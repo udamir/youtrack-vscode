@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Compile TypeScript
+        run: bun run compile
+      
+      - name: Lint check
+        run: bun run lint
+      
+      - name: Run unit tests
+        run: bun run test:unit
+        
+      - name: Run tests with coverage
+        run: bun run test:coverage
+      
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage/lcov.info
+          fail_ci_if_error: false
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    # Only run this job for the main repository
+    if: ${{ github.repository == 'udamir/youtrack-vscode' }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Compile TypeScript
+        run: bun run compile
+      
+      - name: Run integration tests
+        # The test script itself will skip tests if no credentials are available
+        run: bun run test:integration
+        env:
+          # These will be empty strings if the secrets don't exist
+          YOUTRACK_TOKEN: ${{ secrets.YOUTRACK_TOKEN }}
+          YOUTRACK_BASE_URL: ${{ secrets.YOUTRACK_BASE_URL }}
