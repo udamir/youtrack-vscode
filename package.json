@@ -1,6 +1,6 @@
 {
-  "name": "vscode-youtrack-plugin",
-  "displayName": "YouTrack Integration",
+  "name": "youtrack-vscode",
+  "displayName": "YouTrack extension for VSCode",
   "description": "YouTrack integration for VSCode to manage issues and knowledge base articles",
   "version": "0.0.1",
   "engines": {
@@ -57,7 +57,7 @@
       ]
     },
     "configuration": {
-      "title": "YouTrack Integration",
+      "title": "YouTrack extension for VSCode",
       "properties": {
         "youtrack.instanceUrl": {
           "type": "string",

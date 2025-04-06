@@ -1,4 +1,4 @@
-# VSCode YouTrack Plugin
+# YouTrack extension for VSCode 
 
 A Visual Studio Code extension that integrates YouTrack issue management and knowledge base capabilities directly into your development environment.
 
@@ -45,8 +45,8 @@ This extension contributes the following settings:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/vscode-youtrack-plugin.git
-cd vscode-youtrack-plugin
+git clone https://github.com/udamir/youtrack-vscode.git
+cd youtrack-vscode
 
 # Install dependencies
 bun install

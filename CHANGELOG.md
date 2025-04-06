@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the "vscode-youtrack-plugin" extension will be documented in this file.
+All notable changes to the "youtrack-vscode" extension will be documented in this file.
 
 ## [Unreleased]
 
