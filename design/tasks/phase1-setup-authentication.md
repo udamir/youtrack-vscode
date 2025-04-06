@@ -20,7 +20,6 @@
 - **Acceptance Criteria**:
   - VSCode extension API dependencies installed
   - youtrack-client library integrated
-  - Zod schema library for validating YouTrack entity types
   - Development dependencies configured (jest, bun, TypeScript)
 - **Estimated Effort**: Small
 - **Priority**: P0

@@ -1,16 +1,20 @@
-import * as vscode from 'vscode';
-import { EXTENSION_DISPLAY_NAME } from '../constants';
+import * as vscode from "vscode";
+import { EXTENSION_DISPLAY_NAME } from "../constants";
 
 /**
  * Logger functions for the extension
  */
-const outputChannel: { channel: vscode.OutputChannel | undefined } = { channel: undefined };
+const outputChannel: { channel: vscode.OutputChannel | undefined } = {
+	channel: undefined,
+};
 
 /**
  * Initialize the logger
  */
 export function initializeLogger(): void {
-  outputChannel.channel = vscode.window.createOutputChannel(EXTENSION_DISPLAY_NAME);
+	outputChannel.channel = vscode.window.createOutputChannel(
+		EXTENSION_DISPLAY_NAME,
+	);
 }
 
 /**
@@ -18,7 +22,7 @@ export function initializeLogger(): void {
  * @param message The message to log
  */
 export function info(message: string): void {
-  log(`INFO: ${message}`);
+	log(`INFO: ${message}`);
 }
 
 /**
@@ -26,7 +30,7 @@ export function info(message: string): void {
  * @param message The message to log
  */
 export function warn(message: string): void {
-  log(`WARNING: ${message}`);
+	log(`WARNING: ${message}`);
 }
 
 /**
@@ -35,14 +39,14 @@ export function warn(message: string): void {
  * @param error Optional error object
  */
 export function error(message: string, error?: unknown): void {
-  if (error instanceof Error) {
-    log(`ERROR: ${message} - ${error.message}`);
-    if (error.stack) {
-      log(error.stack);
-    }
-  } else {
-    log(`ERROR: ${message}`);
-  }
+	if (error instanceof Error) {
+		log(`ERROR: ${message} - ${error.message}`);
+		if (error.stack) {
+			log(error.stack);
+		}
+	} else {
+		log(`ERROR: ${message}`);
+	}
 }
 
 /**
@@ -50,10 +54,10 @@ export function error(message: string, error?: unknown): void {
  * @param message The message to log
  */
 export function debug(message: string): void {
-  // Only log debug messages in development mode
-  if (process.env.NODE_ENV === 'development') {
-    log(`DEBUG: ${message}`);
-  }
+	// Only log debug messages in development mode
+	if (process.env.NODE_ENV === "development") {
+		log(`DEBUG: ${message}`);
+	}
 }
 
 /**
@@ -61,10 +65,10 @@ export function debug(message: string): void {
  * @param message The message to log
  */
 function log(message: string): void {
-  if (!outputChannel.channel) {
-    return;
-  }
-  
-  const timestamp = new Date().toISOString();
-  outputChannel.channel.appendLine(`[${timestamp}] ${message}`);
+	if (!outputChannel.channel) {
+		return;
+	}
+
+	const timestamp = new Date().toISOString();
+	outputChannel.channel.appendLine(`[${timestamp}] ${message}`);
 }
