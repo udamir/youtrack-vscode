@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"module": "ESNext",
+		"module": "commonjs",
 		"target": "ES2022",
 		"lib": ["ES2022"],
 		"sourceMap": true,
@@ -13,12 +13,12 @@
 		"esModuleInterop": true,
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true,
-		"moduleResolution": "bundler",
+		"moduleResolution": "node",
 		"resolveJsonModule": true,
 		"isolatedModules": true,
 		"importHelpers": false,
-		"outDir": "dist",
+		"outDir": "out",
 		"declaration": true
 	},
-	"exclude": ["node_modules", ".vscode-test"]
+	"exclude": ["node_modules", ".vscode-test", "out"]
 }

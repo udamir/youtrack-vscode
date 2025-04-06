@@ -4,8 +4,6 @@
 	"editor.codeActionsOnSave": {
 		"source.fixAll.eslint": "explicit"
 	},
-	"eslint.validate": ["typescript"],
-	"typescript.tsdk": "node_modules/typescript/lib",
 	"files.exclude": {
 		"**/.git": true,
 		"**/node_modules": true,
