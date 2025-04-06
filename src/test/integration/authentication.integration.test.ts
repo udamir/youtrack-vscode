@@ -1,7 +1,8 @@
 import * as assert from "node:assert"
 import type { ExtensionContext } from "vscode"
-import { AuthState, AuthenticationService } from "../../services/authentication"
 import * as dotenv from "dotenv"
+
+import { AuthState, AuthenticationService } from "../../services/authentication"
 import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN } from "../../constants"
 
 // Load environment variables from .env file
