@@ -8,7 +8,7 @@
   - Project initialized with `yo code` or equivalent
   - TypeScript configuration set up with strict type checking
   - Basic extension manifest (package.json) configured
-  - ESLint and Prettier configured according to code style preferences
+  - Biome linter and formatter configured according to code style preferences
   - Git repository initialized with .gitignore
 - **Estimated Effort**: Medium
 - **Priority**: P0
