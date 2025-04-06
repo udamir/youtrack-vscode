@@ -1,0 +1,85 @@
+{
+  "name": "vscode-youtrack-plugin",
+  "displayName": "YouTrack Integration",
+  "description": "YouTrack integration for VSCode to manage issues and knowledge base articles",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "youtrack.connect",
+        "title": "YouTrack: Connect to YouTrack Instance"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "youtrack-explorer",
+          "title": "YouTrack",
+          "icon": "$(organization)"
+        }
+      ]
+    },
+    "views": {
+      "youtrack-explorer": [
+        {
+          "id": "youtrackProjects",
+          "name": "Projects"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "YouTrack Integration",
+      "properties": {
+        "youtrack.instanceUrl": {
+          "type": "string",
+          "default": "",
+          "description": "URL of the YouTrack instance"
+        },
+        "youtrack.cacheTimeout": {
+          "type": "number",
+          "default": 300,
+          "description": "Cache timeout in seconds"
+        },
+        "youtrack.recentItemsLimit": {
+          "type": "number",
+          "default": 15,
+          "description": "Number of recent items to display"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "bun run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "bun run compile && bun run lint",
+    "lint": "eslint src --ext ts",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.14.0",
+    "@types/vscode": "^1.99.0",
+    "@typescript-eslint/eslint-plugin": "^8.29.0",
+    "@typescript-eslint/parser": "^8.29.0",
+    "eslint": "^9.24.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.5.3",
+    "ts-jest": "^29.3.1",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "youtrack-client": "^0.1.0",
+    "zod": "^3.24.2"
+  }
+}
