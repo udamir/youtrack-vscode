@@ -1,0 +1,201 @@
+import type * as vscode from "vscode"
+import { YouTrack } from "youtrack-client"
+import * as logger from "../utils/logger"
+import { SecureStorageService } from "./secure-storage"
+
+/**
+ * Authentication states for YouTrack connection
+ */
+export enum AuthState {
+  NotAuthenticated = "notAuthenticated",
+  Authenticating = "authenticating",
+  Authenticated = "authenticated",
+  AuthenticationFailed = "authenticationFailed",
+}
+
+/**
+ * Authentication service for managing YouTrack connection and session.
+ */
+export class AuthenticationService {
+  private secureStorage: SecureStorageService
+  private baseUrl: string | undefined
+  private token: string | undefined
+  private client: YouTrack | null = null
+  private currentState: AuthState = AuthState.NotAuthenticated
+  private onAuthStateChangedHandlers: ((state: AuthState) => void)[] = []
+
+  /**
+   * Create a new authentication service
+   * @param context VSCode extension context
+   */
+  constructor(context: vscode.ExtensionContext) {
+    this.secureStorage = new SecureStorageService(context)
+  }
+
+  /**
+   * Get the current authentication state
+   */
+  public getAuthState(): AuthState {
+    return this.currentState
+  }
+
+  /**
+   * Get the authenticated YouTrack client instance
+   * @returns YouTrack client instance or null if not authenticated
+   */
+  public getClient(): YouTrack | null {
+    return this.client
+  }
+
+  /**
+   * Get the current YouTrack base URL
+   */
+  public getBaseUrl(): string | undefined {
+    return this.baseUrl
+  }
+
+  /**
+   * Subscribe to authentication state changes
+   * @param handler Function to call when authentication state changes
+   * @returns Function to unsubscribe from events
+   */
+  public onAuthStateChanged(handler: (state: AuthState) => void): () => void {
+    this.onAuthStateChangedHandlers.push(handler)
+
+    // Return unsubscribe function
+    return () => {
+      const index = this.onAuthStateChangedHandlers.indexOf(handler)
+      if (index !== -1) {
+        this.onAuthStateChangedHandlers.splice(index, 1)
+      }
+    }
+  }
+
+  /**
+   * Initialize authentication from stored credentials or environment variables
+   */
+  public async initialize(): Promise<boolean> {
+    try {
+      this.updateAuthState(AuthState.Authenticating)
+
+      // Try to get credentials from secure storage first
+      this.token = await this.secureStorage.getToken()
+      this.baseUrl = this.secureStorage.getBaseUrl()
+
+      if (this.token && this.baseUrl) {
+        // Verify credentials are still valid
+        return await this.verifyAndCreateClient(this.baseUrl, this.token)
+      }
+
+      this.updateAuthState(AuthState.NotAuthenticated)
+      return false
+    } catch (error) {
+      logger.error("Failed to initialize authentication:", error)
+      this.updateAuthState(AuthState.AuthenticationFailed)
+      return false
+    }
+  }
+
+  /**
+   * Authenticate with YouTrack using a permanent token
+   * @param baseUrl YouTrack instance URL
+   * @param token YouTrack permanent token
+   */
+  public async authenticate(baseUrl: string, token: string): Promise<boolean> {
+    try {
+      this.updateAuthState(AuthState.Authenticating)
+
+      // Validate and create client with credentials
+      const success = await this.verifyAndCreateClient(baseUrl, token)
+
+      if (success) {
+        // Store credentials securely
+        await this.secureStorage.storeToken(token)
+        await this.secureStorage.storeBaseUrl(baseUrl)
+
+        // Update instance variables
+        this.baseUrl = baseUrl
+        this.token = token
+
+        this.updateAuthState(AuthState.Authenticated)
+        return true
+      }
+      this.updateAuthState(AuthState.AuthenticationFailed)
+      return false
+    } catch (error) {
+      logger.error("Authentication failed:", error)
+      this.updateAuthState(AuthState.AuthenticationFailed)
+      return false
+    }
+  }
+
+  /**
+   * Log out and clear stored credentials
+   */
+  public async logout(): Promise<void> {
+    try {
+      await this.secureStorage.clearCredentials()
+      this.client = null
+      this.baseUrl = undefined
+      this.token = undefined
+      this.updateAuthState(AuthState.NotAuthenticated)
+    } catch (error) {
+      logger.error("Logout failed:", error)
+    }
+  }
+
+  /**
+   * Check if user is currently authenticated
+   */
+  public isAuthenticated(): boolean {
+    return this.currentState === AuthState.Authenticated && this.client !== null
+  }
+
+  /**
+   * Verify credentials by connecting to YouTrack and create client if valid
+   * @param baseUrl YouTrack instance URL
+   * @param token YouTrack permanent token
+   * @private
+   */
+  private async verifyAndCreateClient(baseUrl: string, token: string): Promise<boolean> {
+    try {
+      // Create a test client to verify credentials
+      const testClient = YouTrack.client(baseUrl, token)
+
+      // Test the connection by fetching current user
+      await testClient.Users.getCurrentUserProfile({
+        fields: ["login", "email", "fullName"],
+      })
+
+      // If no error was thrown, credentials are valid
+      this.client = testClient
+      this.updateAuthState(AuthState.Authenticated)
+      return true
+    } catch (error) {
+      logger.error("Credentials verification failed:", error)
+      this.updateAuthState(AuthState.AuthenticationFailed)
+      return false
+    }
+  }
+
+  /**
+   * Update authentication state and notify listeners
+   * @param newState New authentication state
+   * @private
+   */
+  private updateAuthState(newState: AuthState): void {
+    if (this.currentState !== newState) {
+      this.currentState = newState
+      logger.info(`Authentication state changed to: ${newState}`)
+
+      // Notify all handlers
+      for (const handler of this.onAuthStateChangedHandlers) {
+        try {
+          handler(newState)
+        } catch (error) {
+          logger.error("Error in auth state change handler:", error)
+        }
+      }
+    }
+  }
+}

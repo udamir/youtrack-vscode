@@ -1,17 +1,14 @@
 import type * as vscode from "vscode"
-import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN } from "../constants"
-import { YouTrack } from "youtrack-client"
-import { SecureStorageService } from "./secure-storage"
+import type { YouTrack } from "youtrack-client"
 import * as logger from "../utils/logger"
+import { AuthenticationService, AuthState } from "./authentication"
 
 /**
  * Service for interacting with YouTrack API
  */
 export class YouTrackService {
   private client: YouTrack | null = null
-  private baseUrl: string | undefined
-  private token: string | undefined
-  private secureStorage: SecureStorageService | undefined
+  private authService: AuthenticationService | null = null
 
   /**
    * Initialize the YouTrack client with credentials
@@ -20,34 +17,21 @@ export class YouTrackService {
    */
   public async initialize(context: vscode.ExtensionContext): Promise<boolean> {
     try {
-      // Initialize secure storage service
-      this.secureStorage = new SecureStorageService(context)
+      // Initialize authentication service
+      this.authService = new AuthenticationService(context)
 
-      // Try to get credentials from secure storage first
-      this.token = await this.secureStorage.getToken()
-      this.baseUrl = this.secureStorage.getBaseUrl()
+      // Subscribe to auth state changes
+      this.authService.onAuthStateChanged(this.handleAuthStateChange.bind(this))
 
-      // If no stored credentials, try environment variables
-      if (!this.token || !this.baseUrl) {
-        this.baseUrl = process.env[ENV_YOUTRACK_BASE_URL]
-        this.token = process.env[ENV_YOUTRACK_TOKEN]
+      // Try to initialize authentication
+      const success = await this.authService.initialize()
+
+      // Update client reference if authentication was successful
+      if (success) {
+        this.client = this.authService.getClient()
       }
 
-      // If still no credentials, client will remain null
-      if (this.token && this.baseUrl) {
-        // If we have credentials from environment variables, store them securely
-        if (process.env[ENV_YOUTRACK_TOKEN] === this.token && this.secureStorage) {
-          await this.secureStorage.storeToken(this.token)
-          await this.secureStorage.storeBaseUrl(this.baseUrl)
-          logger.info("Stored credentials from environment variables")
-        }
-
-        // Create the client
-        this.client = YouTrack.client(this.baseUrl, this.token)
-        return true
-      }
-
-      return false
+      return success
     } catch (error) {
       logger.error("Failed to initialize YouTrack client:", error)
       return false
@@ -55,10 +39,25 @@ export class YouTrackService {
   }
 
   /**
+   * Handle authentication state changes
+   * @param state New authentication state
+   * @private
+   */
+  private handleAuthStateChange(state: AuthState): void {
+    if (state === AuthState.Authenticated && this.authService) {
+      this.client = this.authService.getClient()
+      logger.info("YouTrack client updated due to authentication state change")
+    } else if (state === AuthState.NotAuthenticated || state === AuthState.AuthenticationFailed) {
+      this.client = null
+      logger.info("YouTrack client cleared due to authentication state change")
+    }
+  }
+
+  /**
    * Check if the client is initialized with valid credentials
    */
   public isInitialized(): boolean {
-    return this.client !== null
+    return this.client !== null && this.authService?.isAuthenticated() === true
   }
 
   /**
@@ -69,29 +68,21 @@ export class YouTrackService {
    */
   public async setCredentials(baseUrl: string, token: string, context: vscode.ExtensionContext): Promise<boolean> {
     try {
-      // Create a test client to verify credentials
-      const testClient = YouTrack.client(baseUrl, token)
-
-      // Test the connection by fetching current user
-      await testClient.Users.getCurrentUserProfile({
-        fields: ["login", "email", "fullName"],
-      })
-
-      // If no error was thrown, save credentials
-      this.baseUrl = baseUrl
-      this.token = token
-      this.client = testClient
-
-      // Ensure secure storage is initialized
-      if (!this.secureStorage) {
-        this.secureStorage = new SecureStorageService(context)
+      // Initialize auth service if needed
+      if (!this.authService) {
+        this.authService = new AuthenticationService(context)
+        this.authService.onAuthStateChanged(this.handleAuthStateChange.bind(this))
       }
 
-      // Store credentials securely
-      await this.secureStorage.storeToken(token)
-      await this.secureStorage.storeBaseUrl(baseUrl)
+      // Authenticate with provided credentials
+      const success = await this.authService.authenticate(baseUrl, token)
 
-      return true
+      // Update client reference if authentication was successful
+      if (success) {
+        this.client = this.authService.getClient()
+      }
+
+      return success
     } catch (error) {
       logger.error("Failed to set YouTrack credentials:", error)
       return false
@@ -103,15 +94,13 @@ export class YouTrackService {
    * @param context VSCode extension context
    */
   public async clearCredentials(context: vscode.ExtensionContext): Promise<void> {
-    // Ensure secure storage is initialized
-    if (!this.secureStorage) {
-      this.secureStorage = new SecureStorageService(context)
+    // Initialize auth service if needed
+    if (!this.authService) {
+      this.authService = new AuthenticationService(context)
     }
 
-    await this.secureStorage.clearCredentials()
+    await this.authService.logout()
     this.client = null
-    this.baseUrl = undefined
-    this.token = undefined
   }
 
   /**
@@ -120,5 +109,13 @@ export class YouTrackService {
    */
   public getClient(): YouTrack | null {
     return this.client
+  }
+
+  /**
+   * Get the current YouTrack base URL
+   * @returns YouTrack base URL or undefined if not authenticated
+   */
+  public getBaseUrl(): string | undefined {
+    return this.authService?.getBaseUrl()
   }
 }
