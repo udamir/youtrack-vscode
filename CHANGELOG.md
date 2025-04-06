@@ -11,6 +11,11 @@ All notable changes to the "vscode-youtrack-plugin" extension will be documented
 - Configuration settings structure
 - Logger utility
 - Constants for extension commands and views
+- Implemented Secure Storage Service for credential management
+  - Secure storage of YouTrack token using VSCode Secret Storage API
+  - Encryption for sensitive data in memory
+  - Comprehensive test coverage for storage functionality
+- Modified YouTrack client to use the new Secure Storage Service
 
 ### Changed
 - Migrated from ESLint to Biome for code linting and formatting
