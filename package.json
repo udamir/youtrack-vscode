@@ -81,10 +81,12 @@
     "vscode:prepublish": "bun run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "pretest": "bun run compile && bun run lint",
     "lint": "biome check src",
-    "format": "biome format --write src",
+    "lint:fix": "biome check src --write",
+    "pretest": "bun run compile && bun run lint",
     "test": "jest",
+    "test:integration": "jest --testMatch=\"**/*.integration.test.ts\"",
+    "test:unit": "jest --testMatch=\"**/test/**/*.test.ts\" --testPathIgnorePatterns=\"integration\"",
     "test:coverage": "jest --coverage"
   },
   "devDependencies": {
@@ -97,6 +99,7 @@
     "@types/vscode": "^1.99.0",
     "@typescript-eslint/eslint-plugin": "^8.29.0",
     "@typescript-eslint/parser": "^8.29.0",
+    "dotenv": "^16.4.7",
     "eslint": "^9.24.0",
     "jest": "^29.7.0",
     "prettier": "^3.5.3",

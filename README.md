@@ -58,6 +58,33 @@ bun run compile
 bun run test
 ```
 
+## Testing
+
+### Unit Tests
+
+Run the unit tests with:
+
+```bash
+bun run test:unit
+```
+
+### Integration Tests
+
+Integration tests require a real YouTrack instance and valid credentials.
+
+1. Create a `.env` file in the project root (copy from `.env.example`)
+2. Add your YouTrack credentials:
+   ```
+   YOUTRACK_BASE_URL=https://your-instance.youtrack.cloud
+   YOUTRACK_TOKEN=perm:your-permanent-token
+   ```
+3. Run the integration tests:
+   ```bash
+   bun run test:integration
+   ```
+
+Note: Integration tests will be skipped if no credentials are provided.
+
 ## License
 
 [MIT](LICENSE)
