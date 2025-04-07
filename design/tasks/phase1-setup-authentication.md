@@ -77,6 +77,7 @@
   - Methods to query issues, projects, and users
 - **Estimated Effort**: Medium
 - **Priority**: P0
+- **Status**: ✅ Completed (April 7, 2025)
 
 ## Task 1.7: Setup Dependency Management with GitHub Dependabot
 - **ID**: TASK-1.7
@@ -117,6 +118,7 @@
   - Visual indication of connection state (connected/disconnected)
 - **Estimated Effort**: Small
 - **Priority**: P0
+- **Status**: ✅ Completed (April 8, 2025)
 
 ## Task 1.10: Setup Configuration and Settings
 - **ID**: TASK-1.10
