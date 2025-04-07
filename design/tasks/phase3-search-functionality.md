@@ -3,12 +3,14 @@
 ## Task 3.1: Implement Search Panel Infrastructure
 - **ID**: TASK-3.1
 - **Description**: Create the base infrastructure for the search functionality panel.
-- **Dependencies**: TASK-1.6
+- **Dependencies**: TASK-1.6, TASK-2.9
 - **Acceptance Criteria**:
   - Search panel view registered in package.json
   - WebView panel for search functionality
   - Message passing between WebView and extension
   - Basic UI layout implementation
+  - Configuration state detection integration
+  - "Setup Connection" prompt when not configured
 - **Estimated Effort**: Medium
 - **Priority**: P0
 
@@ -89,5 +91,19 @@
   - Context menu for result items
   - Keyboard navigation support
   - Focus management between search input and results
+- **Estimated Effort**: Small
+- **Priority**: P0
+
+## Task 3.8: Implement Configuration-Aware Search UI
+- **ID**: TASK-3.8
+- **Description**: Ensure search UI gracefully handles unconfigured state and directs users to configuration wizard.
+- **Dependencies**: TASK-3.1, TASK-1.14
+- **Acceptance Criteria**:
+  - Detect YouTrack configuration status on search panel load
+  - Show appropriate message when not configured
+  - Provide direct button to launch configuration wizard
+  - Gracefully handle configuration changes during search session
+  - Update search UI reactively when configuration state changes
+  - Apply consistent empty state styling with other panels
 - **Estimated Effort**: Small
 - **Priority**: P0

@@ -21,13 +21,14 @@ The VSCode YouTrack Plugin aims to seamlessly integrate YouTrack issue and knowl
 
 ### 2.1 Core Functionality
 - Authentication with YouTrack instance via permanent token
-- Browse YouTrack projects, issues, and knowledge base articles
+- Browse manually added YouTrack projects, their issues, and knowledge base articles
 - Open issue descriptions and articles as markdown files in VSCode tabs
 - Edit and save issue descriptions and articles back to YouTrack
 - Search functionality for issues and articles
 
 ### 2.2 Issue Management
-- Browse projects and issues hierarchy based on links
+- Add and remove YouTrack projects from the Projects panel
+- Browse issues for selected projects
 - View issue descriptions, comments, and custom fields
 - Edit issue descriptions
 - Support for issue attachments

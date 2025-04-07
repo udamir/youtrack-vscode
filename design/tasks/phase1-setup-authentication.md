@@ -132,15 +132,65 @@
 - **Estimated Effort**: Small
 - **Priority**: P0
 
-## Task 1.11: Create Connection Settings UI
+## Task 1.11: Create Configuration Wizard Framework
 - **ID**: TASK-1.11
-- **Description**: Create UI for managing YouTrack connection settings.
-- **Dependencies**: TASK-1.9, TASK-1.10
+- **Description**: Implement the multi-step wizard component framework for guiding users through the connection setup process.
+- **Dependencies**: TASK-1.3
 - **Acceptance Criteria**:
-  - Form for entering YouTrack URL and token
-  - Test connection button
-  - Success/failure feedback
-  - Save/cancel buttons
-  - Validation of input fields
+  - Modal dialog framework with Next/Back navigation
+  - Support for multiple steps with progress indicator
+  - Support for validation at each step
+  - Consistent styling that matches VSCode UI guidelines
 - **Estimated Effort**: Medium
 - **Priority**: P0
+
+## Task 1.12: Implement Welcome and URL Input Steps
+- **ID**: TASK-1.12
+- **Description**: Create the initial wizard steps for welcoming users and capturing the YouTrack URL.
+- **Dependencies**: TASK-1.11
+- **Acceptance Criteria**:
+  - Welcome step with clear explanation of extension capabilities
+  - URL input step with validation
+  - Real-time feedback on URL format
+  - Basic connectivity check to validate the URL
+- **Estimated Effort**: Small
+- **Priority**: P0
+
+## Task 1.13: Implement Token Input and Test Steps
+- **ID**: TASK-1.13
+- **Description**: Create steps for entering authentication token and testing the connection.
+- **Dependencies**: TASK-1.12, TASK-1.5
+- **Acceptance Criteria**:
+  - Masked input field for token
+  - Link to documentation on creating tokens
+  - Test connection step that calls the YouTrack API
+  - Real-time progress indication during testing
+  - Clear error messages for connection failures
+- **Estimated Effort**: Medium
+- **Priority**: P0
+
+## Task 1.14: Create Setup Complete Page and Sidebar Button
+- **ID**: TASK-1.14
+- **Description**: Implement the final wizard step and the sidebar button for launching the wizard.
+- **Dependencies**: TASK-1.13
+- **Acceptance Criteria**:
+  - Success confirmation page with connection summary
+  - Quick links to common actions
+  - "Setup Connection" button in sidebar when not configured
+  - Automatic launch of wizard for first-time users
+  - Configuration detection on startup
+- **Estimated Effort**: Small
+- **Priority**: P0
+
+## Task 1.15: Add Wizard Reset Option and Startup Detection
+- **ID**: TASK-1.15
+- **Description**: Add the ability to reset configuration and improve the startup experience.
+- **Dependencies**: TASK-1.14
+- **Acceptance Criteria**:
+  - Command to reset YouTrack configuration
+  - Confirmation dialog before resetting
+  - Cleanup of stored credentials on reset
+  - Startup configuration detection
+  - Notification with link to setup wizard when not configured
+- **Estimated Effort**: Small
+- **Priority**: P1

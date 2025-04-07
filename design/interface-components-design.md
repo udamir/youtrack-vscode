@@ -29,10 +29,14 @@ The plugin's interface is integrated into the VSCode environment, utilizing nati
 The explorer sidebar will contain five separate collapsible panels:
 
 1. **Projects Panel**
-   - A dedicated panel showing the list of all available YouTrack projects
+   - A dedicated panel showing manually added YouTrack projects (not all available projects)
+   - "Add Project" button at the top of the panel to add projects from YouTrack
+   - Context menu option to remove projects from the panel
+   - Project persistence across sessions (remembered between restarts)
    - Single-select functionality (only one project can be selected at a time)
    - Project selection affects the content shown in Issues and Knowledge Base panels
    - Each project displays name and potentially icon/status
+   - When YouTrack is not configured, displays a prominent "Setup Connection" button that launches the Configuration Wizard
 
 2. **Issues Panel**
    - Displays issues for the currently selected project
@@ -262,14 +266,55 @@ Cache Timeout: [30] minutes
 Number of Recent Items: [10]
 ```
 
+### 2.9 Configuration Wizard
+
+**Component Description:**
+- A guided setup flow that appears when the plugin is not configured
+- Accessible via a prominent "Setup Connection" button in the Explorer View sidebar
+- Multi-step wizard with:
+  - Welcome screen explaining YouTrack integration benefits
+  - YouTrack instance URL input with validation
+  - Authentication token input with guidance on how to create one
+  - Test connection step with real-time feedback
+  - Completion screen with next steps
+
+**Requirements Fulfilled:**
+- Simplifies first-time setup experience
+- Guides users through authentication process
+- Validates connection before proceeding
+
+**Visual Design:**
+```
+┌─────────────────────────────────────┐
+│ Configure YouTrack Connection       │
+│                                     │
+│ Step 2 of 3: Enter Auth Token       │
+│ ─────────────────────────────────── │
+│                                     │
+│ Enter your YouTrack permanent token:│
+│ [••••••••••••••••••••••••••]        │
+│                                     │
+│ How to get a token? [Learn More]    │
+│                                     │
+│ [Back]                   [Next >]   │
+└─────────────────────────────────────┘
+```
+
 ## 3. User Interactions
 
 ### 3.1 Authentication Flow
 
 1. User installs the extension
-2. User is prompted to enter YouTrack URL and permanent token in settings
-3. Status bar updates to show connection status
-4. Upon successful connection, the YouTrack explorer panels are populated with data
+2. The extension detects no configuration is present and displays:
+   - A "Setup Connection" button in the Explorer View
+   - A notification suggesting configuration
+3. User clicks the "Setup Connection" button in the sidebar
+4. Configuration Wizard appears, guiding the user through setup:
+   - Enter YouTrack URL
+   - Generate and enter permanent token
+   - Test connection
+5. Upon successful connection, the YouTrack explorer panels are populated with data
+6. Status bar updates to show connected status
 
 ### 3.2 Project Selection and Navigation
 
@@ -306,7 +351,7 @@ This section maps interface components to functional requirements to ensure comp
 
 | Functional Requirement | Interface Component(s) |
 |------------------------|------------------------|
-| Authentication with YouTrack | Settings Page, Status Bar Item |
+| Authentication with YouTrack | Settings Page, Status Bar Item, Configuration Wizard |
 | Browse projects | Projects Panel in Explorer |
 | Browse issues hierarchy | Issues Panel with Tree View mode |
 | View issue descriptions | Issue View |
@@ -397,7 +442,7 @@ This section maps interface components to functional requirements to ensure comp
 │  r  │ │                                                                   │       │
 │     │ │ Links:                                                            │       │
 │     │ │   Depends on: ALPHA-120: Update API endpoints, ALPHA-121: Fix database connection│       │
-│     │ │   Relates to: BETA-100: Redesign mobile layout                        │       │
+│     │ │   Relates to: BETA-100: Redesign mobile layout                    │       │
 │     │ │                                                                   │       │
 │  A  │ │ Tabs: [Description] [Comments] [Attachments]                      │       │
 │  r  │ │                                                                   │       │

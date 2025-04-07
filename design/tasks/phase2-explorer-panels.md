@@ -15,15 +15,20 @@
 
 ## Task 2.2: Implement Projects Panel
 - **ID**: TASK-2.2
-- **Description**: Create the Projects panel showing all available YouTrack projects with single-select functionality.
+- **Description**: Create the Projects panel showing manually added YouTrack projects with add/remove functionality and single-select behavior.
 - **Dependencies**: TASK-2.1
 - **Acceptance Criteria**:
   - Projects tree view registered in package.json
   - Projects tree data provider implementation
   - Project tree item representation with icons
+  - "Add Project" button in panel title with project selector dialog
+  - Context menu item for removing projects from the panel
+  - Project list persistence across sessions using workspace state
   - Single-select behavior implementation
   - Refresh button in panel title
   - Event emission when selected project changes
+  - Display "Setup Connection" button when YouTrack is not configured
+  - Visual state handling for unconfigured state vs. empty project list
 - **Estimated Effort**: Medium
 - **Priority**: P0
 
@@ -110,3 +115,29 @@
   - Memory-efficient storage of panel state
 - **Estimated Effort**: Small
 - **Priority**: P2
+
+## Task 2.9: Implement Configuration Status Detection in Explorer
+- **ID**: TASK-2.9
+- **Description**: Create a mechanism to detect the configuration status and manage the visibility of the "Setup Connection" button in the Explorer view.
+- **Dependencies**: TASK-1.14, TASK-2.2
+- **Acceptance Criteria**:
+  - Configuration detection service that integrates with explorer panels
+  - Dynamic visibility of setup button based on configuration state
+  - Proper handling of connection changes (setup/disconnect events)
+  - Performance optimized state detection to avoid UI lagging
+  - Event system for notifying panels of configuration changes
+- **Estimated Effort**: Small
+- **Priority**: P0
+
+## Task 2.10: Implement Connection Messaging for Empty States
+- **ID**: TASK-2.10
+- **Description**: Create consistent messaging and UI elements for panels when connection is not configured or fails.
+- **Dependencies**: TASK-2.9
+- **Acceptance Criteria**:
+  - Design consistent empty state UI for unconfigured connection
+  - Design error state UI for failed connection
+  - Include actionable buttons to resolve connection issues
+  - Ensure accessibility of messages and actions
+  - Consistent messaging across all panels
+- **Estimated Effort**: Small
+- **Priority**: P1
