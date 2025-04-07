@@ -100,7 +100,7 @@ export class SettingsValidator {
   public validateCacheTimeout(): boolean {
     const timeout = this.configuration.getCacheTimeout()
 
-    if (isNaN(timeout) || timeout < 0) {
+    if (Number.isNaN(timeout) || timeout < 0) {
       vscode.window.showErrorMessage("Cache timeout must be a positive number.")
       return false
     }
@@ -115,7 +115,7 @@ export class SettingsValidator {
   public validateRecentItemsLimit(): boolean {
     const limit = this.configuration.getRecentItemsLimit()
 
-    if (isNaN(limit) || limit < 1 || limit > 100) {
+    if (Number.isNaN(limit) || limit < 1 || limit > 100) {
       vscode.window.showErrorMessage("Recent items limit must be between 1 and 100.")
       return false
     }

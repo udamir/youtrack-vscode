@@ -103,7 +103,8 @@
     "test": "jest",
     "test:integration": "jest --testMatch=\"**/*.integration.test.ts\"",
     "test:unit": "jest --testMatch=\"**/test/**/*.test.ts\" --testPathIgnorePatterns=\"integration\"",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "dev": "bun run compile && code --extensionDevelopmentPath=\"$(pwd)\""
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
