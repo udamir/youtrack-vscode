@@ -2,14 +2,16 @@
 
 ## Task 5.1: Implement Article Editor Provider
 - **ID**: TASK-5.1
-- **Description**: Create a custom editor provider for YouTrack knowledge base articles.
+- **Description**: Create a custom editor provider for YouTrack knowledge base articles supporting both preview and edit modes.
 - **Dependencies**: TASK-4.1
 - **Acceptance Criteria**:
   - Article editor provider registration in package.json
   - Extension of base custom editor provider for article specifics
+  - Support for both preview and edit modes
   - Virtual document handling for article content
   - Article-specific context registration
   - Handling of article content in markdown format
+  - Reuse of temporary file storage configuration from issue editor
 - **Estimated Effort**: Medium
 - **Priority**: P0
 
@@ -23,41 +25,45 @@
   - Author information
   - Parent article/category if applicable
   - Proper layout and styling consistent with VSCode
+  - Sidebar edit action button
 - **Estimated Effort**: Medium
 - **Priority**: P0
 
-## Task 5.3: Implement Article Content Editor
+## Task 5.3: Implement Article Preview Mode
 - **ID**: TASK-5.3
-- **Description**: Create the main content editor for articles using VSCode's markdown capabilities.
+- **Description**: Create the preview mode for articles with markdown and Mermaid diagram support.
 - **Dependencies**: TASK-5.1
 - **Acceptance Criteria**:
-  - VSCode native markdown editor integration
-  - Editor instantiation with article content
-  - Content change tracking
-  - Syntax highlighting for markdown
-  - Toolbar integration with save and refresh actions
-  - Support for VSCode markdown preview
+  - Integration with VSCode's markdown preview
+  - Support for Mermaid diagrams in preview
+  - Interactive internal links in preview mode
+  - Read-only view of article content
+  - Support for article formatting
+  - Refresh action to update content from YouTrack
 - **Estimated Effort**: Medium
 - **Priority**: P0
 
-## Task 5.4: Implement Article Save Functionality
+## Task 5.4: Implement Article Edit Mode
 - **ID**: TASK-5.4
-- **Description**: Add functionality to save article changes back to YouTrack.
+- **Description**: Create the edit mode that allows downloading content to a temporary location and explicitly saving back to YouTrack.
 - **Dependencies**: TASK-5.3
 - **Acceptance Criteria**:
-  - Save button implementation in toolbar
-  - Data validation before saving
-  - API interaction to update article
-  - Error handling for save failures
-  - Success confirmation
-  - Dirty state tracking for unsaved changes
+  - "Download for Editing" action in sidebar that downloads content to predefined temporary folder
+  - Visual indication that the document is in edit mode (e.g., "(Editing)" suffix in the title)
+  - VSCode native markdown editor integration for edit mode
+  - Content change tracking
+  - "Save to YouTrack" action that syncs changes to YouTrack and deletes the temp file
+  - "Discard Changes" action that removes temp file without saving
+  - Success/failure notifications for sync operations
+  - Cleanup of temporary files when editing tab is closed
+  - Syntax highlighting for markdown
 - **Estimated Effort**: Medium
 - **Priority**: P0
 
-## Task 5.5: Implement New Article Creation
+## Task 5.5: Implement Advanced Markdown Features for Articles
 - **ID**: TASK-5.5
-- **Description**: Add functionality to create new articles in the knowledge base.
-- **Dependencies**: TASK-5.3
+- **Description**: Add support for advanced markdown features specific to YouTrack articles.
+- **Dependencies**: TASK-5.4
 - **Acceptance Criteria**:
   - "New Article" command in command palette and context menu
   - Form for entering article title and parent category
@@ -84,7 +90,7 @@
 ## Task 5.7: Add Article-Specific Commands
 - **ID**: TASK-5.7
 - **Description**: Implement specialized commands for working with articles.
-- **Dependencies**: TASK-5.3
+- **Dependencies**: TASK-5.4
 - **Acceptance Criteria**:
   - Command palette entries for article actions
   - Keyboard shortcuts for common operations

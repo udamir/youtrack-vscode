@@ -135,22 +135,27 @@ Results (8):
 ### 2.4 Issue View
 
 **Component Description:**
-- A custom editor that displays issue content in markdown format using VSCode's native markdown editor
+- A custom editor that initially displays issue content in preview mode
+- Markdown preview with support for Mermaid diagrams and interactive internal links
 - Metadata panel showing issue attributes (status, assigned to, etc.)
 - Links section displaying all linked issues grouped by link types (e.g., "Depends on", "Relates to", "Blocks", "Subtask of", "Parent for", etc.)
   - Each linked issue shows both ID and summary for better context
 - Read-only view of comments
 - Tab-based navigation between description, comments, and attachments
+- "Download for Editing" action in sidebar that explicitly downloads content to predefined temporary folder
+- Downloaded documents have a "Save to YouTrack" action that syncs changes and deletes the temp file after saving
+- Cleanup of temporary files when editing tab is closed
 
 **Requirements Fulfilled:**
-- View issue descriptions, comments, and custom fields
-- Edit issue descriptions
+- View issue descriptions, comments, and custom fields with Mermaid diagram support
+- Edit issue descriptions in a dedicated editing mode
 - Support for issue attachments
-- Navigate between related issues through links
+- Navigate between related issues through interactive links
+- Clear separation between viewing and editing modes
 
 **Visual Design:**
 ```
-[Issue PRJ-123: Issue Title]   [Save] [Refresh]
+[Issue PRJ-123: Issue Title]   [Refresh]
 
 Summary: Issue Title
 ID: PRJ-123
@@ -165,37 +170,98 @@ Links:
 
 Tabs: [Description] [Comments] [Attachments]
 
+[Markdown Preview with Mermaid Support]
+# Issue Description
+This is the issue description in preview mode.
+
+```graph TD;
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;
+```
+
+Sidebar Actions:
+[📥 Download for Editing]  [🔄 Refresh]
+```
+
+For downloaded temp documents:
+```
+[Issue PRJ-123: Issue Title (Editing)]
+
 [VSCode Markdown Editor]
 # Issue Description
-This is the issue description that can be edited.
-...
+This is the issue description being edited locally.
 
+```graph TD;
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;
+```
+
+Sidebar Actions:
+[💾 Save to YouTrack]  [❌ Discard Changes]
 ```
 
 ### 2.5 Article Editor
 
 **Component Description:**
-- VSCode's native markdown editor for article content
+- Initially displays article content in preview mode with Mermaid diagram support
+- Interactive internal links in preview mode
 - Metadata panel showing article properties
-- Save and refresh buttons in the editor toolbar
+- "Download for Editing" action in sidebar that explicitly downloads content to predefined temporary folder
+- Downloaded documents have a "Save to YouTrack" action that syncs changes and deletes the temp file after saving
+- Cleanup of temporary files when editing tab is closed
 
 **Requirements Fulfilled:**
-- Edit articles with full markdown support
-- Create new articles
+- View articles with Mermaid diagram support
+- Edit articles in a dedicated editing mode
+- Support for article attachments
+- Navigate between related articles through interactive links
+- Clear separation between viewing and editing modes
 
 **Visual Design:**
 ```
-[Article: Article Title]   [Save] [Refresh]
+[Article: Article Title]   [Refresh]
 
 Title: Article Title
 Space: Project Knowledge Base
 Created: Apr 6, 2025
 Modified: Apr 6, 2025
 
+[Markdown Preview with Mermaid Support]
+# Article Title
+Article content in preview mode.
+
+```graph TD;
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;
+```
+
+Sidebar Actions:
+[📥 Download for Editing]  [🔄 Refresh]
+```
+
+For downloaded temp documents:
+```
+[Article: Article Title (Editing)]
+
 [VSCode Markdown Editor]
 # Article Title
-Article content in markdown format
-...
+Article content being edited locally.
+
+```graph TD;
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;
+```
+
+Sidebar Actions:
+[💾 Save to YouTrack]  [❌ Discard Changes]
 ```
 
 ### 2.6 Status Bar Item
@@ -327,17 +393,21 @@ Number of Recent Items: [10]
 
 1. User locates an issue in the Issues panel or Recent Issues panel
 2. User clicks on the issue to open it in the editor
-3. User edits the description in the markdown editor
-4. User clicks Save to update the issue in YouTrack
-5. The issue is automatically added/updated in the Recent Issues panel
+3. User views the issue in preview mode with interactive links and Mermaid diagrams
+4. User clicks the "Download for Editing" action in the sidebar to download the issue content to a predefined temporary folder
+5. User edits the issue description in the markdown editor
+6. User clicks "Save to YouTrack" to update the issue in YouTrack
+7. The issue is automatically added/updated in the Recent Issues panel
 
 ### 3.4 Working with Articles
 
 1. User locates an article in the Knowledge Base panel or Recent Articles panel
 2. User clicks on the article to open it in the editor
-3. User edits the article content in the markdown editor
-4. User clicks Save to update the article in YouTrack
-5. The article is automatically added/updated in the Recent Articles panel
+3. User views the article in preview mode with interactive links and Mermaid diagrams
+4. User clicks the "Download for Editing" action in the sidebar to download the article content to a predefined temporary folder
+5. User edits the article content in the markdown editor
+6. User clicks "Save to YouTrack" to update the article in YouTrack
+7. The article is automatically added/updated in the Recent Articles panel
 
 ### 3.5 Searching for Content
 
@@ -412,26 +482,26 @@ This section maps interface components to functional requirements to ensure comp
 │  [S]│ │   └── User Manual                                                 │       │
 │  [G]│ │                                                                   │       │
 │     │ │ RECENT ISSUES                                     [▼]             │       │
-│     │ │   ├── ALPHA-123: Fix critical login bug (5m ago)                  │       │
-│     │ │   ├── BETA-456: Mobile UI issues (1h ago)                         │       │
-│     │ │   └── GAMMA-789: Performance optimization (2d ago)                │       │
+│     │ │   ├── PRJ-1: Issue title (3m ago)                                 │       │
+│     │ │   ├── PROJ-45: Issue title (1h ago)                               │       │
+│     │ │   └── DEV-12: Issue title (2d ago)                                │       │
 │     │ │                                                                   │       │
 │     │ │ RECENT ARTICLES                                   [▼]             │       │
-│     │ │   ├── Coding Standards (10m ago)                                  │       │
-│     │ │   ├── Release Process (1d ago)                                    │       │
-│     │ │   └── API Documentation (3d ago)                                  │       │
+│     │ │   ├── Article 1 (1h ago)                                          │       │
+│     │ │   ├── Setup Guide (2d ago)                                        │       │
+│     │ │   └── Release Notes (3d ago)                                      │       │
 │     │ └───────────────────────────────────────────────────────────────────┘       │
 ├─────┼─────────────────────────────────────────────────────────────────────────────┤
 │  S  │ SEARCH                                              [Clear]                 │
 │  e  │ ┌─────────────────────────────────────────────────────────────────┐         │
-│  a  │ │ project: ALPHA status: Op▼                                      │         │
+│  a  │ │ project: PROJ status: Op▼                                       │         │
 │  r  │ └─────────────────────────────────────────────────────────────────┘         │
 │  c  │   ↳ Suggestions: [Open] [In Progress] [Fixed]                               │
 │  h  │                                                                             │
-│     │ Results (3):                                                                │
-│     │   ├── ALPHA-123: Fix critical login bug                                     │
-│     │   ├── ALPHA-127: Update documentation                                       │
-│     │   └── ALPHA-129: Improve error handling                                     │
+│     │ Results (8):                                                                │
+│     │   ├── PRJ-123: Issue title with match                                       │
+│     │   ├── PRJ-456: Another matching issue                                       │
+│     │   └── ...                                                                   │
 ├─────┼─────────────────────────────────────────────────────────────────────────────┤
 │     │ ┌─── Issue ALPHA-123: Fix critical login bug ───┐ ┌─── README.md ───┐       │
 │  E  │ │                                               │ │                 │       │

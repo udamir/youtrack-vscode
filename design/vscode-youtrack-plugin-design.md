@@ -25,6 +25,7 @@ The VSCode YouTrack Plugin aims to seamlessly integrate YouTrack issue and knowl
 - Open issue descriptions and articles as markdown files in VSCode tabs
 - Edit and save issue descriptions and articles back to YouTrack
 - Search functionality for issues and articles
+- Act as MCP (Message Control Program) server for AI assistants
 
 ### 2.2 Issue Management
 - Add and remove YouTrack projects from the Projects panel
@@ -35,14 +36,23 @@ The VSCode YouTrack Plugin aims to seamlessly integrate YouTrack issue and knowl
 
 ### 2.3 Knowledge Base Management
 - Browse article hierarchy
-- Edit articles with full markdown support
-- Create new articles
+- View articles in preview mode with Mermaid diagram support
+- Download articles to temporary folder for editing via explicit action
+- Save edited articles back to YouTrack with explicit "Save to YouTrack" action
+- Track temporary files and clean up on editor close
 
 ### 2.4 Search and Navigation
 - Full-text search across issues and articles
 - Filter by project, tag, status, and other attributes
 - Quick navigation between related issues and articles
 - History of recently accessed items
+
+### 2.5 AI Integration
+- Extension acts as MCP server for AI assistants to interact with YouTrack content
+- Provides structured resources for projects, articles, issues, and comments
+- Exposes YouTrack entities in AI-readable format
+- Enables AI-assisted issue management and documentation
+- Supports natural language queries against YouTrack data
 
 ## 3. Technical Design
 
@@ -53,6 +63,7 @@ The plugin will follow a modular architecture with the following components:
 - Document Manager (handling YouTrack content in VSCode editors)
 - Search and Indexing Engine
 - VSCode Extension Interface
+- MCP Server for AI Integration
 
 ### 3.2 Integration Points
 - VSCode Extension API
@@ -62,8 +73,11 @@ The plugin will follow a modular architecture with the following components:
 1. User authenticates with YouTrack instance using a permanent token
 2. Plugin fetches and caches available projects, issues, and articles
 3. User browses or searches for content
-4. Selected content is fetched and opened in VSCode's native markdown editor
-5. Changes to issue descriptions and articles are tracked and can be saved back to YouTrack
+4. Selected content is fetched and displayed in preview mode with Mermaid diagram support
+5. When "Download for Editing" is requested, content is copied to a configurable temporary location
+6. User edits the content in VSCode's native markdown editor
+7. When "Save to YouTrack" is triggered, changes are synchronized back to YouTrack and temp file is deleted
+8. When editor tab is closed, any remaining temporary files are cleaned up
 
 ### 3.4 User Interface Components
 - YouTrack Explorer view in Activity Bar
@@ -74,6 +88,18 @@ The plugin will follow a modular architecture with the following components:
 ### 3.5 Authentication and Security
 - Secure storage of YouTrack permanent tokens
 
+### 3.6 AI MCP Server Integration
+- The extension will act as an MCP server for AI assistants
+- Server will provide structured access to YouTrack entities:
+  - Projects: list, metadata, permissions
+  - Issues: search, view, create, update, link
+  - Articles: browse, view, edit
+  - Comments: read, create, reply
+- Data will be transformed into AI-friendly formats
+- Authentication and authorization handled by the extension
+- Caching layer for improved performance
+- Command registration for AI-triggered actions
+
 ## 4. Implementation Plan
 
 ### 4.1 Technical Stack
@@ -82,6 +108,8 @@ The plugin will follow a modular architecture with the following components:
 - youtrack-client for API interactions
 - VSCode's built-in markdown preview functionality
 - Native VSCode UI components
+- WebSocket server for AI assistant communication
+- JSON Schema for structured data exchange
 
 ### 4.2 Project Structure
 ```
@@ -95,6 +123,11 @@ vscode-youtrack-plugin/
 │   ├── commands/             # Command implementation
 │   ├── providers/            # VSCode providers (tree view, etc.)
 │   ├── search/               # Search functionality
+│   ├── mcp/                  # MCP server implementation for AI
+│   │   ├── server.ts         # WebSocket server setup
+│   │   ├── resources/        # Resource handlers for YouTrack entities
+│   │   ├── commands/         # AI-invokable commands
+│   │   └── schema/           # JSON Schema definitions
 │   ├── utils/                # Utility functions
 │   └── extension.ts          # Extension entry point
 ├── test/                     # Test cases
