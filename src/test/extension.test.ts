@@ -1,7 +1,7 @@
 import * as assert from "node:assert"
 import type { Extension } from "vscode"
 import * as sinon from "sinon"
-import * as vscode from "./vscode.mock"
+import * as vscode from "./mocks/vscode"
 
 // Import command constants
 import { COMMAND_CONNECT } from "../constants"

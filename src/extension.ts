@@ -3,10 +3,12 @@ import { COMMAND_CONNECT } from "./constants"
 import * as logger from "./utils/logger"
 import { YouTrackService } from "./services/youtrack-client"
 import { ConfigurationService } from "./services/configuration"
+import { StatusBarService, StatusBarState } from "./services/status-bar"
 
 // Service instances
 const youtrackService = new YouTrackService()
 const configService = new ConfigurationService()
+const statusBarService = new StatusBarService()
 
 /**
  * This method is called when the extension is activated
@@ -113,8 +115,13 @@ function registerTreeDataProviders(): void {
  * Update extension's connection status
  */
 async function updateConnectionStatus(connected: boolean): Promise<void> {
-  // This will be expanded in later tasks
-  // Currently just a placeholder
+  if (connected) {
+    const baseUrl = youtrackService.getBaseUrl()
+    statusBarService.updateState(StatusBarState.Authenticated, baseUrl)
+  } else {
+    statusBarService.updateState(StatusBarState.NotAuthenticated)
+  }
+
   logger.info(`Connection status updated: ${connected ? "Connected" : "Disconnected"}`)
 }
 
@@ -131,5 +138,8 @@ function refreshAllViews(): void {
  * This method is called when your extension is deactivated
  */
 export function deactivate(): void {
+  // Dispose of the status bar item
+  statusBarService.dispose()
+
   logger.info("YouTrack integration extension is now deactivated.")
 }

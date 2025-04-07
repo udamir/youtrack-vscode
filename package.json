@@ -110,5 +110,21 @@
   },
   "dependencies": {
     "youtrack-client": "^0.5.2"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "moduleFileExtensions": ["ts", "js"],
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "testMatch": ["**/test/**/*.test.ts"],
+    "setupFilesAfterEnv": ["./src/test/mocks/setup.ts"],
+    "testPathIgnorePatterns": ["/node_modules/", "/out/", "/dist/"],
+    "globals": {
+      "ts-jest": {
+        "isolatedModules": true
+      }
+    }
   }
 }
