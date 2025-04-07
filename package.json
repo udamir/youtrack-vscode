@@ -64,6 +64,17 @@
           "default": "",
           "description": "URL of the YouTrack instance"
         },
+        "youtrack.tokenStorage": {
+          "type": "string",
+          "enum": ["secure", "settings"],
+          "default": "secure",
+          "description": "Where to store the authentication token - secure storage (recommended) or settings"
+        },
+        "youtrack.tempFolderPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to folder for temporary files (leave empty for default location)"
+        },
         "youtrack.cacheTimeout": {
           "type": "number",
           "default": 300,
@@ -73,6 +84,11 @@
           "type": "number",
           "default": 15,
           "description": "Number of recent items to display"
+        },
+        "youtrack.autoLaunchWizard": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically launch setup wizard on first activation"
         }
       }
     }
