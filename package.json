@@ -35,24 +35,35 @@
     "views": {
       "youtrack-explorer": [
         {
+          "id": "youtrackNotConnected",
+          "type": "webview",
+          "name": "Not Connected",
+          "when": "!youtrack.status.connected"
+        },
+        {
           "id": "youtrackProjects",
-          "name": "Projects"
+          "name": "Projects",
+          "when": "youtrack.status.connected"
         },
         {
           "id": "youtrackIssues",
-          "name": "Issues"
+          "name": "Issues",
+          "when": "youtrack.status.connected"
         },
         {
           "id": "youtrackKnowledgeBase",
-          "name": "Knowledge Base"
+          "name": "Knowledge Base",
+          "when": "youtrack.status.connected"
         },
         {
           "id": "youtrackRecentIssues",
-          "name": "Recent Issues"
+          "name": "Recent Issues",
+          "when": "youtrack.status.connected"
         },
         {
           "id": "youtrackRecentArticles",
-          "name": "Recent Articles"
+          "name": "Recent Articles",
+          "when": "youtrack.status.connected"
         }
       ]
     },
@@ -89,6 +100,36 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically launch setup wizard on first activation"
+        },
+        "youtrack.showProjectsView": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show Projects view"
+        },
+        "youtrack.showIssuesView": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show Issues view"
+        },
+        "youtrack.showKnowledgeBaseView": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show Knowledge Base view"
+        },
+        "youtrack.showRecentIssuesView": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show Recent Issues view"
+        },
+        "youtrack.showRecentArticlesView": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show Recent Articles view"
+        },
+        "youtrack.showNotConfiguredView": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show Not Configured view"
         }
       }
     }

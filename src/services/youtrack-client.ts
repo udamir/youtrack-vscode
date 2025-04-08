@@ -118,4 +118,12 @@ export class YouTrackService {
   public getBaseUrl(): string | undefined {
     return this.authService?.getBaseUrl()
   }
+
+  /**
+   * Check if YouTrack is properly configured with valid credentials
+   * @returns True if YouTrack is configured with valid credentials
+   */
+  public isConfigured(): boolean {
+    return this.isInitialized() && this.authService?.isAuthenticated() === true
+  }
 }

@@ -1,14 +1,38 @@
 import * as vscode from "vscode"
-import { COMMAND_CONNECT } from "./constants"
+import {
+  COMMAND_CONNECT,
+  VIEW_ISSUES,
+  VIEW_KNOWLEDGE_BASE,
+  VIEW_PROJECTS,
+  VIEW_RECENT_ARTICLES,
+  VIEW_RECENT_ISSUES,
+  VIEW_NOT_CONNECTED,
+  STATUS_CONNECTED,
+} from "./constants/"
 import * as logger from "./utils/logger"
 import { YouTrackService } from "./services/youtrack-client"
 import { ConfigurationService } from "./services/configuration"
 import { StatusBarService, StatusBarState } from "./services/status-bar"
+import {
+  ProjectsTreeDataProvider,
+  IssuesTreeDataProvider,
+  KnowledgeBaseTreeDataProvider,
+  RecentIssuesTreeDataProvider,
+  RecentArticlesTreeDataProvider,
+  NotConnectedWebviewProvider,
+} from "./views"
 
 // Service instances
 const youtrackService = new YouTrackService()
 const configService = new ConfigurationService()
 const statusBarService = new StatusBarService()
+
+// Tree view providers
+let projectsProvider: ProjectsTreeDataProvider
+let issuesProvider: IssuesTreeDataProvider
+let knowledgeBaseProvider: KnowledgeBaseTreeDataProvider
+let recentIssuesProvider: RecentIssuesTreeDataProvider
+let recentArticlesProvider: RecentArticlesTreeDataProvider
 
 /**
  * This method is called when the extension is activated
@@ -21,6 +45,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Initialize logger
     logger.initializeLogger()
     logger.info("YouTrack integration extension is now active!")
+
+    // Register the WebView provider for Not Connected view
+    const webviewRegistration = vscode.window.registerWebviewViewProvider(
+      VIEW_NOT_CONNECTED,
+      new NotConnectedWebviewProvider(context.extensionUri),
+    )
+    context.subscriptions.push(webviewRegistration)
+    logger.info("Registered WebView provider for Not Connected view")
+
+    // Set initial view visibility (default to showing only Projects)
+    await toggleViewsVisibility(false)
+
+    // Register tree data providers for views
+    registerTreeDataProviders()
 
     // Register all commands
     registerCommands(context)
@@ -38,9 +76,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       // Update connection status
       await updateConnectionStatus(false)
     }
-
-    // Register tree data providers for views
-    registerTreeDataProviders()
   } catch (error) {
     logger.error("Failed to activate extension", error)
     vscode.window.showErrorMessage("Failed to activate YouTrack extension. See output log for details.")
@@ -86,6 +121,9 @@ function registerCommands(context: vscode.ExtensionContext): void {
 
         // Refresh views
         refreshAllViews()
+
+        // Show all views after successful connection
+        await toggleViewsVisibility(true)
       } else {
         vscode.window.showErrorMessage("Failed to connect to YouTrack. Please check credentials and try again.")
 
@@ -106,9 +144,34 @@ function registerCommands(context: vscode.ExtensionContext): void {
  * Register tree data providers for YouTrack views
  */
 function registerTreeDataProviders(): void {
-  // These will be implemented in later tasks
-  // Currently just placeholders for the structure
+  // Create tree data providers
+  projectsProvider = new ProjectsTreeDataProvider(youtrackService)
+  issuesProvider = new IssuesTreeDataProvider(youtrackService)
+  knowledgeBaseProvider = new KnowledgeBaseTreeDataProvider(youtrackService)
+  recentIssuesProvider = new RecentIssuesTreeDataProvider(youtrackService)
+  recentArticlesProvider = new RecentArticlesTreeDataProvider(youtrackService)
+
+  // Register tree data providers
+  vscode.window.registerTreeDataProvider(VIEW_PROJECTS, projectsProvider)
+  vscode.window.registerTreeDataProvider(VIEW_ISSUES, issuesProvider)
+  vscode.window.registerTreeDataProvider(VIEW_KNOWLEDGE_BASE, knowledgeBaseProvider)
+  vscode.window.registerTreeDataProvider(VIEW_RECENT_ISSUES, recentIssuesProvider)
+  vscode.window.registerTreeDataProvider(VIEW_RECENT_ARTICLES, recentArticlesProvider)
+
   logger.info("Registered tree data providers for YouTrack views")
+}
+
+/**
+ * Toggle the visibility of views based on configuration state
+ */
+async function toggleViewsVisibility(isConfigured: boolean): Promise<void> {
+  logger.info(`Setting view visibility. isConfigured: ${isConfigured}`)
+
+  // Always show Projects view
+  await vscode.commands.executeCommand("setContext", STATUS_CONNECTED, isConfigured)
+  logger.info(`Set ${STATUS_CONNECTED} to ${!isConfigured}`)
+
+  logger.info(`View visibility updated: ${isConfigured ? "All views visible" : "Only Projects view visible"}`)
 }
 
 /**
@@ -122,6 +185,9 @@ async function updateConnectionStatus(connected: boolean): Promise<void> {
     statusBarService.updateState(StatusBarState.NotAuthenticated)
   }
 
+  // Update view visibility based on connection status
+  await toggleViewsVisibility(connected)
+
   logger.info(`Connection status updated: ${connected ? "Connected" : "Disconnected"}`)
 }
 
@@ -129,8 +195,13 @@ async function updateConnectionStatus(connected: boolean): Promise<void> {
  * Refresh all YouTrack views
  */
 function refreshAllViews(): void {
-  // This will be expanded in later tasks
-  // Currently just a placeholder
+  projectsProvider.refresh()
+  issuesProvider.refresh()
+  knowledgeBaseProvider.refresh()
+  recentIssuesProvider.refresh()
+  recentArticlesProvider.refresh()
+  // WebView providers don't need to be refreshed the same way as TreeDataProviders
+
   logger.info("Refreshing all YouTrack views")
 }
 

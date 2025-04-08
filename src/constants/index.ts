@@ -14,6 +14,7 @@ export const VIEW_ISSUES = "youtrackIssues"
 export const VIEW_KNOWLEDGE_BASE = "youtrackKnowledgeBase"
 export const VIEW_RECENT_ISSUES = "youtrackRecentIssues"
 export const VIEW_RECENT_ARTICLES = "youtrackRecentArticles"
+export const VIEW_NOT_CONNECTED = "youtrackNotConnected"
 
 // Configuration keys
 export const CONFIG_INSTANCE_URL = "youtrack.instanceUrl"
@@ -29,3 +30,6 @@ export const TOKEN_STORAGE_SETTINGS = "settings"
 // Environment variable names
 export const ENV_YOUTRACK_BASE_URL = "YOUTRACK_BASE_URL"
 export const ENV_YOUTRACK_TOKEN = "YOUTRACK_TOKEN"
+
+// Status to control view visibility
+export const STATUS_CONNECTED = "youtrack.status.connected"
