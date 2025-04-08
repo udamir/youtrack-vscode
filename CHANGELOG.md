@@ -21,6 +21,11 @@ All notable changes to the "youtrack-vscode" extension will be documented in thi
   - Events for authentication state changes
   - Proper connection status handling and validation
   - Comprehensive test coverage for authentication flow
+- Implemented Not Connected WebView Panel
+  - Blue centered button for setting up connection
+  - Clear instructions for obtaining a YouTrack token
+  - Step-by-step guide for getting a permanent token
+  - Proper VS Code theme integration
 
 ### Changed
 - Migrated from ESLint to Biome for code linting and formatting
