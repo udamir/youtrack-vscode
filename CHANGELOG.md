@@ -20,7 +20,7 @@ All notable changes to the "youtrack-vscode" extension will be documented in thi
   - Support for permanent token authentication
   - Events for authentication state changes
   - Proper connection status handling and validation
-  - Comprehensive test coverage for authentication flow
+  - Comprehensive test coverage for authentication flow 
 - Implemented Not Connected WebView Panel
   - Blue centered button for setting up connection
   - Clear instructions for obtaining a YouTrack token

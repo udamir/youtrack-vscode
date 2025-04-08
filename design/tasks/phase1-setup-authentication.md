@@ -120,15 +120,16 @@
 - **Priority**: P0
 - **Status**: ✅ Completed (April 8, 2025)
 
-## Task 1.10: Sidebar layout for unconfigured state
+## Task 1.10: Sidebar layout for not connected state
 - **ID**: TASK-1.10
-- **Description**: Implement the sidebar layout when the extension is not configured.
+- **Description**: Implement the sidebar layout when the extension is not connected.
 - **Dependencies**: TASK-1.3
 - **Acceptance Criteria**:
   - "Setup Connection" button in sidebar
   - Click action to open connection settings
   - Settings validation
-  - Only Projects panel visible when not configured
-  - All panels become visible after successful configuration
+  - Only Projects panel visible when not connected
+  - All panels become visible after successful connection
 - **Estimated Effort**: Small
 - **Priority**: P0
+- **Status**: ✅ Completed (April 8, 2025)

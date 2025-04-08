@@ -1,13 +1,13 @@
-import * as vscode from 'vscode';
-import { COMMAND_CONNECT } from '../constants';
-import type { YouTrackService } from '../services/youtrack-client';
+import * as vscode from "vscode"
+import { COMMAND_CONNECT } from "../constants"
+import type { YouTrackService } from "../services/youtrack-client"
 
 /**
  * Icon configuration for tree items
  */
 export interface TreeItemIconPath {
-  light: string | vscode.Uri;
-  dark: string | vscode.Uri;
+  light: string | vscode.Uri
+  dark: string | vscode.Uri
 }
 
 /**
@@ -27,10 +27,10 @@ export class YouTrackTreeItem extends vscode.TreeItem {
     public readonly command?: vscode.Command,
     public readonly contextValue?: string,
   ) {
-    super(label, collapsibleState);
-    
+    super(label, collapsibleState)
+
     if (contextValue) {
-      this.contextValue = contextValue;
+      this.contextValue = contextValue
     }
   }
 
@@ -39,7 +39,7 @@ export class YouTrackTreeItem extends vscode.TreeItem {
    * @param iconId Icon ID from the VS Code icon set (e.g., 'plug', 'folder', etc.)
    */
   setThemeIcon(iconId: string): void {
-    this.iconPath = new vscode.ThemeIcon(iconId);
+    this.iconPath = new vscode.ThemeIcon(iconId)
   }
 
   /**
@@ -49,9 +49,9 @@ export class YouTrackTreeItem extends vscode.TreeItem {
    */
   setCustomIcon(lightIconPath: string | vscode.Uri, darkIconPath: string | vscode.Uri): void {
     this.iconPath = {
-      light: lightIconPath,
-      dark: darkIconPath
-    };
+      light: lightIconPath instanceof vscode.Uri ? lightIconPath : vscode.Uri.file(lightIconPath),
+      dark: darkIconPath instanceof vscode.Uri ? darkIconPath : vscode.Uri.file(darkIconPath),
+    }
   }
 
   /**
@@ -64,15 +64,15 @@ export class YouTrackTreeItem extends vscode.TreeItem {
    * @returns Configured YouTrackTreeItem
    */
   static withThemeIcon(
-    label: string, 
+    label: string,
     collapsibleState: vscode.TreeItemCollapsibleState,
     iconId: string,
     contextValue?: string,
-    command?: vscode.Command
+    command?: vscode.Command,
   ): YouTrackTreeItem {
-    const item = new YouTrackTreeItem(label, collapsibleState, command, contextValue);
-    item.setThemeIcon(iconId);
-    return item;
+    const item = new YouTrackTreeItem(label, collapsibleState, command, contextValue)
+    item.setThemeIcon(iconId)
+    return item
   }
 }
 
@@ -83,8 +83,8 @@ export class YouTrackTreeItem extends vscode.TreeItem {
 export abstract class BaseTreeDataProvider implements vscode.TreeDataProvider<YouTrackTreeItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<YouTrackTreeItem | undefined> = new vscode.EventEmitter<
     YouTrackTreeItem | undefined
-  >();
-  readonly onDidChangeTreeData: vscode.Event<YouTrackTreeItem | undefined> = this._onDidChangeTreeData.event;
+  >()
+  readonly onDidChangeTreeData: vscode.Event<YouTrackTreeItem | undefined> = this._onDidChangeTreeData.event
 
   constructor(protected youtrackService: YouTrackService) {}
 
@@ -93,14 +93,14 @@ export abstract class BaseTreeDataProvider implements vscode.TreeDataProvider<Yo
    * @param item Optional specific item to refresh, or undefined to refresh everything
    */
   public refresh(item?: YouTrackTreeItem): void {
-    this._onDidChangeTreeData.fire(item);
+    this._onDidChangeTreeData.fire(item)
   }
 
   /**
    * Get tree item for the given element
    */
   public getTreeItem(element: YouTrackTreeItem): vscode.TreeItem {
-    return element;
+    return element
   }
 
   /**
@@ -111,17 +111,17 @@ export abstract class BaseTreeDataProvider implements vscode.TreeDataProvider<Yo
   public async getChildren(element?: YouTrackTreeItem): Promise<YouTrackTreeItem[]> {
     // If element is defined, we're getting children of a specific node
     if (element) {
-      return this.getConfiguredChildren(element);
+      return this.getConfiguredChildren(element)
     }
 
     // Check if YouTrack is configured
-    const isConfigured = this.youtrackService.isConfigured();
+    const isConfigured = this.youtrackService.isConfigured()
     if (!isConfigured) {
-      return [this.createSetupButton()];
+      return [this.createSetupButton()]
     }
 
     // If we're configured, get the implementation-specific children
-    return this.getConfiguredChildren();
+    return this.getConfiguredChildren()
   }
 
   /**
@@ -129,16 +129,16 @@ export abstract class BaseTreeDataProvider implements vscode.TreeDataProvider<Yo
    */
   private createSetupButton(): YouTrackTreeItem {
     return YouTrackTreeItem.withThemeIcon(
-      'Setup Connection', 
+      "Setup Connection",
       vscode.TreeItemCollapsibleState.None,
-      'plug',
-      'youtrack-setup-button',
+      "plug",
+      "youtrack-setup-button",
       {
         command: COMMAND_CONNECT,
-        title: 'Connect to YouTrack',
-        tooltip: 'Configure YouTrack connection',
-      }
-    );
+        title: "Connect to YouTrack",
+        tooltip: "Configure YouTrack connection",
+      },
+    )
   }
 
   /**
@@ -149,18 +149,13 @@ export abstract class BaseTreeDataProvider implements vscode.TreeDataProvider<Yo
    * @returns A configured YouTrackTreeItem
    */
   protected createTextItem(label: string, description?: string, contextValue?: string): YouTrackTreeItem {
-    const item = new YouTrackTreeItem(
-      label, 
-      vscode.TreeItemCollapsibleState.None, 
-      undefined, 
-      contextValue
-    );
-    
+    const item = new YouTrackTreeItem(label, vscode.TreeItemCollapsibleState.None, undefined, contextValue)
+
     if (description) {
-      item.description = description;
+      item.description = description
     }
-    
-    return item;
+
+    return item
   }
 
   /**
@@ -169,14 +164,14 @@ export abstract class BaseTreeDataProvider implements vscode.TreeDataProvider<Yo
    * @returns A styled header item
    */
   protected createHeaderItem(label: string): YouTrackTreeItem {
-    const item = this.createTextItem(label);
-    item.setThemeIcon('symbol-class');
-    return item;
+    const item = this.createTextItem(label)
+    item.setThemeIcon("symbol-class")
+    return item
   }
 
   /**
    * Get children when YouTrack is configured
    * To be implemented by specific tree data providers
    */
-  protected abstract getConfiguredChildren(element?: YouTrackTreeItem): Promise<YouTrackTreeItem[]>;
+  protected abstract getConfiguredChildren(element?: YouTrackTreeItem): Promise<YouTrackTreeItem[]>
 }
