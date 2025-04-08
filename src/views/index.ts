@@ -1,5 +1,6 @@
 // Export all tree view providers
 export * from "./base-tree-view"
+export * from "./tree-view-utils"
 export * from "./projects-tree-view"
 export * from "./issues-tree-view"
 export * from "./knowledge-base-tree-view"
