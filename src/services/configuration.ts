@@ -5,7 +5,6 @@ import {
   CONFIG_RECENT_ITEMS_LIMIT,
   CONFIG_TOKEN_STORAGE,
   CONFIG_TEMP_FOLDER_PATH,
-  CONFIG_AUTO_LAUNCH_WIZARD,
   TOKEN_STORAGE_SECURE,
 } from "../constants"
 import * as path from "node:path"
@@ -86,24 +85,10 @@ export class ConfigurationService {
   }
 
   /**
-   * Set maximum number of recent items to display
+   * Set recent items limit
    */
   public async setRecentItemsLimit(limit: number): Promise<void> {
     await this.updateValue(CONFIG_RECENT_ITEMS_LIMIT, limit)
-  }
-
-  /**
-   * Check if wizard should be auto-launched on first activation
-   */
-  public getAutoLaunchWizard(): boolean {
-    return this.getValue<boolean>(CONFIG_AUTO_LAUNCH_WIZARD, true)
-  }
-
-  /**
-   * Set auto launch wizard setting
-   */
-  public async setAutoLaunchWizard(autoLaunch: boolean): Promise<void> {
-    await this.updateValue(CONFIG_AUTO_LAUNCH_WIZARD, autoLaunch)
   }
 
   /**

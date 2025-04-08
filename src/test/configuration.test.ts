@@ -7,7 +7,6 @@ import {
   CONFIG_TEMP_FOLDER_PATH,
   CONFIG_CACHE_TIMEOUT,
   CONFIG_RECENT_ITEMS_LIMIT,
-  CONFIG_AUTO_LAUNCH_WIZARD,
   TOKEN_STORAGE_SECURE,
   TOKEN_STORAGE_SETTINGS,
 } from "../constants"
@@ -34,8 +33,6 @@ describe("ConfigurationService", () => {
             return 300
           case CONFIG_RECENT_ITEMS_LIMIT:
             return 15
-          case CONFIG_AUTO_LAUNCH_WIZARD:
-            return true
           default:
             return defaultValue
         }
