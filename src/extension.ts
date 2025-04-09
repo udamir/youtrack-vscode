@@ -1,33 +1,35 @@
 import * as vscode from "vscode"
-import {
-  COMMAND_CONNECT,
-  VIEW_ISSUES,
-  VIEW_KNOWLEDGE_BASE,
-  VIEW_PROJECTS,
-  VIEW_RECENT_ARTICLES,
-  VIEW_RECENT_ISSUES,
-  VIEW_NOT_CONNECTED,
-  STATUS_CONNECTED,
-} from "./constants/"
 import * as logger from "./utils/logger"
 import { YouTrackService } from "./services/youtrack-client"
 import { ConfigurationService } from "./services/configuration"
 import { StatusBarService, StatusBarState } from "./services/status-bar"
+import { CacheService } from "./services/cache-service"
+import { ProjectsTreeDataProvider } from "./views/projects-tree-view"
+import { IssuesTreeDataProvider } from "./views/issues-tree-view"
+import { KnowledgeBaseTreeDataProvider } from "./views/knowledge-base-tree-view"
+import { RecentIssuesTreeDataProvider } from "./views/recent-issues-tree-view"
+import { RecentArticlesTreeDataProvider } from "./views/recent-articles-tree-view"
+import { NotConnectedWebviewProvider } from "./views/not-connected-webview"
 import {
-  ProjectsTreeDataProvider,
-  IssuesTreeDataProvider,
-  KnowledgeBaseTreeDataProvider,
-  RecentIssuesTreeDataProvider,
-  RecentArticlesTreeDataProvider,
-  NotConnectedWebviewProvider,
-} from "./views"
+  COMMAND_CONNECT,
+  COMMAND_ADD_PROJECT,
+  COMMAND_REMOVE_PROJECT,
+  COMMAND_SET_ACTIVE_PROJECT,
+  VIEW_PROJECTS,
+  VIEW_ISSUES,
+  VIEW_RECENT_ISSUES,
+  VIEW_KNOWLEDGE_BASE,
+  VIEW_RECENT_ARTICLES,
+  VIEW_NOT_CONNECTED,
+  STATUS_CONNECTED,
+} from "./constants"
 
 // Service instances
 const youtrackService = new YouTrackService()
 const configService = new ConfigurationService()
 const statusBarService = new StatusBarService()
 
-// Tree view providers
+// Tree view providers (will be initialized in registerTreeDataProviders)
 let projectsProvider: ProjectsTreeDataProvider
 let issuesProvider: IssuesTreeDataProvider
 let knowledgeBaseProvider: KnowledgeBaseTreeDataProvider
@@ -46,36 +48,25 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     logger.initializeLogger()
     logger.info("YouTrack integration extension is now active!")
 
-    // Register the WebView provider for Not Connected view
-    const webviewRegistration = vscode.window.registerWebviewViewProvider(
-      VIEW_NOT_CONNECTED,
-      new NotConnectedWebviewProvider(context.extensionUri),
+    // Initialize YouTrack client
+    const initialized = await youtrackService.initialize(context)
+    logger.info(
+      initialized
+        ? "YouTrack client initialized successfully"
+        : "YouTrack client not initialized. User needs to provide credentials.",
     )
-    context.subscriptions.push(webviewRegistration)
-    logger.info("Registered WebView provider for Not Connected view")
 
     // Set initial view visibility (default to showing only Projects)
     await toggleViewsVisibility(false)
 
     // Register tree data providers for views
-    registerTreeDataProviders()
+    registerTreeDataProviders(context)
 
     // Register all commands
     registerCommands(context)
 
-    // Initialize YouTrack client
-    const initialized = await youtrackService.initialize(context)
-    if (initialized) {
-      logger.info("YouTrack client initialized successfully")
-
-      // Update connection status
-      await updateConnectionStatus(true)
-    } else {
-      logger.info("YouTrack client not initialized. User needs to provide credentials.")
-
-      // Update connection status
-      await updateConnectionStatus(false)
-    }
+    // Update connection status
+    await updateConnectionStatus(initialized)
   } catch (error) {
     logger.error("Failed to activate extension", error)
     vscode.window.showErrorMessage("Failed to activate YouTrack extension. See output log for details.")
@@ -136,27 +127,172 @@ function registerCommands(context: vscode.ExtensionContext): void {
     }
   })
 
-  // Add command to the context subscriptions
+  // Register add project command
+  const addProjectCommand = vscode.commands.registerCommand(COMMAND_ADD_PROJECT, async () => {
+    try {
+      // Get all available projects from YouTrack
+      const availableProjects = await youtrackService.getProjects()
+
+      if (!availableProjects || availableProjects.length === 0) {
+        vscode.window.showInformationMessage(
+          "No projects available in YouTrack or you don't have access to any projects",
+        )
+        return
+      }
+
+      // Filter out already selected projects
+      const unselectedProjects = availableProjects.filter(
+        (project) => !projectsProvider.selectedProjects.some((selected) => selected.id === project.id),
+      )
+
+      if (unselectedProjects.length === 0) {
+        vscode.window.showInformationMessage("All available projects have already been added")
+        return
+      }
+
+      // Show project picker and let user select one to add
+      const selected = await vscode.window.showQuickPick(
+        unselectedProjects.map((p) => ({
+          label: p.name,
+          description: p.shortName,
+          detail: p.description,
+          project: p,
+        })),
+      )
+
+      if (selected) {
+        // Add the selected project
+        projectsProvider.addProject(selected.project)
+      }
+    } catch (error) {
+      logger.error("Error adding project", error)
+      vscode.window.showErrorMessage("Error adding project. See output log for details.")
+    }
+  })
+
+  // Register remove project command
+  const removeProjectCommand = vscode.commands.registerCommand(COMMAND_REMOVE_PROJECT, async (item: any) => {
+    try {
+      if (item?.project) {
+        const projectId = item.project.id
+        const projectName = item.project.name
+
+        // Confirm deletion
+        const confirm = await vscode.window.showWarningMessage(
+          `Are you sure you want to remove project "${projectName}"?`,
+          { modal: true },
+          "Yes",
+        )
+
+        if (confirm === "Yes") {
+          projectsProvider.removeProject(projectId)
+          vscode.window.showInformationMessage(`Removed project: ${projectName}`)
+        }
+      }
+    } catch (error) {
+      logger.error("Error removing project", error)
+      vscode.window.showErrorMessage("Error removing project. See output log for details.")
+    }
+  })
+
+  // Register set active project command
+  const setActiveProjectCommand = vscode.commands.registerCommand(COMMAND_SET_ACTIVE_PROJECT, async (item: any) => {
+    try {
+      // Check if we have a valid item with project info
+      if (!item) {
+        logger.error("Error setting active project: No item received")
+        return
+      }
+
+      // Extract project information based on the shape of the item
+      let projectId: string | undefined
+      let projectName: string | undefined
+
+      if (item.project && typeof item.project === "object") {
+        // Case: item is { project: Project }
+        projectId = item.project.id
+        projectName = item.project.name
+      } else if (item.id && item.name) {
+        // Case: item is directly a Project or ProjectTreeItem
+        projectId = item.id
+        projectName = item.name
+      }
+
+      if (projectId && projectName) {
+        projectsProvider.setActiveProject(projectId)
+        // Add debug logging to track command execution
+        logger.info(`Active project set to: ${projectName} (${projectId})`)
+      } else {
+        logger.error("Error setting active project: Invalid project object received", item)
+      }
+    } catch (error) {
+      logger.error("Error setting active project", error)
+      vscode.window.showErrorMessage("Error setting active project. See output log for details.")
+    }
+  })
+
+  // Add commands to subscriptions
   context.subscriptions.push(connectCommand)
+  context.subscriptions.push(addProjectCommand)
+  context.subscriptions.push(removeProjectCommand)
+  context.subscriptions.push(setActiveProjectCommand)
 }
 
 /**
- * Register tree data providers for YouTrack views
+ * Register tree data providers and their tree views
  */
-function registerTreeDataProviders(): void {
+function registerTreeDataProviders(context: vscode.ExtensionContext): void {
   // Create tree data providers
-  projectsProvider = new ProjectsTreeDataProvider(youtrackService)
+  const cacheService = new CacheService(youtrackService, context.workspaceState)
+
+  projectsProvider = new ProjectsTreeDataProvider(youtrackService, cacheService)
   issuesProvider = new IssuesTreeDataProvider(youtrackService)
   knowledgeBaseProvider = new KnowledgeBaseTreeDataProvider(youtrackService)
-  recentIssuesProvider = new RecentIssuesTreeDataProvider(youtrackService)
-  recentArticlesProvider = new RecentArticlesTreeDataProvider(youtrackService)
+  recentIssuesProvider = new RecentIssuesTreeDataProvider(youtrackService, cacheService)
+  recentArticlesProvider = new RecentArticlesTreeDataProvider(youtrackService, cacheService)
+
+  // Register the WebView provider for Not Connected view
+  const webviewRegistration = vscode.window.registerWebviewViewProvider(
+    VIEW_NOT_CONNECTED,
+    new NotConnectedWebviewProvider(context.extensionUri),
+  )
+  context.subscriptions.push(webviewRegistration)
+  logger.info("Registered WebView provider for Not Connected view")
 
   // Register tree data providers
   vscode.window.registerTreeDataProvider(VIEW_PROJECTS, projectsProvider)
-  vscode.window.registerTreeDataProvider(VIEW_ISSUES, issuesProvider)
-  vscode.window.registerTreeDataProvider(VIEW_KNOWLEDGE_BASE, knowledgeBaseProvider)
+
+  // Register Issues view as TreeView instead of just a data provider
+  const issuesView = vscode.window.createTreeView(VIEW_ISSUES, {
+    treeDataProvider: issuesProvider,
+    showCollapseAll: true,
+  })
+  context.subscriptions.push(issuesView)
+
+  // Register Articles view as TreeView instead of just a data provider
+  const articlesView = vscode.window.createTreeView(VIEW_KNOWLEDGE_BASE, {
+    treeDataProvider: knowledgeBaseProvider,
+    showCollapseAll: true,
+  })
+  context.subscriptions.push(articlesView)
+
   vscode.window.registerTreeDataProvider(VIEW_RECENT_ISSUES, recentIssuesProvider)
   vscode.window.registerTreeDataProvider(VIEW_RECENT_ARTICLES, recentArticlesProvider)
+
+  // Subscribe to active project changes to update the Issues view title
+  projectsProvider.onDidChangeActiveProject((event) => {
+    if (event.project) {
+      // Update Issues view title to include active project
+      issuesView.title = `${event.project.shortName}: Issues`
+      articlesView.title = `${event.project.shortName}: Knowledge Base`
+      logger.info(`Updated Issues/Articles view title with ${event.project.shortName}`)
+    } else {
+      // Reset to default title if no active project
+      issuesView.title = "Issues"
+      articlesView.title = "Knowledge Base"
+      logger.info("Reset Issues/Articles view title to default")
+    }
+  })
 
   logger.info("Registered tree data providers for YouTrack views")
 }
@@ -204,6 +340,15 @@ function refreshAllViews(): void {
 
   logger.info("Refreshing all YouTrack views")
 }
+
+// Update status bar based on server connection status
+youtrackService.onServerChanged((baseUrl: string | undefined) => {
+  if (baseUrl) {
+    statusBarService.updateState(StatusBarState.Authenticated, baseUrl)
+  } else {
+    statusBarService.updateState(StatusBarState.NotAuthenticated)
+  }
+})
 
 /**
  * This method is called when your extension is deactivated

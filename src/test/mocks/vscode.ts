@@ -13,6 +13,42 @@ export enum StatusBarAlignment {
   Right = 2,
 }
 
+// TreeItem collapsible state enum
+export enum TreeItemCollapsibleState {
+  None = 0,
+  Collapsed = 1,
+  Expanded = 2,
+}
+
+// Uri class for file paths in tree items
+export class Uri {
+  static file(path: string): Uri {
+    return new Uri(path)
+  }
+
+  constructor(public readonly path: string) {}
+}
+
+// ThemeIcon class for tree items
+export class ThemeIcon {
+  constructor(public readonly id: string) {}
+}
+
+// TreeItem class for tree views
+export class TreeItem {
+  public label: string
+  public collapsibleState: TreeItemCollapsibleState
+  public iconPath?: ThemeIcon | { light: string | Uri; dark: string | Uri }
+  public command?: Command
+  public contextValue?: string
+  public description?: string
+
+  constructor(label: string, collapsibleState: TreeItemCollapsibleState) {
+    this.label = label
+    this.collapsibleState = collapsibleState
+  }
+}
+
 // Mock window namespace
 export const window = {
   createStatusBarItem: jest.fn().mockImplementation((_alignment?: StatusBarAlignment, _priority?: number) => ({
@@ -74,6 +110,13 @@ export const ExtensionContext = {
     store: jest.fn(),
     delete: jest.fn(),
   },
+}
+
+// Mock Command interface
+export interface Command {
+  title: string
+  command: string
+  tooltip?: string
 }
 
 export const EventEmitter = jest.fn()

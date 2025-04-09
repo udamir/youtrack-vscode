@@ -21,6 +21,16 @@
       {
         "command": "youtrack.connect",
         "title": "YouTrack: Connect to YouTrack Instance"
+      },
+      {
+        "command": "youtrack.addProject",
+        "title": "YouTrack: Add Project",
+        "icon": "$(add)"
+      },
+      {
+        "command": "youtrack.removeProject",
+        "title": "YouTrack: Remove Project from List",
+        "icon": "$(trash)"
       }
     ],
     "viewsContainers": {
@@ -64,6 +74,22 @@
           "id": "youtrackRecentArticles",
           "name": "Recent Articles",
           "when": "youtrack.status.connected"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "youtrack.addProject",
+          "when": "view == youtrackProjects && youtrack.status.connected",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "youtrack.removeProject",
+          "when": "view == youtrackProjects && viewItem == youtrack-project || viewItem == youtrack-project-active",
+          "group": "inline"
         }
       ]
     },

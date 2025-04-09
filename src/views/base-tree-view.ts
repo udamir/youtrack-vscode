@@ -1,5 +1,4 @@
 import * as vscode from "vscode"
-import { COMMAND_CONNECT } from "../constants"
 import type { YouTrackService } from "../services/youtrack-client"
 
 /**
@@ -86,6 +85,17 @@ export abstract class BaseTreeDataProvider implements vscode.TreeDataProvider<Yo
   >()
   readonly onDidChangeTreeData: vscode.Event<YouTrackTreeItem | undefined> = this._onDidChangeTreeData.event
 
+  private _isLoading = false
+
+  set isLoading(isLoading: boolean) {
+    this._isLoading = isLoading
+    this.refresh()
+  }
+
+  get isLoading(): boolean {
+    return this._isLoading
+  }
+
   constructor(protected youtrackService: YouTrackService) {}
 
   /**
@@ -109,36 +119,7 @@ export abstract class BaseTreeDataProvider implements vscode.TreeDataProvider<Yo
    * Otherwise, call the implementation-specific getConfiguredChildren method
    */
   public async getChildren(element?: YouTrackTreeItem): Promise<YouTrackTreeItem[]> {
-    // If element is defined, we're getting children of a specific node
-    if (element) {
-      return this.getConfiguredChildren(element)
-    }
-
-    // Check if YouTrack is configured
-    const isConfigured = this.youtrackService.isConfigured()
-    if (!isConfigured) {
-      return [this.createSetupButton()]
-    }
-
-    // If we're configured, get the implementation-specific children
-    return this.getConfiguredChildren()
-  }
-
-  /**
-   * Create the setup button tree item
-   */
-  private createSetupButton(): YouTrackTreeItem {
-    return YouTrackTreeItem.withThemeIcon(
-      "Setup Connection",
-      vscode.TreeItemCollapsibleState.None,
-      "plug",
-      "youtrack-setup-button",
-      {
-        command: COMMAND_CONNECT,
-        title: "Connect to YouTrack",
-        tooltip: "Configure YouTrack connection",
-      },
-    )
+    return this.getConfiguredChildren(element)
   }
 
   /**

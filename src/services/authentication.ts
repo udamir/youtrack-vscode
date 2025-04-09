@@ -84,6 +84,7 @@ export class AuthenticationService {
 
       if (this.token && this.baseUrl) {
         // Verify credentials are still valid
+        logger.info(`Initializing with stored credentials for ${this.baseUrl}`)
         return await this.verifyAndCreateClient(this.baseUrl, this.token)
       }
 
@@ -100,26 +101,53 @@ export class AuthenticationService {
    * Authenticate with YouTrack using a permanent token
    * @param baseUrl YouTrack instance URL
    * @param token YouTrack permanent token
+   * @returns True if authentication was successful
    */
   public async authenticate(baseUrl: string, token: string): Promise<boolean> {
     try {
+      logger.info(`Authenticating to YouTrack at ${baseUrl}, previous URL: ${this.baseUrl || "none"}`)
+
+      // Detect server URL change
+      const isServerChange = this.baseUrl !== undefined && this.baseUrl !== baseUrl
+      if (isServerChange) {
+        logger.info(`Server URL changing from ${this.baseUrl} to ${baseUrl}`)
+      }
+
+      // Set authenticating state first
       this.updateAuthState(AuthState.Authenticating)
 
-      // Validate and create client with credentials
+      if (!baseUrl || !token) {
+        this.updateAuthState(AuthState.AuthenticationFailed)
+        return false
+      }
+
+      // Verify credentials are valid
       const success = await this.verifyAndCreateClient(baseUrl, token)
 
       if (success) {
-        // Store credentials securely
+        // Save credentials
         await this.secureStorage.storeToken(token)
         await this.secureStorage.storeBaseUrl(baseUrl)
 
-        // Update instance variables
+        // Important: Update instance variables before firing the authenticated event
+        // This ensures that getBaseUrl() returns the new URL when handlers process the event
+        const oldBaseUrl = this.baseUrl
         this.baseUrl = baseUrl
         this.token = token
 
+        // Update auth state which will trigger event handlers
         this.updateAuthState(AuthState.Authenticated)
+
+        // Log successful authentication with potential server change
+        if (isServerChange) {
+          logger.info(`Successfully authenticated with new server. Changed from ${oldBaseUrl} to ${baseUrl}`)
+        } else {
+          logger.info(`Successfully authenticated with server at ${baseUrl}`)
+        }
+
         return true
       }
+
       this.updateAuthState(AuthState.AuthenticationFailed)
       return false
     } catch (error) {

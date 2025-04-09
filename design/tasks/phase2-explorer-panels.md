@@ -27,8 +27,7 @@
   - Single-select behavior implementation
   - Refresh button in panel title
   - Event emission when selected project changes
-  - Display "Setup Connection" button when YouTrack is not configured
-  - Visual state handling for unconfigured state vs. empty project list
+  - Local cache of selected projects
 - **Estimated Effort**: Medium
 - **Priority**: P0
 

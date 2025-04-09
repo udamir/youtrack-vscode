@@ -33,3 +33,8 @@ export const ENV_YOUTRACK_TOKEN = "YOUTRACK_TOKEN"
 
 // Status to control view visibility
 export const STATUS_CONNECTED = "youtrack.status.connected"
+
+// Commands
+export const COMMAND_ADD_PROJECT = "youtrack.addProject"
+export const COMMAND_REMOVE_PROJECT = "youtrack.removeProject"
+export const COMMAND_SET_ACTIVE_PROJECT = "youtrack.setActiveProject"

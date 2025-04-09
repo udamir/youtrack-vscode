@@ -1,26 +1,114 @@
 import * as vscode from "vscode"
 import { BaseTreeDataProvider, YouTrackTreeItem } from "./base-tree-view"
-import * as logger from "../utils/logger"
+import type { CacheService } from "../services/cache-service"
+import type { YouTrackService } from "../services/youtrack-client"
+import type { Article } from "../models/article"
+import { createLoadingItem } from "./tree-view-utils"
 
 /**
- * Tree data provider for YouTrack Recent Articles view
+ * Tree item representing a YouTrack knowledge base article
+ */
+export class ArticleTreeItem extends YouTrackTreeItem {
+  constructor(
+    public readonly article: Article,
+    public readonly command?: vscode.Command,
+  ) {
+    super(article.title, vscode.TreeItemCollapsibleState.None, command, "youtrack-article")
+
+    // Set description to show the article summary if available
+    this.description = article.summary || ""
+
+    // Set tooltip
+    this.tooltip = article.summary ? `${article.title}\n${article.summary}` : article.title
+  }
+}
+
+/**
+ * Tree data provider for YouTrack recent articles
  */
 export class RecentArticlesTreeDataProvider extends BaseTreeDataProvider {
-  /**
-   * Get children for the Recent Articles view when configured
-   */
-  protected async getConfiguredChildren(element?: YouTrackTreeItem): Promise<YouTrackTreeItem[]> {
-    // This will be implemented in a future task to show actual recent articles
-    // For now, just return a placeholder item
-    logger.info("Getting recent articles view children - not fully implemented yet")
+  private _articles: Article[] = []
+  private _serverChangeDisposable: vscode.Disposable | undefined
 
-    if (element) {
-      return []
+  /**
+   * Create a new recent articles tree data provider
+   * @param youtrackService The YouTrack service
+   * @param cacheService The cache service to use for storing/retrieving articles
+   */
+  constructor(
+    youtrackService: YouTrackService,
+    private readonly _cacheService: CacheService,
+  ) {
+    super(youtrackService)
+
+    // Register for server change events
+    this._serverChangeDisposable = this.youtrackService.onServerChanged(this.loadFromCache.bind(this))
+
+    // Load initial data from cache
+    this.loadFromCache()
+  }
+
+  /**
+   * Dispose of resources
+   */
+  public dispose(): void {
+    if (this._serverChangeDisposable) {
+      this._serverChangeDisposable.dispose()
+    }
+  }
+
+  /**
+   * Get children for the recent articles view
+   * @returns Tree items representing recent articles
+   */
+  protected async getConfiguredChildren(): Promise<YouTrackTreeItem[]> {
+    if (this.isLoading) {
+      return [createLoadingItem("Loading recent articles...")]
     }
 
-    const placeholder = new YouTrackTreeItem("Recent articles will be shown here", vscode.TreeItemCollapsibleState.None)
-    placeholder.description = "Coming Soon"
+    if (this._articles.length === 0) {
+      return [YouTrackTreeItem.withThemeIcon("No recent articles", vscode.TreeItemCollapsibleState.None, "info")]
+    }
 
-    return [placeholder]
+    return this._articles.map(
+      (article) =>
+        new ArticleTreeItem(article, {
+          command: "vscode.open",
+          title: "Open Article",
+          arguments: [vscode.Uri.parse(`${this._cacheService.baseUrl}/articles/${article.id}`)],
+        }),
+    )
+  }
+
+  /**
+   * Load recent articles from cache
+   */
+  private loadFromCache(): void {
+    this.isLoading = true
+    this._articles = this._cacheService.getRecentArticles()
+    this.isLoading = false
+  }
+
+  /**
+   * Add an article to the recent articles list
+   * @param article The article to add
+   */
+  public addArticle(article: Article): void {
+    // Check if article already exists in the list
+    const existingIndex = this._articles.findIndex((a) => a.id === article.id)
+
+    // If it exists, remove it so we can add it to the front
+    if (existingIndex >= 0) {
+      this._articles.splice(existingIndex, 1)
+    }
+
+    // Add to the front of the list
+    this._articles = [article, ...this._articles]
+
+    // Save to cache
+    this._cacheService.saveRecentArticles(this._articles)
+
+    // Refresh the view
+    this.refresh()
   }
 }
