@@ -9,3 +9,4 @@ coverage
 .idea
 *.log
 .env
+.windsurf
