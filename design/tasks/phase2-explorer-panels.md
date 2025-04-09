@@ -12,6 +12,7 @@
   - Icon resolution for tree items
 - **Estimated Effort**: Medium
 - **Priority**: P0
+- **Status**: ✅ Completed (April 9, 2025)
 
 ## Task 2.2: Implement Projects Panel
 - **ID**: TASK-2.2
@@ -30,6 +31,7 @@
   - Local cache of selected projects
 - **Estimated Effort**: Medium
 - **Priority**: P0
+- **Status**: ✅ Completed (April 10, 2025)
 
 ## Task 2.3: Implement Issues Panel
 - **ID**: TASK-2.3
