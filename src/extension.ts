@@ -45,7 +45,7 @@ let recentArticlesProvider: RecentArticlesTreeDataProvider
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   try {
     // Initialize logger
-    logger.initializeLogger()
+    logger.initializeLogger(context)
     logger.info("YouTrack integration extension is now active!")
 
     // Initialize YouTrack client
@@ -281,6 +281,12 @@ function registerTreeDataProviders(context: vscode.ExtensionContext): void {
 
   // Subscribe to active project changes to update the Issues view title
   projectsProvider.onDidChangeActiveProject((event) => {
+    logger.debug(`[TRACE] ProjectChange event received: ${JSON.stringify({
+      projectExists: !!event.project,
+      shortName: event.project?.shortName,
+      name: event.project?.name
+    })}`)
+    
     if (event.project) {
       // Update Issues view title to include active project
       issuesView.title = `${event.project.shortName}: Issues`

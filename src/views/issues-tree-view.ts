@@ -125,7 +125,6 @@ export class IssuesTreeDataProvider extends BaseTreeDataProvider {
    * Get children for the Issues view when configured
    */
   protected async getConfiguredChildren(element?: YouTrackTreeItem): Promise<YouTrackTreeItem[]> {
-    // If there's no active project, return a message
     if (!this.activeProjectKey) {
       const noProject = new YouTrackTreeItem("No project selected", vscode.TreeItemCollapsibleState.None)
       noProject.description = "Select a project in the Projects panel"
@@ -145,34 +144,39 @@ export class IssuesTreeDataProvider extends BaseTreeDataProvider {
         // In list mode, return all issues as flat list
         // Fetch the issues for the active project
         this._issues = await this.youtrackService.getIssues(this.activeProjectKey, this._filter)
-      } else {
-        // In tree mode return issues with no parent
-        this._issues = await this.youtrackService.getChildIssues(this.activeProjectKey, element?.id, this._filter)
+        return this._issues.length
+          ? this._issues.map((issue) => new IssueTreeItem(issue))
+          : [this._createNoIssuesItem()]
       }
 
-      this.isLoading = false
+      // In tree mode return issues with no parent
+      this._issues = await this.youtrackService.getChildIssues(this.activeProjectKey, element?.id, this._filter)
 
-      if (this._issues.length) {
-        return this._issues.map((issue) => new IssueTreeItem(issue))
-      }
-
-      const noIssues = new YouTrackTreeItem("No issues found", vscode.TreeItemCollapsibleState.None)
-
-      if (this._filter) {
-        noIssues.description = `No results for "${this._filter}"`
-        noIssues.tooltip = "Try a different filter"
-      } else {
-        noIssues.description = "Project has no issues"
-      }
-
-      return [noIssues]
+      return this._issues.length ? this._issues.map((issue) => new IssueTreeItem(issue)) : [this._createNoIssuesItem()]
     } catch (error) {
-      logger.error("Error loading issues:", error)
-
+      logger.error("Error fetching issues:", error)
       const errorItem = new YouTrackTreeItem("Error loading issues", vscode.TreeItemCollapsibleState.None)
       errorItem.tooltip = "Check connection to YouTrack server"
       return [errorItem]
+    } finally {
+      this.isLoading = false
     }
+  }
+
+  /**
+   * Create a "No issues found" tree item
+   */
+  private _createNoIssuesItem(): YouTrackTreeItem {
+    const noIssues = new YouTrackTreeItem("No issues found", vscode.TreeItemCollapsibleState.None)
+
+    if (this._filter) {
+      noIssues.description = `No results for "${this._filter}"`
+      noIssues.tooltip = "Try a different filter"
+    } else {
+      noIssues.description = "Project has no issues"
+    }
+
+    return noIssues
   }
 
   /**

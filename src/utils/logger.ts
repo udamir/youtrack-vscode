@@ -4,15 +4,61 @@ import { EXTENSION_DISPLAY_NAME } from "../consts/vscode"
 /**
  * Logger functions for the extension
  */
+enum LogLevel {
+  DEBUG = 0,
+  INFO = 1,
+  WARNING = 2,
+  ERROR = 3,
+}
+
 const outputChannel: { channel: vscode.OutputChannel | undefined } = {
   channel: undefined,
 }
 
+let logLevel: LogLevel = LogLevel.DEBUG
+
 /**
  * Initialize the logger
  */
-export function initializeLogger(): void {
+export function initializeLogger(context: vscode.ExtensionContext): void {
   outputChannel.channel = vscode.window.createOutputChannel(EXTENSION_DISPLAY_NAME)
+
+  // Subscribe to configuration changes
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration("youtrack-vscode.logLevel")) {
+        const configuration = vscode.workspace.getConfiguration("youtrack-vscode")
+        const configLogLevel = configuration.get<string>("logLevel")
+
+        if (configLogLevel) {
+          const level = LogLevel[configLogLevel.toUpperCase() as keyof typeof LogLevel]
+          if (level !== undefined) {
+            setLogLevel(level)
+          }
+        }
+      }
+    }),
+  )
+
+  const configuration = vscode.workspace.getConfiguration("youtrack-vscode")
+  const configLogLevel = configuration.get<string>("logLevel")
+
+  if (configLogLevel) {
+    const level = LogLevel[configLogLevel.toUpperCase() as keyof typeof LogLevel]
+    if (level !== undefined) {
+      setLogLevel(level)
+      debug(`Log level set from configuration to ${LogLevel[level]}`)
+    }
+  }
+}
+
+/**
+ * Set the log level
+ * @param level The log level to set
+ */
+export function setLogLevel(level: LogLevel): void {
+  logLevel = level
+  info(`Log level set to ${LogLevel[level]}`)
 }
 
 /**
@@ -52,8 +98,7 @@ export function error(message: string, error?: unknown): void {
  * @param message The message to log
  */
 export function debug(message: string): void {
-  // Only log debug messages in development mode
-  if (process.env.NODE_ENV === "development") {
+  if (logLevel <= LogLevel.DEBUG) {
     log(`DEBUG: ${message}`)
   }
 }

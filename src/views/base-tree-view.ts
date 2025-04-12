@@ -1,25 +1,6 @@
 import * as vscode from "vscode"
 import type { YouTrackService } from "../services/youtrack-client"
 
-// Detect test environment - must be in runtime to avoid issues with Jest
-const isTestEnvironment = typeof jest !== "undefined" || process.env.NODE_ENV === "test"
-
-// Conditionally import the MockEventEmitter in test environment
-// This avoids circular dependencies when running in production
-// Define a type for our MockEventEmitter to allow using generics
-interface EventEmitterLike<T> {
-  event: vscode.Event<T>
-  fire(data: T): void
-  dispose(): void
-}
-
-let MockEventEmitter: new <T>() => EventEmitterLike<T>
-if (isTestEnvironment) {
-  // Dynamic import to avoid circular dependencies
-  const mockModule = require("../test/helpers/vscode-mock")
-  MockEventEmitter = mockModule.MockEventEmitter
-}
-
 /**
  * Icon configuration for tree items
  */
@@ -99,23 +80,19 @@ export class YouTrackTreeItem extends vscode.TreeItem {
  * Handles the common logic for displaying the setup button when not configured
  */
 export abstract class BaseTreeDataProvider implements vscode.TreeDataProvider<YouTrackTreeItem> {
-  private _onDidChangeTreeData: EventEmitterLike<YouTrackTreeItem | undefined>
+  private _onDidChangeTreeData: vscode.EventEmitter<YouTrackTreeItem | undefined>
   readonly onDidChangeTreeData: vscode.Event<YouTrackTreeItem | undefined>
 
   private _isLoading = false
 
   constructor(protected youtrackService: YouTrackService) {
-    // Initialize the appropriate EventEmitter based on environment
-    this._onDidChangeTreeData = isTestEnvironment
-      ? new MockEventEmitter<YouTrackTreeItem | undefined>()
-      : new vscode.EventEmitter<YouTrackTreeItem | undefined>()
+    this._onDidChangeTreeData = new vscode.EventEmitter<YouTrackTreeItem | undefined>()
 
     this.onDidChangeTreeData = this._onDidChangeTreeData.event
   }
 
   set isLoading(isLoading: boolean) {
     this._isLoading = isLoading
-    this.refresh()
   }
 
   get isLoading(): boolean {

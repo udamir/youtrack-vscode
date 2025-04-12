@@ -2,28 +2,8 @@ import * as vscode from "vscode"
 import type { YouTrack } from "youtrack-client"
 import * as logger from "../utils/logger"
 import { AuthenticationService } from "./authentication"
-import type { IssueEntity, ProjectEntity } from "../models"
-import type { AuthState } from "../models/cache"
-import { AUTHENTICATED, AUTHENTICATION_FAILED, NOT_AUTHENTICATED } from "../consts/vscode"
-
-// Detect test environment - must be in runtime to avoid issues with Jest
-const isTestEnvironment = typeof jest !== "undefined" || process.env.NODE_ENV === "test"
-
-// Conditionally import the MockEventEmitter in test environment
-// This avoids circular dependencies when running in production
-// Define a type for our MockEventEmitter to allow using generics
-interface EventEmitterLike<T> {
-  event: vscode.Event<T>
-  fire(data: T): void
-  dispose(): void
-}
-
-let MockEventEmitter: new <T>() => EventEmitterLike<T>
-if (isTestEnvironment) {
-  // Dynamic import to avoid circular dependencies
-  const mockModule = require("../test/helpers/vscode-mock")
-  MockEventEmitter = mockModule.MockEventEmitter
-}
+import type { AuthState, IssueEntity, ProjectEntity } from "../models"
+import { AUTHENTICATED, AUTHENTICATION_FAILED, NOT_AUTHENTICATED, ISSUE_FIELDS, PROJECT_FIELDS } from "../consts"
 
 /**
  * Service for interacting with YouTrack API
@@ -32,9 +12,7 @@ export class YouTrackService {
   private client: YouTrack | null = null
   private _authService: AuthenticationService | null = null
   private previousBaseUrl: string | undefined
-  private readonly _onServerChanged = isTestEnvironment
-    ? new MockEventEmitter<string | undefined>()
-    : new vscode.EventEmitter<string | undefined>()
+  private readonly _onServerChanged = new vscode.EventEmitter<string | undefined>()
 
   /**
    * Event fired when the YouTrack server changes
@@ -222,7 +200,7 @@ export class YouTrackService {
 
       // Fetch projects from the YouTrack client
       return (await client.Admin.Projects.getProjects({
-        fields: ["id", "name", "shortName", "description", "iconUrl"],
+        fields: PROJECT_FIELDS,
       })) as ProjectEntity[]
     } catch (error) {
       logger.error("Error fetching projects from YouTrack:", error)
@@ -261,7 +239,7 @@ export class YouTrackService {
 
       // Get project details from YouTrack
       return (await client.Admin.Projects.getProjectById(projectId, {
-        fields: ["id", "name", "shortName", "description", "iconUrl"],
+        fields: PROJECT_FIELDS,
       })) as ProjectEntity
     } catch (error) {
       logger.error(`Error fetching project ${projectId} from YouTrack:`, error)
@@ -296,6 +274,10 @@ export class YouTrackService {
    */
   public async getIssues(projectShortName: string, filter?: string): Promise<IssueEntity[]> {
     try {
+      logger.debug(
+        `[TRACE] YouTrackService.getIssues called with projectShortName="${projectShortName}", filter="${filter || ""}"`,
+      )
+
       if (!this.isConnected()) {
         logger.warn("YouTrack service not connected, cannot get issues")
         return []
@@ -316,14 +298,17 @@ export class YouTrackService {
       }
 
       logger.info(`Fetching issues with query: ${query}`)
+      logger.debug(`[TRACE] Calling YouTrack API with query "${query}"`)
 
       // Fetch issues using the getAll endpoint
       // @ts-ignore - We know this property exists, even if types don't reflect it correctly
       const issues = await client.Issues.getIssues({
         query,
-        fields: ["id", "idReadable", "summary", "resolved", "created", "updated", { project: ["id"] }],
+        fields: ISSUE_FIELDS,
         $top: 50, // Limit to 50 issues for performance
       })
+
+      logger.debug(`[TRACE] YouTrack API returned ${issues.length} issues for query "${query}"`)
 
       // Map to our simplified Issue model
       return issues.map((issue: any) => ({
@@ -377,7 +362,7 @@ export class YouTrackService {
       // Fetch issue details
       // @ts-ignore - We know this property exists, even if types don't reflect it correctly
       const issue = await client.Issues.byId(issueId, {
-        fields: ["id", "idReadable", "summary", "resolved", "created", "updated", { project: ["id"] }],
+        fields: ISSUE_FIELDS,
       })
 
       if (!issue) {
