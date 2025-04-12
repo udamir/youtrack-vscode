@@ -16,7 +16,8 @@ export class IssueTreeItem extends YouTrackTreeItem {
   constructor(public readonly issue: IssueEntity) {
     super(
       issue.summary,
-      vscode.TreeItemCollapsibleState.None,
+      // Set collapsible state based on whether the issue has children
+      issue.hasChildren ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
       {
         command: COMMAND_OPEN_ISSUE,
         title: "Open Issue",
@@ -24,6 +25,9 @@ export class IssueTreeItem extends YouTrackTreeItem {
       },
       issue.resolved ? "youtrack-issue-resolved" : "youtrack-issue",
     )
+
+    // Set the id property to match the issue id for tracking
+    this.id = issue.id
 
     // Set description to show the issue ID
     this.description = issue.idReadable
@@ -68,20 +72,6 @@ export class IssuesTreeDataProvider extends BaseTreeDataProvider {
   }
 
   /**
-   * Get or set the current filter string
-   */
-  public get filter(): string {
-    return this._filter
-  }
-
-  public set filter(value: string) {
-    if (this._filter !== value) {
-      this._filter = value
-      this.refresh()
-    }
-  }
-
-  /**
    * Get or set the current view mode
    */
   public get viewMode(): IssuesViewMode {
@@ -98,10 +88,20 @@ export class IssuesTreeDataProvider extends BaseTreeDataProvider {
   }
 
   /**
-   * Get the currently active project short name
+   * Get the current filter text
    */
-  public get activeProjectKey(): string | undefined {
-    return this._activeProject?.shortName
+  public get filter(): string {
+    return this._filter
+  }
+
+  /**
+   * Set the filter text
+   */
+  public set filter(filter: string) {
+    if (this._filter !== filter) {
+      this._filter = filter
+      this.refresh()
+    }
   }
 
   /**
@@ -109,6 +109,13 @@ export class IssuesTreeDataProvider extends BaseTreeDataProvider {
    */
   public toggleViewMode(): void {
     this.viewMode = this._viewMode === ISSUE_VIEW_MODE_LIST ? ISSUE_VIEW_MODE_TREE : ISSUE_VIEW_MODE_LIST
+  }
+
+  /**
+   * Get the currently active project short name
+   */
+  public get activeProjectKey(): string | undefined {
+    return this._activeProject?.shortName
   }
 
   /**

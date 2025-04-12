@@ -22,6 +22,8 @@ import {
   VIEW_RECENT_ARTICLES,
   VIEW_NOT_CONNECTED,
   STATUS_CONNECTED,
+  ISSUE_VIEW_MODE_LIST,
+  ISSUE_VIEW_MODE_TREE,
 } from "./consts"
 
 // Service instances
@@ -231,6 +233,43 @@ function registerCommands(context: vscode.ExtensionContext): void {
     }
   })
 
+  // Register commands related to issues
+  const refreshIssuesCommand = vscode.commands.registerCommand("youtrack.refreshIssues", () => {
+    logger.info("Refreshing issues panel")
+    issuesProvider.refresh()
+  })
+  context.subscriptions.push(refreshIssuesCommand)
+
+  // Command for filtering issues with input box
+  const filterIssuesCommand = vscode.commands.registerCommand("youtrack.filterIssues", async () => {
+    const currentFilter = issuesProvider.filter
+    const filterText = await vscode.window.showInputBox({
+      title: "Filter Issues",
+      prompt: "Enter issue filter text (YouTrack query syntax supported)",
+      value: currentFilter,
+      placeHolder: "project: {project} #unresolved",
+    })
+
+    // Only update if the user didn't cancel and the value changed
+    if (filterText !== undefined) {
+      logger.info(`Setting issues filter to: ${filterText}`)
+      issuesProvider.filter = filterText
+    }
+  })
+  context.subscriptions.push(filterIssuesCommand)
+
+  // Command for toggling issues view mode
+  const toggleIssuesViewModeCommand = vscode.commands.registerCommand("youtrack.toggleIssuesViewMode", () => {
+    const newMode = issuesProvider.viewMode === ISSUE_VIEW_MODE_LIST ? ISSUE_VIEW_MODE_TREE : ISSUE_VIEW_MODE_LIST
+    logger.info(`Changing issues view mode to: ${newMode}`)
+    issuesProvider.toggleViewMode()
+
+    // Show a notification with the current mode
+    const modeName = newMode === ISSUE_VIEW_MODE_LIST ? "List View" : "Tree View"
+    vscode.window.showInformationMessage(`Issues panel switched to ${modeName}`)
+  })
+  context.subscriptions.push(toggleIssuesViewModeCommand)
+
   // Add commands to subscriptions
   context.subscriptions.push(connectCommand)
   context.subscriptions.push(addProjectCommand)
@@ -281,12 +320,6 @@ function registerTreeDataProviders(context: vscode.ExtensionContext): void {
 
   // Subscribe to active project changes to update the Issues view title
   projectsProvider.onDidChangeActiveProject((event) => {
-    logger.debug(`[TRACE] ProjectChange event received: ${JSON.stringify({
-      projectExists: !!event.project,
-      shortName: event.project?.shortName,
-      name: event.project?.name
-    })}`)
-    
     if (event.project) {
       // Update Issues view title to include active project
       issuesView.title = `${event.project.shortName}: Issues`

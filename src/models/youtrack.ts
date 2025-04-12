@@ -29,6 +29,12 @@ export interface IssueEntity extends Entity<Issue, typeof ISSUE_FIELDS> {
   resolved: number
   summary: string
   updated: number
+  hasChildren?: boolean
+  description: string | null
+  parentIssue?: {
+    id: string
+    idReadable?: string
+  } | null
 }
 
 export interface ArticleEntity extends Entity<Article, typeof ARTICLE_FIELDS> {

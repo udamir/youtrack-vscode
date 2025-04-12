@@ -274,10 +274,6 @@ export class YouTrackService {
    */
   public async getIssues(projectShortName: string, filter?: string): Promise<IssueEntity[]> {
     try {
-      logger.debug(
-        `[TRACE] YouTrackService.getIssues called with projectShortName="${projectShortName}", filter="${filter || ""}"`,
-      )
-
       if (!this.isConnected()) {
         logger.warn("YouTrack service not connected, cannot get issues")
         return []
@@ -285,7 +281,7 @@ export class YouTrackService {
 
       const client = this.getClient()
       if (!client) {
-        logger.warn("YouTrack client not available")
+        logger.error("Failed to get YouTrack client")
         return []
       }
 
@@ -298,28 +294,30 @@ export class YouTrackService {
       }
 
       logger.info(`Fetching issues with query: ${query}`)
-      logger.debug(`[TRACE] Calling YouTrack API with query "${query}"`)
 
-      // Fetch issues using the getAll endpoint
-      // @ts-ignore - We know this property exists, even if types don't reflect it correctly
       const issues = await client.Issues.getIssues({
         query,
         fields: ISSUE_FIELDS,
         $top: 50, // Limit to 50 issues for performance
       })
 
-      logger.debug(`[TRACE] YouTrack API returned ${issues.length} issues for query "${query}"`)
-
       // Map to our simplified Issue model
       return issues.map((issue: any) => ({
         id: issue.id,
         idReadable: issue.idReadable,
-        summary: issue.summary,
+        summary: issue.summary || "",
         description: issue.description,
-        resolved: issue.resolved,
-        project: { id: issue.project?.id },
+        resolved: issue.resolved || 0,
+        project: { id: issue.project?.id || "" },
         created: issue.created,
         updated: issue.updated,
+        hasChildren: issue.subtasks && issue.subtasks.length > 0,
+        parentIssue: issue.parentIssue
+          ? {
+              id: issue.parentIssue.id,
+              idReadable: issue.parentIssue.idReadable,
+            }
+          : null,
       }))
     } catch (error) {
       logger.error("Error fetching issues:", error)
@@ -330,12 +328,16 @@ export class YouTrackService {
   /**
    * Get child issues for a specific project
    * @param projectShortName Short name of the project to fetch child issues for
-   * @param parentId Optional ID of the parent issue to filter by
+   * @param parentIssueId Optional ID of the parent issue to filter by
    * @param filter Optional additional filter criteria
    * @returns Array of child issues or empty array if none found
    */
-  public async getChildIssues(projectShortName: string, parentId?: string, filter?: string): Promise<IssueEntity[]> {
-    const parentFilter = parentId ? `subtask of: {${parentId}}` : "has: -{Subtask of}"
+  public async getChildIssues(
+    projectShortName: string,
+    parentIssueId?: string,
+    filter?: string,
+  ): Promise<IssueEntity[]> {
+    const parentFilter = parentIssueId ? `subtask of: {${parentIssueId}}` : "has: -{Subtask of}"
     return this.getIssues(projectShortName, `${parentFilter}${filter ? ` ${filter}` : ""}`)
   }
 
@@ -360,8 +362,7 @@ export class YouTrackService {
       logger.info(`Fetching issue with ID: ${issueId}`)
 
       // Fetch issue details
-      // @ts-ignore - We know this property exists, even if types don't reflect it correctly
-      const issue = await client.Issues.byId(issueId, {
+      const issue = await client.Issues.getIssueById(issueId, {
         fields: ISSUE_FIELDS,
       })
 
@@ -373,10 +374,10 @@ export class YouTrackService {
       return {
         id: issue.id,
         idReadable: issue.idReadable,
-        summary: issue.summary,
-        description: issue.description,
-        resolved: issue.resolved,
-        project: { id: issue.project?.id },
+        summary: issue.summary || "",
+        description: issue.description || "",
+        resolved: issue.resolved || 0,
+        project: { id: issue.project?.id || "" },
         created: issue.created,
         updated: issue.updated,
       }

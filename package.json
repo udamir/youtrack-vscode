@@ -31,6 +31,21 @@
         "command": "youtrack.removeProject",
         "title": "YouTrack: Remove Project from List",
         "icon": "$(trash)"
+      },
+      {
+        "command": "youtrack.refreshIssues",
+        "title": "YouTrack: Refresh Issues",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "youtrack.filterIssues",
+        "title": "YouTrack: Filter Issues",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "youtrack.toggleIssuesViewMode",
+        "title": "YouTrack: Toggle Issues View Mode",
+        "icon": "$(list-tree)"
       }
     ],
     "viewsContainers": {
@@ -82,6 +97,21 @@
         {
           "command": "youtrack.addProject",
           "when": "view == youtrackProjects && youtrack.status.connected",
+          "group": "navigation"
+        },
+        {
+          "command": "youtrack.refreshIssues",
+          "when": "view == youtrackIssues && youtrack.status.connected",
+          "group": "navigation"
+        },
+        {
+          "command": "youtrack.filterIssues",
+          "when": "view == youtrackIssues && youtrack.status.connected",
+          "group": "navigation"
+        },
+        {
+          "command": "youtrack.toggleIssuesViewMode",
+          "when": "view == youtrackIssues && youtrack.status.connected",
           "group": "navigation"
         }
       ],
