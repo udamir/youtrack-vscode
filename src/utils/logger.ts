@@ -1,5 +1,5 @@
 import * as vscode from "vscode"
-import { EXTENSION_DISPLAY_NAME } from "../constants"
+import { EXTENSION_DISPLAY_NAME } from "../consts/vscode"
 
 /**
  * Logger functions for the extension

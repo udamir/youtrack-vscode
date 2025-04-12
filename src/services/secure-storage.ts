@@ -1,6 +1,7 @@
 import type * as vscode from "vscode"
 import * as crypto from "node:crypto"
 import * as logger from "../utils/logger"
+import { EXTENSION_NAME } from "../consts/vscode"
 
 /**
  * Keys used for storing credentials
@@ -102,7 +103,7 @@ export class SecureStorageService {
       // Use a derived key from the machine-id or another semi-stable identifier
       // For simplicity, we're using a fixed key here, but in production,
       // you would want to derive this from something machine-specific
-      const key = crypto.scryptSync(this.getMachineIdentifier(), "salt", 32)
+      const key = crypto.scryptSync(EXTENSION_NAME, "salt", 32)
 
       // Create cipher
       const cipher = crypto.createCipheriv("aes-256-cbc", key, iv)
@@ -137,7 +138,7 @@ export class SecureStorageService {
       const encryptedText = parts[1]
 
       // Use the same derived key as in encryption
-      const key = crypto.scryptSync(this.getMachineIdentifier(), "salt", 32)
+      const key = crypto.scryptSync(EXTENSION_NAME, "salt", 32)
 
       // Create decipher
       const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv)
@@ -151,23 +152,5 @@ export class SecureStorageService {
       logger.error("Failed to decrypt data", error)
       throw new Error("Failed to decrypt sensitive data")
     }
-  }
-
-  /**
-   * Get a pseudo-unique machine identifier
-   * This is used for encryption to tie encrypted data to this machine
-   *
-   * @returns A string that should be consistent for this machine
-   */
-  private getMachineIdentifier(): string {
-    // In a real implementation, you might use:
-    // - OS-specific identifier APIs
-    // - Hardware identifiers
-    // - A combination of user and machine details
-
-    // For this implementation, we'll use a simplified approach
-    const username = process.env.USER || process.env.USERNAME || "unknown"
-    const hostname = process.env.HOSTNAME || "unknown"
-    return `youtrack-extension-${username}-${hostname}`
   }
 }

@@ -6,7 +6,7 @@ import {
   CONFIG_TOKEN_STORAGE,
   CONFIG_TEMP_FOLDER_PATH,
   TOKEN_STORAGE_SECURE,
-} from "../constants"
+} from "../consts/vscode"
 import * as path from "node:path"
 import * as os from "node:os"
 

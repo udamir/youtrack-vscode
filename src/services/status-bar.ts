@@ -1,5 +1,5 @@
 import * as vscode from "vscode"
-import { COMMAND_CONNECT } from "../constants"
+import { COMMAND_CONNECT } from "../consts/vscode"
 import * as logger from "../utils/logger"
 
 /**

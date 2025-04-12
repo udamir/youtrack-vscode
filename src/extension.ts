@@ -22,7 +22,7 @@ import {
   VIEW_RECENT_ARTICLES,
   VIEW_NOT_CONNECTED,
   STATUS_CONNECTED,
-} from "./constants"
+} from "./consts"
 
 // Service instances
 const youtrackService = new YouTrackService()
@@ -205,23 +205,23 @@ function registerCommands(context: vscode.ExtensionContext): void {
       }
 
       // Extract project information based on the shape of the item
-      let projectId: string | undefined
+      let projectShortName: string | undefined
       let projectName: string | undefined
 
       if (item.project && typeof item.project === "object") {
         // Case: item is { project: Project }
-        projectId = item.project.id
+        projectShortName = item.project.shortName
         projectName = item.project.name
-      } else if (item.id && item.name) {
+      } else if (item.shortName && item.name) {
         // Case: item is directly a Project or ProjectTreeItem
-        projectId = item.id
+        projectShortName = item.shortName
         projectName = item.name
       }
 
-      if (projectId && projectName) {
-        projectsProvider.setActiveProject(projectId)
+      if (projectShortName && projectName) {
+        projectsProvider.setActiveProject(projectShortName)
         // Add debug logging to track command execution
-        logger.info(`Active project set to: ${projectName} (${projectId})`)
+        logger.info(`Active project set to: ${projectName} (${projectShortName})`)
       } else {
         logger.error("Error setting active project: Invalid project object received", item)
       }
@@ -246,7 +246,7 @@ function registerTreeDataProviders(context: vscode.ExtensionContext): void {
   const cacheService = new CacheService(youtrackService, context.workspaceState)
 
   projectsProvider = new ProjectsTreeDataProvider(youtrackService, cacheService)
-  issuesProvider = new IssuesTreeDataProvider(youtrackService)
+  issuesProvider = new IssuesTreeDataProvider(youtrackService, cacheService, projectsProvider)
   knowledgeBaseProvider = new KnowledgeBaseTreeDataProvider(youtrackService)
   recentIssuesProvider = new RecentIssuesTreeDataProvider(youtrackService, cacheService)
   recentArticlesProvider = new RecentArticlesTreeDataProvider(youtrackService, cacheService)

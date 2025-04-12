@@ -2,16 +2,9 @@ import type * as vscode from "vscode"
 import { YouTrack } from "youtrack-client"
 import * as logger from "../utils/logger"
 import { SecureStorageService } from "./secure-storage"
-
-/**
- * Authentication states for YouTrack connection
- */
-export enum AuthState {
-  NotAuthenticated = "notAuthenticated",
-  Authenticating = "authenticating",
-  Authenticated = "authenticated",
-  AuthenticationFailed = "authenticationFailed",
-}
+import type { AuthState } from "../models/cache"
+import { AUTHENTICATED, AUTHENTICATING, AUTHENTICATION_FAILED, NOT_AUTHENTICATED } from "../consts/vscode"
+import { USER_PROFILE_FIELDS } from "../consts"
 
 /**
  * Authentication service for managing YouTrack connection and session.
@@ -21,7 +14,7 @@ export class AuthenticationService {
   private baseUrl: string | undefined
   private token: string | undefined
   private client: YouTrack | null = null
-  private currentState: AuthState = AuthState.NotAuthenticated
+  private currentState: AuthState = NOT_AUTHENTICATED
   private onAuthStateChangedHandlers: ((state: AuthState) => void)[] = []
 
   /**
@@ -76,7 +69,7 @@ export class AuthenticationService {
    */
   public async initialize(): Promise<boolean> {
     try {
-      this.updateAuthState(AuthState.Authenticating)
+      this.updateAuthState(AUTHENTICATING)
 
       // Try to get credentials from secure storage first
       this.token = await this.secureStorage.getToken()
@@ -88,11 +81,11 @@ export class AuthenticationService {
         return await this.verifyAndCreateClient(this.baseUrl, this.token)
       }
 
-      this.updateAuthState(AuthState.NotAuthenticated)
+      this.updateAuthState(NOT_AUTHENTICATED)
       return false
     } catch (error) {
       logger.error("Failed to initialize authentication:", error)
-      this.updateAuthState(AuthState.AuthenticationFailed)
+      this.updateAuthState(AUTHENTICATION_FAILED)
       return false
     }
   }
@@ -114,10 +107,10 @@ export class AuthenticationService {
       }
 
       // Set authenticating state first
-      this.updateAuthState(AuthState.Authenticating)
+      this.updateAuthState(AUTHENTICATING)
 
       if (!baseUrl || !token) {
-        this.updateAuthState(AuthState.AuthenticationFailed)
+        this.updateAuthState(AUTHENTICATION_FAILED)
         return false
       }
 
@@ -136,7 +129,7 @@ export class AuthenticationService {
         this.token = token
 
         // Update auth state which will trigger event handlers
-        this.updateAuthState(AuthState.Authenticated)
+        this.updateAuthState(AUTHENTICATED)
 
         // Log successful authentication with potential server change
         if (isServerChange) {
@@ -148,11 +141,11 @@ export class AuthenticationService {
         return true
       }
 
-      this.updateAuthState(AuthState.AuthenticationFailed)
+      this.updateAuthState(AUTHENTICATION_FAILED)
       return false
     } catch (error) {
       logger.error("Authentication failed:", error)
-      this.updateAuthState(AuthState.AuthenticationFailed)
+      this.updateAuthState(AUTHENTICATION_FAILED)
       return false
     }
   }
@@ -166,7 +159,7 @@ export class AuthenticationService {
       this.client = null
       this.baseUrl = undefined
       this.token = undefined
-      this.updateAuthState(AuthState.NotAuthenticated)
+      this.updateAuthState(NOT_AUTHENTICATED)
     } catch (error) {
       logger.error("Logout failed:", error)
     }
@@ -176,7 +169,7 @@ export class AuthenticationService {
    * Check if user is currently authenticated
    */
   public isAuthenticated(): boolean {
-    return this.currentState === AuthState.Authenticated && this.client !== null
+    return this.currentState === AUTHENTICATED && this.client !== null
   }
 
   /**
@@ -192,16 +185,16 @@ export class AuthenticationService {
 
       // Test the connection by fetching current user
       await testClient.Users.getCurrentUserProfile({
-        fields: ["login", "email", "fullName"],
+        fields: USER_PROFILE_FIELDS,
       })
 
       // If no error was thrown, credentials are valid
       this.client = testClient
-      this.updateAuthState(AuthState.Authenticated)
+      this.updateAuthState(AUTHENTICATED)
       return true
     } catch (error) {
       logger.error("Credentials verification failed:", error)
-      this.updateAuthState(AuthState.AuthenticationFailed)
+      this.updateAuthState(AUTHENTICATION_FAILED)
       return false
     }
   }

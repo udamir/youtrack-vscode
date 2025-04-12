@@ -2,15 +2,15 @@ import * as vscode from "vscode"
 import { BaseTreeDataProvider, YouTrackTreeItem } from "./base-tree-view"
 import type { CacheService } from "../services/cache-service"
 import type { YouTrackService } from "../services/youtrack-client"
-import type { Issue } from "../models/issue"
+import type { IssueEntity } from "../models"
 import { createLoadingItem } from "./tree-view-utils"
 
 /**
  * Tree item representing a YouTrack issue
  */
-export class IssueTreeItem extends YouTrackTreeItem {
+export class RecentIssueItem extends YouTrackTreeItem {
   constructor(
-    public readonly issue: Issue,
+    public readonly issue: IssueEntity,
     public readonly command?: vscode.Command,
   ) {
     super(issue.idReadable || `#${issue.id}`, vscode.TreeItemCollapsibleState.None, command, "youtrack-issue")
@@ -27,7 +27,7 @@ export class IssueTreeItem extends YouTrackTreeItem {
  * Tree data provider for YouTrack recent issues
  */
 export class RecentIssuesTreeDataProvider extends BaseTreeDataProvider {
-  private _issues: Issue[] = []
+  private _issues: IssueEntity[] = []
   private _serverChangeDisposable: vscode.Disposable | undefined
 
   /**
@@ -72,7 +72,7 @@ export class RecentIssuesTreeDataProvider extends BaseTreeDataProvider {
 
     return this._issues.map(
       (issue) =>
-        new IssueTreeItem(issue, {
+        new RecentIssueItem(issue, {
           command: "vscode.open",
           title: "Open Issue",
           arguments: [vscode.Uri.parse(`${this._cacheService.baseUrl}/issue/${issue.idReadable}`)],
@@ -93,7 +93,7 @@ export class RecentIssuesTreeDataProvider extends BaseTreeDataProvider {
    * Add an issue to the recent issues list
    * @param issue The issue to add
    */
-  public addIssue(issue: Issue): void {
+  public addIssue(issue: IssueEntity): void {
     // Check if issue already exists in the list
     const existingIndex = this._issues.findIndex((i) => i.id === issue.id)
 

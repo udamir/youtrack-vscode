@@ -1,18 +1,17 @@
 import * as vscode from "vscode"
 import { BaseTreeDataProvider, YouTrackTreeItem } from "./base-tree-view"
 import { createLoadingItem } from "./tree-view-utils"
-import type { Project } from "../models/project"
+import type { ProjectEntity } from "../models"
 import * as logger from "../utils/logger"
 import type { YouTrackService } from "../services/youtrack-client"
 import type { CacheService } from "../services/cache-service"
-import { COMMAND_SET_ACTIVE_PROJECT } from "../constants"
+import { COMMAND_SET_ACTIVE_PROJECT } from "../consts/vscode"
 
 /**
  * Event fired when the active project changes
  */
 export interface ProjectChangeEvent {
-  projectId: string | undefined
-  project: Project | undefined
+  project: ProjectEntity | undefined
 }
 
 /**
@@ -20,7 +19,7 @@ export interface ProjectChangeEvent {
  */
 export class ProjectTreeItem extends YouTrackTreeItem {
   constructor(
-    public readonly project: Project,
+    public readonly project: ProjectEntity,
     public readonly isActive: boolean = false,
   ) {
     super(
@@ -58,8 +57,8 @@ export class ProjectTreeItem extends YouTrackTreeItem {
  * Tree data provider for YouTrack Projects view
  */
 export class ProjectsTreeDataProvider extends BaseTreeDataProvider {
-  private _selectedProjects: Project[] = []
-  private _activeProjectId?: string
+  private _selectedProjects: ProjectEntity[] = []
+  private _activeProject?: ProjectEntity
   private _onDidChangeActiveProject = new vscode.EventEmitter<ProjectChangeEvent>()
   private _serverChangeDisposable: vscode.Disposable | undefined
 
@@ -68,29 +67,30 @@ export class ProjectsTreeDataProvider extends BaseTreeDataProvider {
    */
   public readonly onDidChangeActiveProject = this._onDidChangeActiveProject.event
 
-  get activeProjectId(): string | undefined {
-    return this._activeProjectId
+  get activeProjectKey(): string | undefined {
+    return this._activeProject?.shortName
   }
 
-  set activeProjectId(value: string | undefined) {
-    this._activeProjectId = value
-    this._cacheService.saveActiveProjectId(this._activeProjectId)
+  set activeProjectKey(key: string | undefined) {
+    this.activeProject = this.selectedProjects.find((project) => project.shortName === key)
   }
 
-  get selectedProjects(): Project[] {
+  get selectedProjects(): ProjectEntity[] {
     return [...this._selectedProjects]
   }
 
-  set selectedProjects(value: Project[]) {
+  set selectedProjects(value: ProjectEntity[]) {
     this._selectedProjects = [...value]
     this._cacheService.saveSelectedProjects(this._selectedProjects)
   }
 
-  get activeProject(): Project | undefined {
-    if (!this._activeProjectId) {
-      return undefined
-    }
-    return this._selectedProjects.find((p) => p.id === this._activeProjectId)
+  get activeProject(): ProjectEntity | undefined {
+    return this._activeProject
+  }
+
+  set activeProject(value: ProjectEntity | undefined) {
+    this._activeProject = value
+    this._cacheService.saveActiveProject(this._activeProject?.shortName)
   }
 
   /**
@@ -135,7 +135,7 @@ export class ProjectsTreeDataProvider extends BaseTreeDataProvider {
     }
 
     // Display an "Add Project" message if no projects are selected
-    if (this._selectedProjects.length === 0) {
+    if (this.selectedProjects.length === 0) {
       const addProjectItem = YouTrackTreeItem.withThemeIcon(
         "Click the + button to add projects",
         vscode.TreeItemCollapsibleState.None,
@@ -146,7 +146,9 @@ export class ProjectsTreeDataProvider extends BaseTreeDataProvider {
     }
 
     // Convert projects to tree items, marking the active one
-    return this._selectedProjects.map((project) => new ProjectTreeItem(project, project.id === this._activeProjectId))
+    return this.selectedProjects.map(
+      (project) => new ProjectTreeItem(project, project.shortName === this.activeProjectKey),
+    )
   }
 
   /**
@@ -159,15 +161,8 @@ export class ProjectsTreeDataProvider extends BaseTreeDataProvider {
     // Load projects
     this._selectedProjects = this._cacheService.getSelectedProjects()
 
-    // Load active project ID
-    this._activeProjectId = this._cacheService.getActiveProjectId()
-
-    // If we have an active project ID but it's not in the selected projects,
-    // clear the active project ID
-    if (this._activeProjectId && !this._selectedProjects.some((p) => p.id === this._activeProjectId)) {
-      logger.warn(`Active project ${this._activeProjectId} not found in selected projects, clearing active project`)
-      this.activeProjectId = undefined
-    }
+    // Load active project short name
+    this.activeProjectKey = this._cacheService.getActiveProject()
 
     // Remove loading state and refresh view
     this.isLoading = false
@@ -176,10 +171,10 @@ export class ProjectsTreeDataProvider extends BaseTreeDataProvider {
   /**
    * Add a project to the selected projects list
    */
-  public addProject(project: Project): void {
+  public addProject(project: ProjectEntity): void {
     // Check if project already exists
-    if (!this._selectedProjects.some((p) => p.id === project.id)) {
-      this.selectedProjects = [...this._selectedProjects, project]
+    if (!this.selectedProjects.some((p) => p.shortName === project.shortName)) {
+      this.selectedProjects = [...this.selectedProjects, project]
       this.refresh()
     }
   }
@@ -187,14 +182,14 @@ export class ProjectsTreeDataProvider extends BaseTreeDataProvider {
   /**
    * Remove a project from the selected projects list
    */
-  public removeProject(projectId: string): void {
-    const initialLength = this._selectedProjects.length
-    this.selectedProjects = this._selectedProjects.filter((p) => p.id !== projectId)
+  public removeProject(projectShortName: string): void {
+    const initialLength = this.selectedProjects.length
+    this.selectedProjects = this.selectedProjects.filter((p) => p.shortName !== projectShortName)
 
     // Only persist and refresh if something was actually removed
-    if (initialLength !== this._selectedProjects.length) {
+    if (initialLength !== this.selectedProjects.length) {
       // If the active project was removed, clear the active project reference
-      if (this._activeProjectId === projectId) {
+      if (this.activeProjectKey === projectShortName) {
         this.setActiveProject(undefined)
       }
 
@@ -204,23 +199,17 @@ export class ProjectsTreeDataProvider extends BaseTreeDataProvider {
 
   /**
    * Set the active project
-   * @param projectId ID of the project to set as active, or undefined to clear active project
+   * @param projectShortName Short name of the project to set as active, or undefined to clear active project
    */
-  public setActiveProject(projectId: string | undefined): void {
-    if (projectId === this._activeProjectId) {
+  public setActiveProject(projectShortName: string | undefined): void {
+    if (projectShortName === this.activeProjectKey) {
       return // No change needed
     }
 
-    this.activeProjectId = projectId
-
-    // Find the project object if we have an ID
-    const project = projectId ? this._selectedProjects.find((p) => p.id === projectId) : undefined
+    this.activeProjectKey = projectShortName
 
     // Emit change event
-    this._onDidChangeActiveProject.fire({
-      projectId,
-      project,
-    })
+    this._onDidChangeActiveProject.fire({ project: this.activeProject })
 
     // Refresh the view to update the UI
     this.refresh()

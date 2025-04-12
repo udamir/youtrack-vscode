@@ -2,7 +2,7 @@ import * as vscode from "vscode"
 import { BaseTreeDataProvider, YouTrackTreeItem } from "./base-tree-view"
 import type { CacheService } from "../services/cache-service"
 import type { YouTrackService } from "../services/youtrack-client"
-import type { Article } from "../models/article"
+import type { ArticleEntity } from "../models"
 import { createLoadingItem } from "./tree-view-utils"
 
 /**
@@ -10,16 +10,16 @@ import { createLoadingItem } from "./tree-view-utils"
  */
 export class ArticleTreeItem extends YouTrackTreeItem {
   constructor(
-    public readonly article: Article,
+    public readonly article: ArticleEntity,
     public readonly command?: vscode.Command,
   ) {
-    super(article.title, vscode.TreeItemCollapsibleState.None, command, "youtrack-article")
+    super(article.summary, vscode.TreeItemCollapsibleState.None, command, "youtrack-article")
 
     // Set description to show the article summary if available
-    this.description = article.summary || ""
+    this.description = article.content || ""
 
     // Set tooltip
-    this.tooltip = article.summary ? `${article.title}\n${article.summary}` : article.title
+    this.tooltip = `${article.idReadable} ${article.summary}`
   }
 }
 
@@ -27,7 +27,7 @@ export class ArticleTreeItem extends YouTrackTreeItem {
  * Tree data provider for YouTrack recent articles
  */
 export class RecentArticlesTreeDataProvider extends BaseTreeDataProvider {
-  private _articles: Article[] = []
+  private _articles: ArticleEntity[] = []
   private _serverChangeDisposable: vscode.Disposable | undefined
 
   /**
@@ -93,7 +93,7 @@ export class RecentArticlesTreeDataProvider extends BaseTreeDataProvider {
    * Add an article to the recent articles list
    * @param article The article to add
    */
-  public addArticle(article: Article): void {
+  public addArticle(article: ArticleEntity): void {
     // Check if article already exists in the list
     const existingIndex = this._articles.findIndex((a) => a.id === article.id)
 

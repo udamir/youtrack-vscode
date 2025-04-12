@@ -1,9 +1,29 @@
-import type * as vscode from "vscode"
-import { EventEmitter } from "vscode"
+import * as vscode from "vscode"
 import type { YouTrack } from "youtrack-client"
 import * as logger from "../utils/logger"
-import { AuthenticationService, AuthState } from "./authentication"
-import type { Project } from "../models/project"
+import { AuthenticationService } from "./authentication"
+import type { IssueEntity, ProjectEntity } from "../models"
+import type { AuthState } from "../models/cache"
+import { AUTHENTICATED, AUTHENTICATION_FAILED, NOT_AUTHENTICATED } from "../consts/vscode"
+
+// Detect test environment - must be in runtime to avoid issues with Jest
+const isTestEnvironment = typeof jest !== "undefined" || process.env.NODE_ENV === "test"
+
+// Conditionally import the MockEventEmitter in test environment
+// This avoids circular dependencies when running in production
+// Define a type for our MockEventEmitter to allow using generics
+interface EventEmitterLike<T> {
+  event: vscode.Event<T>
+  fire(data: T): void
+  dispose(): void
+}
+
+let MockEventEmitter: new <T>() => EventEmitterLike<T>
+if (isTestEnvironment) {
+  // Dynamic import to avoid circular dependencies
+  const mockModule = require("../test/helpers/vscode-mock")
+  MockEventEmitter = mockModule.MockEventEmitter
+}
 
 /**
  * Service for interacting with YouTrack API
@@ -12,7 +32,9 @@ export class YouTrackService {
   private client: YouTrack | null = null
   private _authService: AuthenticationService | null = null
   private previousBaseUrl: string | undefined
-  private readonly _onServerChanged = new EventEmitter<string | undefined>()
+  private readonly _onServerChanged = isTestEnvironment
+    ? new MockEventEmitter<string | undefined>()
+    : new vscode.EventEmitter<string | undefined>()
 
   /**
    * Event fired when the YouTrack server changes
@@ -77,7 +99,7 @@ export class YouTrackService {
    * @private
    */
   private handleAuthStateChange(state: AuthState): void {
-    if (state === AuthState.Authenticated && this._authService) {
+    if (state === AUTHENTICATED && this._authService) {
       this.client = this._authService.getClient()
 
       // Get the current base URL
@@ -102,7 +124,7 @@ export class YouTrackService {
       }
 
       logger.info("YouTrack client updated due to authentication state change")
-    } else if (state === AuthState.NotAuthenticated || state === AuthState.AuthenticationFailed) {
+    } else if (state === NOT_AUTHENTICATED || state === AUTHENTICATION_FAILED) {
       this.client = null
 
       // If we were previously authenticated and are now disconnected
@@ -191,7 +213,7 @@ export class YouTrackService {
    * Gets all available projects from YouTrack
    * @returns Array of Project objects
    */
-  public async getProjects(): Promise<Project[]> {
+  public async getProjects(): Promise<ProjectEntity[]> {
     try {
       const client = this.getClient()
       if (!client) {
@@ -201,7 +223,7 @@ export class YouTrackService {
       // Fetch projects from the YouTrack client
       return (await client.Admin.Projects.getProjects({
         fields: ["id", "name", "shortName", "description", "iconUrl"],
-      })) as Project[]
+      })) as ProjectEntity[]
     } catch (error) {
       logger.error("Error fetching projects from YouTrack:", error)
       throw error
@@ -213,12 +235,12 @@ export class YouTrackService {
    * @param selectedProjectIds Array of IDs of already selected projects
    * @returns Array of available Project objects
    */
-  public async getAvailableProjects(selectedProjectIds: string[]): Promise<Project[]> {
+  public async getAvailableProjects(selectedProjectIds: string[]): Promise<ProjectEntity[]> {
     try {
       const allProjects = await this.getProjects()
 
       // Filter out already selected projects
-      return allProjects.filter((project: Project) => !selectedProjectIds.includes(project.id))
+      return allProjects.filter((project: ProjectEntity) => !selectedProjectIds.includes(project.id))
     } catch (error) {
       logger.error("Error fetching available projects from YouTrack:", error)
       throw error
@@ -230,7 +252,7 @@ export class YouTrackService {
    * @param projectId ID of the project to get
    * @returns Project object or null if not found
    */
-  public async getProjectById(projectId: string): Promise<Project | null> {
+  public async getProjectById(projectId: string): Promise<ProjectEntity | null> {
     try {
       const client = this.getClient()
       if (!client) {
@@ -240,7 +262,7 @@ export class YouTrackService {
       // Get project details from YouTrack
       return (await client.Admin.Projects.getProjectById(projectId, {
         fields: ["id", "name", "shortName", "description", "iconUrl"],
-      })) as Project
+      })) as ProjectEntity
     } catch (error) {
       logger.error(`Error fetching project ${projectId} from YouTrack:`, error)
       return null
@@ -252,7 +274,7 @@ export class YouTrackService {
    * @param projectIds Array of project IDs to get
    * @returns Array of Project objects that were found
    */
-  public async getProjectsByIds(projectIds: string[]): Promise<Project[]> {
+  public async getProjectsByIds(projectIds: string[]): Promise<ProjectEntity[]> {
     try {
       if (!projectIds.length) {
         return []
@@ -263,6 +285,119 @@ export class YouTrackService {
     } catch (error) {
       logger.error("Error fetching projects by IDs from YouTrack:", error)
       return []
+    }
+  }
+
+  /**
+   * Get issues for a specific project
+   * @param projectShortName Short name of the project to fetch issues for
+   * @param filter Optional filter string to apply (YouTrack query syntax)
+   * @returns Array of issues or empty array if none found
+   */
+  public async getIssues(projectShortName: string, filter?: string): Promise<IssueEntity[]> {
+    try {
+      if (!this.isConnected()) {
+        logger.warn("YouTrack service not connected, cannot get issues")
+        return []
+      }
+
+      const client = this.getClient()
+      if (!client) {
+        logger.warn("YouTrack client not available")
+        return []
+      }
+
+      // Construct the query to filter by project
+      let query = `project: {${projectShortName}}`
+
+      // Add any additional filter criteria if provided
+      if (filter && filter.trim().length > 0) {
+        query += ` ${filter}`
+      }
+
+      logger.info(`Fetching issues with query: ${query}`)
+
+      // Fetch issues using the getAll endpoint
+      // @ts-ignore - We know this property exists, even if types don't reflect it correctly
+      const issues = await client.Issues.getIssues({
+        query,
+        fields: ["id", "idReadable", "summary", "resolved", "created", "updated", { project: ["id"] }],
+        $top: 50, // Limit to 50 issues for performance
+      })
+
+      // Map to our simplified Issue model
+      return issues.map((issue: any) => ({
+        id: issue.id,
+        idReadable: issue.idReadable,
+        summary: issue.summary,
+        description: issue.description,
+        resolved: issue.resolved,
+        project: { id: issue.project?.id },
+        created: issue.created,
+        updated: issue.updated,
+      }))
+    } catch (error) {
+      logger.error("Error fetching issues:", error)
+      return []
+    }
+  }
+
+  /**
+   * Get child issues for a specific project
+   * @param projectShortName Short name of the project to fetch child issues for
+   * @param parentId Optional ID of the parent issue to filter by
+   * @param filter Optional additional filter criteria
+   * @returns Array of child issues or empty array if none found
+   */
+  public async getChildIssues(projectShortName: string, parentId?: string, filter?: string): Promise<IssueEntity[]> {
+    const parentFilter = parentId ? `subtask of: {${parentId}}` : "has: -{Subtask of}"
+    return this.getIssues(projectShortName, `${parentFilter}${filter ? ` ${filter}` : ""}`)
+  }
+
+  /**
+   * Get a specific issue by ID
+   * @param issueId ID of the issue to fetch
+   * @returns Issue object or null if not found
+   */
+  public async getIssueById(issueId: string): Promise<IssueEntity | null> {
+    try {
+      if (!this.isConnected()) {
+        logger.warn("YouTrack service not connected, cannot get issue")
+        return null
+      }
+
+      const client = this.getClient()
+      if (!client) {
+        logger.warn("YouTrack client not available")
+        return null
+      }
+
+      logger.info(`Fetching issue with ID: ${issueId}`)
+
+      // Fetch issue details
+      // @ts-ignore - We know this property exists, even if types don't reflect it correctly
+      const issue = await client.Issues.byId(issueId, {
+        fields: ["id", "idReadable", "summary", "resolved", "created", "updated", { project: ["id"] }],
+      })
+
+      if (!issue) {
+        return null
+      }
+
+      // Map to our simplified Issue model
+      return {
+        id: issue.id,
+        idReadable: issue.idReadable,
+        summary: issue.summary,
+        description: issue.description,
+        resolved: issue.resolved,
+        project: { id: issue.project?.id },
+        created: issue.created,
+        updated: issue.updated,
+      }
+    } catch (error) {
+      logger.error(`Error fetching issue ${issueId}:`, error)
+      return null
     }
   }
 }

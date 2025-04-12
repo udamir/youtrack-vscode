@@ -1,10 +1,9 @@
 import type * as vscode from "vscode"
 import * as logger from "../utils/logger"
-import type { Project } from "../models/project"
-import type { Issue } from "../models/issue"
-import type { Article } from "../models/article"
+import type { ProjectEntity, IssueEntity, ArticleEntity } from "../models"
 import type { YouTrackService } from "./youtrack-client"
-import type { ServerCache } from "../models/cache"
+import type { IssuesViewMode, ServerCache } from "../models/cache"
+import { ISSUE_VIEW_MODE_LIST } from "../consts/vscode"
 
 /**
  * Cache service for YouTrack data
@@ -106,7 +105,7 @@ export class CacheService {
    * Get the list of selected projects for the current server
    * @returns Array of selected projects
    */
-  public getSelectedProjects(): Project[] {
+  public getSelectedProjects(): ProjectEntity[] {
     return this.getValue("selectedProjects") || []
   }
 
@@ -115,25 +114,44 @@ export class CacheService {
    * @param projects Array of selected projects to save
    * @returns Promise that resolves when the projects are saved
    */
-  public async saveSelectedProjects(projects: Project[]): Promise<void> {
+  public async saveSelectedProjects(projects: ProjectEntity[]): Promise<void> {
     await this.setValue("selectedProjects", projects)
   }
 
   /**
-   * Get the active project ID for the current server
-   * @returns The active project ID or undefined if none is set
+   * Get the active project for the current server
+   * @returns The active project or undefined if none is set
    */
-  public getActiveProjectId(): string | undefined {
-    return this.getValue("activeProjectId")
+  public getActiveProject(): string | undefined {
+    return this.getValue("activeProject")
   }
 
   /**
-   * Save the active project ID for the current server
-   * @param projectId The project ID to save as active, or undefined to clear
+   * Save the active project for the current server
+   * @param project The project to save as active, or undefined to clear
    * @returns Promise that resolves when the active project is saved
    */
-  public async saveActiveProjectId(projectId: string | undefined): Promise<void> {
-    await this.setValue("activeProjectId", projectId)
+  public async saveActiveProject(project: string | undefined): Promise<void> {
+    await this.setValue("activeProject", project)
+  }
+
+  // Issues View Mode
+
+  /**
+   * Get the current view mode for issues
+   * @returns The current view mode
+   */
+  public getIssuesViewMode(): IssuesViewMode {
+    return this.getValue("issuesViewMode") || ISSUE_VIEW_MODE_LIST
+  }
+
+  /**
+   * Save the view mode for issues
+   * @param mode The view mode to save
+   * @returns Promise that resolves when the view mode is saved
+   */
+  public async saveIssuesViewMode(mode: IssuesViewMode): Promise<void> {
+    await this.setValue("issuesViewMode", mode)
   }
 
   // Recent Issues
@@ -142,7 +160,7 @@ export class CacheService {
    * Get the list of recent issues for the current server
    * @returns Array of recent issues
    */
-  public getRecentIssues(): Issue[] {
+  public getRecentIssues(): IssueEntity[] {
     return this.getValue("recentIssues") || []
   }
 
@@ -151,7 +169,7 @@ export class CacheService {
    * @param issues Array of recent issues to save
    * @returns Promise that resolves when the issues are saved
    */
-  public async saveRecentIssues(issues: Issue[]): Promise<void> {
+  public async saveRecentIssues(issues: IssueEntity[]): Promise<void> {
     // Limit to 10 most recent issues
     const limitedIssues = issues.slice(0, 10)
     await this.setValue("recentIssues", limitedIssues)
@@ -163,7 +181,7 @@ export class CacheService {
    * Get the list of recent articles for the current server
    * @returns Array of recent articles
    */
-  public getRecentArticles(): Article[] {
+  public getRecentArticles(): ArticleEntity[] {
     return this.getValue("recentArticles") || []
   }
 
@@ -172,7 +190,7 @@ export class CacheService {
    * @param articles Array of recent articles to save
    * @returns Promise that resolves when the articles are saved
    */
-  public async saveRecentArticles(articles: Article[]): Promise<void> {
+  public async saveRecentArticles(articles: ArticleEntity[]): Promise<void> {
     // Limit to 10 most recent articles
     const limitedArticles = articles.slice(0, 10)
     await this.setValue("recentArticles", limitedArticles)

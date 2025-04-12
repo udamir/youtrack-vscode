@@ -203,7 +203,6 @@
       "^.+\\.ts$": ["ts-jest"]
     },
     "testMatch": ["**/test/**/*.test.ts"],
-    "setupFilesAfterEnv": ["./src/test/mocks/setup.ts"],
     "testPathIgnorePatterns": ["/node_modules/", "/out/", "/dist/"]
   }
 }
