@@ -190,6 +190,9 @@ export class ProjectsTreeDataProvider extends BaseTreeDataProvider<ProjectTreeIt
     // Find the project by short name
     this._activeProject = this._selectedProjects.find((p) => p.shortName === projectShortName)
 
+    // Save to cache so it persists across VS Code restarts
+    await this._cacheService.saveActiveProject(projectShortName)
+    
     // Emit change event
     this._onDidChangeActiveProject.fire(this._activeProject)
 

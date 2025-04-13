@@ -42,6 +42,12 @@ export const COMMAND_OPEN_ISSUE = "youtrack.openIssue"
 export const COMMAND_OPEN_ARTICLE = "youtrack.openArticle"
 export const COMMAND_FILTER_ISSUES = "youtrack.filterIssues"
 export const COMMAND_TOGGLE_ISSUES_VIEW_MODE = "youtrack.toggleIssuesViewMode"
+export const COMMAND_OPEN_INTERNAL_LINK = "youtrack.openInternalLink"
+export const COMMAND_PREVIEW_ISSUE = "youtrack.previewIssue"
+export const COMMAND_PREVIEW_ARTICLE = "youtrack.previewArticle"
+
+// Maximum length for tab titles in the preview
+export const MAX_TITLE_LENGTH = 30
 
 // View IDs
 export const VIEW_PROJECTS = "youtrackProjects"

@@ -1,0 +1,281 @@
+/* Base styles */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--vscode-editor-foreground);
+  background-color: var(--vscode-editor-background);
+  padding: 0;
+  margin: 0;
+}
+
+/* Container layout */
+.youtrack-preview {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Header styles */
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background-color: var(--vscode-sideBar-background);
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.entity-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.metadata-item {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.label {
+  font-weight: bold;
+  color: var(--vscode-descriptionForeground);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.refresh-button {
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  padding: 4px 10px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.refresh-button:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+/* Markdown content */
+.markdown-body {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Typography */
+.markdown-body h1 {
+  font-size: 2em;
+  margin: 0.67em 0;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  padding-bottom: 0.3em;
+}
+
+.markdown-body h2 {
+  font-size: 1.5em;
+  margin: 0.83em 0;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  padding-bottom: 0.3em;
+}
+
+.markdown-body h3 {
+  font-size: 1.17em;
+  margin: 1em 0;
+}
+
+.markdown-body h4 {
+  font-size: 1em;
+  margin: 1.33em 0;
+}
+
+.markdown-body h5 {
+  font-size: 0.83em;
+  margin: 1.67em 0;
+}
+
+.markdown-body h6 {
+  font-size: 0.67em;
+  margin: 2.33em 0;
+}
+
+.markdown-body p {
+  margin: 0.5em 0 1em 0;
+}
+
+/* Lists */
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 2em;
+  margin: 0.5em 0;
+}
+
+.markdown-body li {
+  margin: 0.25em 0;
+}
+
+/* Code blocks */
+.markdown-body pre {
+  background-color: var(--vscode-textCodeBlock-background);
+  border-radius: 3px;
+  padding: 16px;
+  overflow: auto;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 85%;
+  line-height: 1.45;
+  margin: 1em 0;
+}
+
+.markdown-body code {
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  background-color: var(--vscode-textCodeBlock-background);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 85%;
+}
+
+.markdown-body pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* Links */
+.markdown-body a {
+  color: var(--vscode-textLink-foreground);
+  text-decoration: none;
+}
+
+.markdown-body a:hover {
+  text-decoration: underline;
+  color: var(--vscode-textLink-activeForeground);
+}
+
+/* Internal links */
+.markdown-body a.internal-link {
+  color: var(--vscode-charts-blue);
+}
+
+.markdown-body a.command-link {
+  color: var(--vscode-charts-blue);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.markdown-body a.command-link:hover {
+  text-decoration: underline;
+}
+
+/* Tables */
+.markdown-body table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+
+.markdown-body table th,
+.markdown-body table td {
+  border: 1px solid var(--vscode-panel-border);
+  padding: 6px 13px;
+}
+
+.markdown-body table th {
+  background-color: var(--vscode-sideBar-background);
+  font-weight: bold;
+}
+
+.markdown-body table tr:nth-child(even) {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+/* Blockquotes */
+.markdown-body blockquote {
+  margin: 1em 0;
+  padding: 0 1em;
+  color: var(--vscode-descriptionForeground);
+  border-left: 0.25em solid var(--vscode-activityBar-background);
+}
+
+/* Horizontal rule */
+.markdown-body hr {
+  height: 0.25em;
+  padding: 0;
+  margin: 24px 0;
+  background-color: var(--vscode-panel-border);
+  border: 0;
+}
+
+/* Images */
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Mermaid diagrams */
+.markdown-body .mermaid {
+  margin: 1em 0;
+  text-align: center;
+}
+
+/* Scrollbar styling */
+.markdown-body::-webkit-scrollbar {
+  width: 10px;
+}
+
+.markdown-body::-webkit-scrollbar-track {
+  background-color: var(--vscode-scrollbarSlider-background);
+}
+
+.markdown-body::-webkit-scrollbar-thumb {
+  background-color: var(--vscode-scrollbarSlider-hoverBackground);
+  border-radius: 5px;
+}
+
+.markdown-body::-webkit-scrollbar-thumb:hover {
+  background-color: var(--vscode-scrollbarSlider-activeBackground);
+}
+
+/* Task list styling */
+.task-list-item {
+  list-style-type: none;
+  margin-left: -20px;
+}
+
+.task-list-item input[type="checkbox"] {
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.markdown-task-list-label {
+  cursor: pointer;
+  user-select: none;
+}
+
+.task-list-item-checkbox {
+  margin-right: 6px;
+}
+
+/* Make sure task list looks good in both light and dark themes */
+.vscode-dark .task-list-item-checkbox {
+  filter: invert(100%);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 767px) {
+  .preview-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .actions {
+    margin-top: 8px;
+  }
+}

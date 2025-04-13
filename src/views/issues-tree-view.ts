@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 
-import { COMMAND_OPEN_ISSUE, ISSUE_VIEW_MODE_LIST, ISSUE_VIEW_MODE_TREE } from "../consts"
-import type { IssueEntity, ProjectEntity, IssuesViewMode } from "../models"
+import { COMMAND_PREVIEW_ISSUE, ISSUE_VIEW_MODE_LIST, ISSUE_VIEW_MODE_TREE } from "../consts"
+import type { ProjectEntity, IssuesViewMode, IssueBaseEntity } from "../models"
 import { BaseTreeDataProvider, YouTrackTreeItem } from "./base-tree-view"
 import type { ProjectsTreeDataProvider } from "./projects-tree-view"
 import type { CacheService, YouTrackService } from "../services"
@@ -12,15 +12,15 @@ import * as logger from "../utils/logger"
  * Tree item representing a YouTrack issue
  */
 export class IssueTreeItem extends YouTrackTreeItem {
-  constructor(public readonly issue: IssueEntity) {
+  constructor(public readonly issue: IssueBaseEntity) {
     super(
       issue.summary,
       // Set collapsible state based on whether the issue has children
       issue.subtasks.length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
       {
-        command: COMMAND_OPEN_ISSUE,
-        title: "Open Issue",
-        arguments: [{ issue }],
+        command: COMMAND_PREVIEW_ISSUE,
+        title: "Preview Issue",
+        arguments: [issue.idReadable],
       },
       issue.resolved ? "youtrack-issue-resolved" : "youtrack-issue",
     )
@@ -51,7 +51,7 @@ export class IssuesTreeDataProvider extends BaseTreeDataProvider<IssueTreeItem |
   private _filter = ""
   private _viewMode: IssuesViewMode = ISSUE_VIEW_MODE_LIST
   private _activeProject?: ProjectEntity
-  private _issues: IssueEntity[] = []
+  private _issues: IssueBaseEntity[] = []
   private _projectChangeDisposable: vscode.Disposable | undefined
 
   constructor(

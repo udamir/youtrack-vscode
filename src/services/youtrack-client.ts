@@ -2,7 +2,14 @@ import * as vscode from "vscode"
 import type { YouTrack } from "youtrack-client"
 import * as logger from "../utils/logger"
 import { AuthenticationService } from "./authentication"
-import type { AuthState, IssueEntity, ProjectEntity, ArticleEntity } from "../models"
+import type {
+  AuthState,
+  IssueEntity,
+  ProjectEntity,
+  ArticleEntity,
+  IssueBaseEntity,
+  ArticleBaseEntity,
+} from "../models"
 import {
   AUTHENTICATED,
   AUTHENTICATION_FAILED,
@@ -10,8 +17,10 @@ import {
   ISSUE_FIELDS,
   PROJECT_FIELDS,
   ARTICLE_FIELDS,
+  ARTICLE_FIELDS_FULL,
+  ISSUE_FIELDS_FULL,
 } from "../consts"
-import { getIssueEntity, getArticleEntity } from "../utils/youtrack"
+import { getIssueEntity, getArticleBaseEntity, getIssueBaseEntity, getArticleEntity } from "../utils/youtrack"
 
 /**
  * Service for interacting with YouTrack API
@@ -270,7 +279,7 @@ export class YouTrackService {
    * @param filter Optional filter string to apply (YouTrack query syntax)
    * @returns Array of issues or empty array if none found
    */
-  public async getIssues(projectShortName: string, filter?: string): Promise<IssueEntity[]> {
+  public async getIssues(projectShortName: string, filter?: string): Promise<IssueBaseEntity[]> {
     try {
       if (!this.isConnected() || !this.client) {
         logger.warn("YouTrack service not connected, cannot get issues")
@@ -290,7 +299,7 @@ export class YouTrackService {
       const issues = await this.client.Issues.getIssues({ query, fields: ISSUE_FIELDS, $top: 50 })
 
       // Map to our simplified Issue model
-      return issues.map(getIssueEntity)
+      return issues.map(getIssueBaseEntity)
     } catch (error) {
       logger.error("Error fetching issues:", error)
       return []
@@ -308,7 +317,7 @@ export class YouTrackService {
     projectShortName: string,
     parentIssueId?: string,
     filter?: string,
-  ): Promise<IssueEntity[]> {
+  ): Promise<IssueBaseEntity[]> {
     const parentFilter = parentIssueId ? `subtask of: {${parentIssueId}}` : "has: -{Subtask of}"
     return this.getIssues(projectShortName, `${parentFilter}${filter ? ` ${filter}` : ""}`)
   }
@@ -328,7 +337,7 @@ export class YouTrackService {
       logger.info(`Fetching issue with ID: ${issueId}`)
 
       // Fetch issue details
-      const issue = await this.client.Issues.getIssueById(issueId, { fields: ISSUE_FIELDS })
+      const issue = await this.client.Issues.getIssueById(issueId, { fields: ISSUE_FIELDS_FULL })
 
       if (!issue) {
         return null
@@ -343,11 +352,36 @@ export class YouTrackService {
   }
 
   /**
+   * Get a specific article by ID
+   * @param articleId ID of the article to fetch
+   * @returns Article object or null if not found
+   */
+  public async getArticleById(articleId: string): Promise<ArticleEntity | null> {
+    try {
+      if (!this.isConnected() || !this.client) {
+        logger.warn("YouTrack service not connected, cannot get article")
+        return null
+      }
+
+      logger.info(`Fetching article with ID: ${articleId}`)
+
+      // Fetch article details
+      const article = await this.client.Articles.getArticle(articleId, { fields: ARTICLE_FIELDS_FULL })
+
+      // Map to our simplified Article model
+      return getArticleEntity(article)
+    } catch (error) {
+      logger.error(`Error fetching article ${articleId}:`, error)
+      return null
+    }
+  }
+
+  /**
    * Get knowledge base articles for a project
    * @param projectId Project ID to fetch articles for
    * @returns Array of articles or empty array if not found/error
    */
-  public async getArticles(projectId: string): Promise<ArticleEntity[]> {
+  public async getArticles(projectId: string): Promise<ArticleBaseEntity[]> {
     try {
       if (!this.isConnected() || !this.client) {
         logger.warn("YouTrack service not connected, cannot get articles")
@@ -375,7 +409,7 @@ export class YouTrackService {
       })
 
       // Map to our simplified Article model
-      return topLevelArticles.map((article) => getArticleEntity(article))
+      return topLevelArticles.map((article) => getArticleBaseEntity(article))
     } catch (error) {
       logger.error(`Error fetching articles for project ${projectId}:`, error)
       return []
@@ -387,7 +421,7 @@ export class YouTrackService {
    * @param parentArticleId Parent article ID to fetch children for
    * @returns Array of child articles or empty array if not found/error
    */
-  public async getChildArticles(parentArticleId: string): Promise<ArticleEntity[]> {
+  public async getChildArticles(parentArticleId: string): Promise<ArticleBaseEntity[]> {
     try {
       if (!this.isConnected() || !this.client) {
         logger.warn("YouTrack service not connected, cannot get child articles")
@@ -407,7 +441,7 @@ export class YouTrackService {
       }
 
       // Map children to our simplified Article model
-      return articles.map((article) => getArticleEntity(article))
+      return articles.map((article) => getArticleBaseEntity(article))
     } catch (error) {
       logger.error(`Error fetching child articles for article ${parentArticleId}:`, error)
       return []

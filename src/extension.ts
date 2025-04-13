@@ -1,31 +1,34 @@
 import * as vscode from "vscode"
-import * as logger from "./utils/logger"
 import { YouTrackService } from "./services/youtrack-client"
-import { ConfigurationService } from "./services/configuration"
-import { StatusBarService, StatusBarState } from "./services/status-bar"
-import { CacheService } from "./services/cache-service"
 import { ProjectsTreeDataProvider } from "./views/projects-tree-view"
 import { IssuesTreeDataProvider } from "./views/issues-tree-view"
 import { ArticlesTreeDataProvider } from "./views/articles-tree-view"
 import { RecentIssuesTreeDataProvider } from "./views/recent-issues-tree-view"
 import { RecentArticlesTreeDataProvider } from "./views/recent-articles-tree-view"
 import { NotConnectedWebviewProvider } from "./views/not-connected-webview"
+import { MarkdownPreviewProvider } from "./views/markdown-preview"
 import {
   COMMAND_CONNECT,
   COMMAND_ADD_PROJECT,
   COMMAND_REMOVE_PROJECT,
   COMMAND_SET_ACTIVE_PROJECT,
   COMMAND_OPEN_ARTICLE,
+  COMMAND_OPEN_INTERNAL_LINK,
+  COMMAND_PREVIEW_ISSUE,
+  COMMAND_PREVIEW_ARTICLE,
   VIEW_PROJECTS,
   VIEW_ISSUES,
-  VIEW_RECENT_ISSUES,
   VIEW_KNOWLEDGE_BASE,
+  VIEW_RECENT_ISSUES,
   VIEW_RECENT_ARTICLES,
   VIEW_NOT_CONNECTED,
   STATUS_CONNECTED,
   ISSUE_VIEW_MODE_LIST,
-  ISSUE_VIEW_MODE_TREE,
 } from "./consts"
+import * as logger from "./utils/logger"
+import { ConfigurationService } from "./services/configuration"
+import { StatusBarService, StatusBarState } from "./services/status-bar"
+import { CacheService } from "./services/cache-service"
 
 // Service instances
 const youtrackService = new YouTrackService()
@@ -38,6 +41,7 @@ let issuesProvider: IssuesTreeDataProvider
 let knowledgeBaseProvider: ArticlesTreeDataProvider
 let recentIssuesProvider: RecentIssuesTreeDataProvider
 let recentArticlesProvider: RecentArticlesTreeDataProvider
+let markdownPreviewProvider: MarkdownPreviewProvider
 
 /**
  * This method is called when the extension is activated
@@ -47,6 +51,8 @@ let recentArticlesProvider: RecentArticlesTreeDataProvider
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   try {
+    logger.info("Activating YouTrack extension")
+
     // Initialize logger
     logger.initializeLogger(context)
     logger.info("YouTrack integration extension is now active!")
@@ -59,11 +65,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         : "YouTrack client not initialized. User needs to provide credentials.",
     )
 
-    // Set initial view visibility (default to showing only Projects)
-    await toggleViewsVisibility(false)
+    // Initialize cache service with workspace state
+    const cacheService = new CacheService(youtrackService, context.workspaceState)
 
-    // Register tree data providers for views
-    registerTreeDataProviders(context)
+    // Register tree data providers
+    registerTreeDataProviders(context, cacheService)
+
+    // Register markdown preview provider
+    markdownPreviewProvider = new MarkdownPreviewProvider(youtrackService)
+    context.subscriptions.push(markdownPreviewProvider)
 
     // Register all commands
     registerCommands(context)
@@ -80,6 +90,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
  * Register all extension commands
  */
 function registerCommands(context: vscode.ExtensionContext): void {
+  logger.info("Registering commands")
+
   // Register the connect command
   const connectCommand = vscode.commands.registerCommand(COMMAND_CONNECT, async () => {
     try {
@@ -261,12 +273,12 @@ function registerCommands(context: vscode.ExtensionContext): void {
 
   // Command for toggling issues view mode
   const toggleIssuesViewModeCommand = vscode.commands.registerCommand("youtrack.toggleIssuesViewMode", () => {
-    const newMode = issuesProvider.viewMode === ISSUE_VIEW_MODE_LIST ? ISSUE_VIEW_MODE_TREE : ISSUE_VIEW_MODE_LIST
+    const newMode = issuesProvider.viewMode === ISSUE_VIEW_MODE_LIST ? ISSUE_VIEW_MODE_LIST : ISSUE_VIEW_MODE_LIST
     logger.info(`Changing issues view mode to: ${newMode}`)
     issuesProvider.toggleViewMode()
 
     // Show a notification with the current mode
-    const modeName = newMode === ISSUE_VIEW_MODE_LIST ? "List View" : "Tree View"
+    const modeName = newMode === ISSUE_VIEW_MODE_LIST ? "List View" : "List View"
     vscode.window.showInformationMessage(`Issues panel switched to ${modeName}`)
   })
   context.subscriptions.push(toggleIssuesViewModeCommand)
@@ -342,6 +354,55 @@ function registerCommands(context: vscode.ExtensionContext): void {
   })
   context.subscriptions.push(openArticleCommand)
 
+  // Command for previewing an issue in Markdown
+  const previewIssueCommand = vscode.commands.registerCommand(COMMAND_PREVIEW_ISSUE, async (issueId: string) => {
+    try {
+      logger.info(`Previewing issue with ID: ${issueId}`)
+      const issue = await youtrackService.getIssueById(issueId)
+
+      if (issue) {
+        await markdownPreviewProvider.showPreview(issue)
+      } else {
+        vscode.window.showErrorMessage(`Cannot preview issue: Issue with ID ${issueId} not found`)
+      }
+    } catch (error) {
+      logger.error(`Error previewing issue ${issueId}:`, error)
+      vscode.window.showErrorMessage(`Error previewing issue: ${error}`)
+    }
+  })
+  context.subscriptions.push(previewIssueCommand)
+
+  // Command for previewing an article in Markdown
+  const previewArticleCommand = vscode.commands.registerCommand(COMMAND_PREVIEW_ARTICLE, async (articleId: string) => {
+    try {
+      logger.info(`Previewing article with ID: ${articleId}`)
+      const article = await youtrackService.getArticleById(articleId)
+
+      if (article) {
+        await markdownPreviewProvider.showPreview(article)
+      } else {
+        vscode.window.showErrorMessage(`Cannot preview article: Article with ID ${articleId} not found`)
+      }
+    } catch (error) {
+      logger.error(`Error previewing article ${articleId}:`, error)
+      vscode.window.showErrorMessage(`Error previewing article: ${error}`)
+    }
+  })
+  context.subscriptions.push(previewArticleCommand)
+
+  // Command for handling internal links
+  const openInternalLinkCommand = vscode.commands.registerCommand(COMMAND_OPEN_INTERNAL_LINK, async (id: string) => {
+    try {
+      logger.info(`Command triggered for internal link: ${id}`)
+      // Delegate to the markdown preview provider which already has this logic
+      await markdownPreviewProvider.handleInternalLink(id)
+    } catch (error) {
+      logger.error("Error opening internal link:", error)
+      vscode.window.showErrorMessage(`Error opening internal link: ${error}`)
+    }
+  })
+  context.subscriptions.push(openInternalLinkCommand)
+
   // Add commands to subscriptions
   context.subscriptions.push(connectCommand)
   context.subscriptions.push(addProjectCommand)
@@ -352,10 +413,8 @@ function registerCommands(context: vscode.ExtensionContext): void {
 /**
  * Register tree data providers and their tree views
  */
-function registerTreeDataProviders(context: vscode.ExtensionContext): void {
+function registerTreeDataProviders(context: vscode.ExtensionContext, cacheService: CacheService): void {
   // Create tree data providers
-  const cacheService = new CacheService(youtrackService, context.workspaceState)
-
   projectsProvider = new ProjectsTreeDataProvider(youtrackService, cacheService)
   issuesProvider = new IssuesTreeDataProvider(youtrackService, cacheService, projectsProvider)
   knowledgeBaseProvider = new ArticlesTreeDataProvider(youtrackService, projectsProvider)

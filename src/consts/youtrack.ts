@@ -10,6 +10,15 @@ export const ISSUE_FIELDS = [
   "id",
   "idReadable",
   "summary",
+  "resolved",
+  { project: ["id"] },
+  { links: [{ linkType: ["name"] }, "direction", { issues: ["id"] }, "id"] },
+] as const satisfies Schema<Issue>
+
+export const ISSUE_FIELDS_FULL = [
+  "id",
+  "idReadable",
+  "summary",
   "created",
   "updated",
   "description",
@@ -22,6 +31,18 @@ export const ISSUE_FIELDS = [
  * Fields to fetch for articles
  */
 export const ARTICLE_FIELDS = [
+  "id",
+  "idReadable",
+  "summary",
+  { parentArticle: ["id"] },
+  { project: ["id"] },
+  { childArticles: ["id"] },
+] as const satisfies Schema<Article>
+
+/**
+ * Fields to fetch for articles
+ */
+export const ARTICLE_FIELDS_FULL = [
   "id",
   "idReadable",
   "summary",

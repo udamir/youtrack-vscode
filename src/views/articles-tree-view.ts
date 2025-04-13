@@ -1,18 +1,17 @@
 import * as vscode from "vscode"
-
 import { BaseTreeDataProvider, YouTrackTreeItem } from "./base-tree-view"
 import type { ProjectsTreeDataProvider } from "./projects-tree-view"
-import type { ArticleEntity, ProjectEntity } from "../models"
+import type { YouTrackService } from "../services/youtrack-client"
+import type { ArticleBaseEntity, ProjectEntity } from "../models"
 import { createLoadingItem } from "./tree-view-utils"
-import type { YouTrackService } from "../services"
-import { COMMAND_OPEN_ARTICLE } from "../consts"
+import { COMMAND_PREVIEW_ARTICLE } from "../consts"
 import * as logger from "../utils/logger"
 
 /**
  * Tree item representing a YouTrack knowledge base article
  */
 export class ArticleTreeItem extends YouTrackTreeItem {
-  constructor(public readonly article: ArticleEntity) {
+  constructor(public readonly article: ArticleBaseEntity) {
     super(
       article.summary,
       // Set collapsible state based on whether the article has children
@@ -20,15 +19,15 @@ export class ArticleTreeItem extends YouTrackTreeItem {
         ? vscode.TreeItemCollapsibleState.Collapsed
         : vscode.TreeItemCollapsibleState.None,
       {
-        command: COMMAND_OPEN_ARTICLE,
-        title: "Open Article",
-        arguments: [{ article }],
+        command: COMMAND_PREVIEW_ARTICLE,
+        title: "Preview Article",
+        arguments: [article.idReadable],
       },
       article.childArticles.length > 0 ? "folder" : "document",
     )
 
     // Set the id property to match the article id for tracking
-    this.id = article.id
+    this.id = article.idReadable
 
     // Set tooltip to include additional info
     this.tooltip = article.summary
@@ -52,7 +51,7 @@ export class ArticleTreeItem extends YouTrackTreeItem {
  */
 export class ArticlesTreeDataProvider extends BaseTreeDataProvider<ArticleTreeItem | YouTrackTreeItem> {
   private _activeProject?: ProjectEntity
-  private _articles: ArticleEntity[] = []
+  private _articles: ArticleBaseEntity[] = []
   private _projectChangeDisposable: vscode.Disposable | undefined
 
   constructor(

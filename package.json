@@ -6,7 +6,9 @@
   "engines": {
     "vscode": "^1.80.0"
   },
-  "categories": ["Other"],
+  "categories": [
+    "Other"
+  ],
   "activationEvents": [
     "onView:youtrackProjects",
     "onView:youtrackIssues",
@@ -143,7 +145,10 @@
         },
         "youtrack.tokenStorage": {
           "type": "string",
-          "enum": ["secure", "settings"],
+          "enum": [
+            "secure",
+            "settings"
+          ],
           "default": "secure",
           "description": "Where to store the authentication token - secure storage (recommended) or settings"
         },
@@ -218,6 +223,7 @@
     "@eslint/eslintrc": "^3.3.1",
     "@types/bun": "latest",
     "@types/jest": "^29.5.14",
+    "@types/markdown-it": "^14.1.2",
     "@types/node": "^22.14.0",
     "@types/sinon": "^17.0.4",
     "@types/vscode": "^1.99.0",
@@ -233,17 +239,33 @@
     "typescript-eslint": "^8.29.0"
   },
   "dependencies": {
+    "markdown-it": "^14.1.0",
+    "markdown-it-mermaid": "^0.2.5",
+    "markdown-it-task-lists": "^2.1.1",
     "youtrack-client": "^0.5.2"
   },
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
-    "moduleFileExtensions": ["ts", "js"],
+    "moduleFileExtensions": [
+      "ts",
+      "js"
+    ],
     "transform": {
-      "^.+\\.ts$": ["ts-jest"]
+      "^.+\\.ts$": [
+        "ts-jest"
+      ]
     },
-    "testMatch": ["**/test/**/*.test.ts"],
-    "testPathIgnorePatterns": ["/node_modules/", "/out/", "/dist/"],
-    "setupFilesAfterEnv": ["<rootDir>/test/helpers/mock-setup.ts"]
+    "testMatch": [
+      "**/test/**/*.test.ts"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/out/",
+      "/dist/"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/test/helpers/mock-setup.ts"
+    ]
   }
 }

@@ -80,8 +80,13 @@
   - Refresh action to update content from YouTrack
   - Error handling for content that fails to load
   - WebView persistence for better performance
+  - Support for task lists (checkboxes) in Markdown content
+  - Proper theme detection for Mermaid diagrams to adapt to VS Code theme
+  - Title truncation to improve readability in tab titles
+  - Clean code organization with minimal duplication
 - **Estimated Effort**: Medium
 - **Priority**: P0
+- **Status**: ✅ Completed (April 13, 2025)
 
 ## Task 2.6: Implement Recent Issues Panel
 - **ID**: TASK-2.6
