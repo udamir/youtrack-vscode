@@ -88,8 +88,75 @@
 - **Priority**: P0
 - **Status**: ✅ Completed (April 13, 2025)
 
-## Task 2.6: Implement Recent Issues Panel
-- **ID**: TASK-2.6
+### Task 2.6 Refactoring of extension file
+### Task 2.6.1 View Management Refactoring
+- **ID**: TASK-2.6.1
+- **Description**: Refactor the extension file to improve code organization and readability.
+- **Dependencies**: TASK-2.5
+- **Acceptance Criteria**:
+  - Create focused functions for each tree provider registration
+  - Implement a dedicated ViewService to centralize view management operations
+  - Move toggleViewsVisibility to ViewService or a utility file
+  - Extend StatusBarService to include updateConnectionStatus functionality
+  - Move refreshAllViews to the ViewService
+- **Estimated Effort**: Small
+- **Priority**: P1
+- **Status**: 🔄 In Progress
+
+### Task 2.6.2 Dependency Management
+- **ID**: TASK-2.6.2
+- **Description**: Implement a dependency injection pattern to improve testability and reduce coupling.
+- **Dependencies**: TASK-2.6.1
+- **Acceptance Criteria**:
+  - Create a container/context class for service instances
+  - Pass dependencies through constructors rather than using globals
+  - Eliminate global variables
+  - Improve unit test capabilities
+- **Estimated Effort**: Medium
+- **Priority**: P2
+- **Status**: 📝 Planned
+
+### Task 2.6.3 Activation Flow Improvement
+- **ID**: TASK-2.6.3
+- **Description**: Restructure the extension activation process for better clarity and maintainability.
+- **Dependencies**: TASK-2.6.2
+- **Acceptance Criteria**:
+  - Extract the activation sequence into a dedicated `ExtensionActivator` class
+  - Break down initialization into well-defined steps
+  - Simplify the main extension.ts file
+  - Ensure proper error handling during activation
+- **Estimated Effort**: Small
+- **Priority**: P1
+- **Status**: 📝 Planned
+
+### Task 2.6.4 Error Handling Enhancement
+- **ID**: TASK-2.6.4
+- **Description**: Create a consistent error handling strategy across the extension.
+- **Dependencies**: TASK-2.6.3
+- **Acceptance Criteria**:
+  - Create a consistent error handling service
+  - Standardize error logging and user notifications
+  - Implement structured error types for different failure scenarios
+  - Improve error recovery mechanisms
+- **Estimated Effort**: Small
+- **Priority**: P2
+- **Status**: 📝 Planned
+
+### Task 2.6.5 Configuration Management
+- **ID**: TASK-2.6.5
+- **Description**: Enhance the configuration service for better settings management.
+- **Dependencies**: TASK-2.6.3
+- **Acceptance Criteria**:
+  - Enhance the existing configuration service
+  - Add validation and defaults handling
+  - Implement change detection and automatic updates
+  - Support user-level and workspace-level settings
+- **Estimated Effort**: Small
+- **Priority**: P2
+- **Status**: 📝 Planned
+
+## Task 2.7: Implement Recent Issues Panel
+- **ID**: TASK-2.7
 - **Description**: Create the Recent Issues panel showing recently accessed issues across all projects.
 - **Dependencies**: TASK-2.1
 - **Acceptance Criteria**:
@@ -101,9 +168,10 @@
   - Recent issues persistence across sessions
 - **Estimated Effort**: Medium
 - **Priority**: P1
+- **Status**: 📝 Planned
 
-## Task 2.7: Implement Recent Articles Panel
-- **ID**: TASK-2.7
+## Task 2.8: Implement Recent Articles Panel
+- **ID**: TASK-2.8
 - **Description**: Create the Recent Articles panel showing recently accessed articles across all projects.
 - **Dependencies**: TASK-2.1
 - **Acceptance Criteria**:
@@ -115,11 +183,12 @@
   - Recent articles persistence across sessions
 - **Estimated Effort**: Medium
 - **Priority**: P1
+- **Status**: 📝 Planned
 
-## Task 2.8: Implement Context Menus for Tree Items
-- **ID**: TASK-2.8
+## Task 2.9: Implement Context Menus for Tree Items
+- **ID**: TASK-2.9
 - **Description**: Create context menus for all tree item types with relevant actions.
-- **Dependencies**: TASK-2.2, TASK-2.3, TASK-2.4, TASK-2.6, TASK-2.7
+- **Dependencies**: TASK-2.2, TASK-2.3, TASK-2.4, TASK-2.7, TASK-2.8
 - **Acceptance Criteria**:
   - Context menu registrations in package.json
   - Command handlers for each context menu action
@@ -129,9 +198,10 @@
   - Context value-based enablement of menu items
 - **Estimated Effort**: Medium
 - **Priority**: P1
+- **Status**: 📝 Planned
 
-## Task 2.9: Enhance Issues Panel with Issue Filters
-- **ID**: TASK-2.9
+## Task 2.10: Enhance Issues Panel with Issue Filters
+- **ID**: TASK-2.10
 - **Description**: Add support for different issue filters in the Issues panel: by types (Epic, Feature, Task, Bug) and by resolution status.
 - **Dependencies**: TASK-2.3
 - **Acceptance Criteria**:
@@ -149,9 +219,10 @@
   - Persistence of filter preferences across sessions
 - **Estimated Effort**: Medium
 - **Priority**: P1
+- **Status**: 📝 Planned
 
-## Task 2.10: Implement Saved Search Support in Projects Panel
-- **ID**: TASK-2.10
+## Task 2.11: Implement Saved Search Support in Projects Panel
+- **ID**: TASK-2.11
 - **Description**: Add support for saved searches in the Projects panel.
 - **Dependencies**: TASK-2.2
 - **Acceptance Criteria**:
@@ -163,11 +234,12 @@
   - Update YouTrack client to fetch and execute saved searches
 - **Estimated Effort**: Medium
 - **Priority**: P1
+- **Status**: 📝 Planned
 
-## Task 2.11: Implement Connection Messaging for Empty States
-- **ID**: TASK-2.11
+## Task 2.12: Implement Connection Messaging for Empty States
+- **ID**: TASK-2.12
 - **Description**: Create consistent messaging and UI elements for panels when connection is not configured or fails.
-- **Dependencies**: TASK-2.10
+- **Dependencies**: TASK-2.11
 - **Acceptance Criteria**:
   - Design consistent empty state UI for unconfigured connection
   - Design error state UI for failed connection
@@ -176,3 +248,4 @@
   - Consistent messaging across all panels
 - **Estimated Effort**: Small
 - **Priority**: P1
+- **Status**: 📝 Planned

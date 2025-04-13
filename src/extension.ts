@@ -8,14 +8,6 @@ import { RecentArticlesTreeDataProvider } from "./views/recent-articles-tree-vie
 import { NotConnectedWebviewProvider } from "./views/not-connected-webview"
 import { MarkdownPreviewProvider } from "./views/markdown-preview"
 import {
-  COMMAND_CONNECT,
-  COMMAND_ADD_PROJECT,
-  COMMAND_REMOVE_PROJECT,
-  COMMAND_SET_ACTIVE_PROJECT,
-  COMMAND_OPEN_ARTICLE,
-  COMMAND_OPEN_INTERNAL_LINK,
-  COMMAND_PREVIEW_ISSUE,
-  COMMAND_PREVIEW_ARTICLE,
   VIEW_PROJECTS,
   VIEW_ISSUES,
   VIEW_KNOWLEDGE_BASE,
@@ -23,12 +15,18 @@ import {
   VIEW_RECENT_ARTICLES,
   VIEW_NOT_CONNECTED,
   STATUS_CONNECTED,
-  ISSUE_VIEW_MODE_LIST,
 } from "./consts"
 import * as logger from "./utils/logger"
 import { ConfigurationService } from "./services/configuration"
 import { StatusBarService, StatusBarState } from "./services/status-bar"
 import { CacheService } from "./services/cache-service"
+import {
+  registerArticleCommands,
+  registerAuthenticationCommands,
+  registerIssueCommands,
+  registerNavigationCommands,
+  registerProjectCommands,
+} from "./commands"
 
 // Service instances
 const youtrackService = new YouTrackService()
@@ -38,7 +36,7 @@ const statusBarService = new StatusBarService()
 // Tree view providers (will be initialized in registerTreeDataProviders)
 let projectsProvider: ProjectsTreeDataProvider
 let issuesProvider: IssuesTreeDataProvider
-let knowledgeBaseProvider: ArticlesTreeDataProvider
+let articlesProvider: ArticlesTreeDataProvider
 let recentIssuesProvider: RecentIssuesTreeDataProvider
 let recentArticlesProvider: RecentArticlesTreeDataProvider
 let markdownPreviewProvider: MarkdownPreviewProvider
@@ -50,481 +48,185 @@ let markdownPreviewProvider: MarkdownPreviewProvider
  * - A YouTrack command is executed
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  logger.info("Activating YouTrack extension")
+
   try {
-    logger.info("Activating YouTrack extension")
+    // Get VS Code configuration
+    const connectionUrl = configService.getInstanceUrl()
+    logger.info(`YouTrack instance URL from configuration: ${connectionUrl || "not set"}`)
 
-    // Initialize logger
-    logger.initializeLogger(context)
-    logger.info("YouTrack integration extension is now active!")
-
-    // Initialize YouTrack client
-    const initialized = await youtrackService.initialize(context)
-    logger.info(
-      initialized
-        ? "YouTrack client initialized successfully"
-        : "YouTrack client not initialized. User needs to provide credentials.",
-    )
-
-    // Initialize cache service with workspace state
+    // Create cache service
     const cacheService = new CacheService(youtrackService, context.workspaceState)
 
-    // Register tree data providers
+    // Register tree data providers (creates project and issue tree views)
     registerTreeDataProviders(context, cacheService)
 
-    // Register markdown preview provider
-    markdownPreviewProvider = new MarkdownPreviewProvider(youtrackService)
-    context.subscriptions.push(markdownPreviewProvider)
+    // Try to restore connection if configured
+    if (connectionUrl) {
+      const connected = await youtrackService.initialize(context)
+      await updateConnectionStatus(connected)
 
-    // Register all commands
-    registerCommands(context)
-
-    // Update connection status
-    await updateConnectionStatus(initialized)
-  } catch (error) {
-    logger.error("Failed to activate extension", error)
-    vscode.window.showErrorMessage("Failed to activate YouTrack extension. See output log for details.")
-  }
-}
-
-/**
- * Register all extension commands
- */
-function registerCommands(context: vscode.ExtensionContext): void {
-  logger.info("Registering commands")
-
-  // Register the connect command
-  const connectCommand = vscode.commands.registerCommand(COMMAND_CONNECT, async () => {
-    try {
-      const baseUrl = await vscode.window.showInputBox({
-        prompt: "Enter YouTrack instance URL",
-        placeHolder: "https://youtrack.example.com",
-        value: configService.getInstanceUrl(),
-      })
-
-      if (baseUrl === undefined || baseUrl === "") {
-        return // User cancelled
-      }
-
-      const token = await vscode.window.showInputBox({
-        prompt: "Enter permanent token for YouTrack",
-        password: true,
-      })
-
-      if (token === undefined || token === "") {
-        return // User cancelled
-      }
-
-      // Try to connect with provided credentials
-      const success = await youtrackService.setCredentials(baseUrl, token, context)
-
-      if (success) {
-        await configService.setInstanceUrl(baseUrl)
-        vscode.window.showInformationMessage("Successfully connected to YouTrack!")
-        logger.info(`Connected to YouTrack instance at ${baseUrl}`)
-
-        // Update connection status
-        await updateConnectionStatus(true)
-
-        // Refresh views
-        refreshAllViews()
+      if (connected) {
+        logger.info("Successfully authenticated using stored credentials")
 
         // Show all views after successful connection
         await toggleViewsVisibility(true)
       } else {
-        vscode.window.showErrorMessage("Failed to connect to YouTrack. Please check credentials and try again.")
-
-        // Update connection status
-        await updateConnectionStatus(false)
-      }
-    } catch (error) {
-      logger.error("Error connecting to YouTrack", error)
-      vscode.window.showErrorMessage("Error connecting to YouTrack. See output log for details.")
-    }
-  })
-
-  // Register add project command
-  const addProjectCommand = vscode.commands.registerCommand(COMMAND_ADD_PROJECT, async () => {
-    try {
-      // Get all available projects from YouTrack
-      const availableProjects = await youtrackService.getProjects()
-
-      if (!availableProjects || availableProjects.length === 0) {
-        vscode.window.showInformationMessage(
-          "No projects available in YouTrack or you don't have access to any projects",
-        )
-        return
-      }
-
-      // Filter out already selected projects
-      const unselectedProjects = availableProjects.filter(
-        (project) => !projectsProvider.selectedProjects.some((selected) => selected.id === project.id),
-      )
-
-      if (unselectedProjects.length === 0) {
-        vscode.window.showInformationMessage("All available projects have already been added")
-        return
-      }
-
-      // Show project picker and let user select one to add
-      const selected = await vscode.window.showQuickPick(
-        unselectedProjects.map((p) => ({
-          label: p.name,
-          description: p.shortName,
-          detail: p.description,
-          project: p,
-        })),
-      )
-
-      if (selected) {
-        // Add the selected project
-        projectsProvider.addProject(selected.project)
-      }
-    } catch (error) {
-      logger.error("Error adding project", error)
-      vscode.window.showErrorMessage("Error adding project. See output log for details.")
-    }
-  })
-
-  // Register remove project command
-  const removeProjectCommand = vscode.commands.registerCommand(COMMAND_REMOVE_PROJECT, async (item: any) => {
-    try {
-      if (item?.project) {
-        const projectId = item.project.id
-        const projectName = item.project.name
-
-        // Confirm deletion
-        const confirm = await vscode.window.showWarningMessage(
-          `Are you sure you want to remove project "${projectName}"?`,
-          { modal: true },
-          "Yes",
+        logger.info("Failed to authenticate using stored credentials")
+        vscode.window.showErrorMessage(
+          "Failed to connect to YouTrack. Please check your connection or re-authenticate.",
         )
 
-        if (confirm === "Yes") {
-          projectsProvider.removeProject(projectId)
-          vscode.window.showInformationMessage(`Removed project: ${projectName}`)
-        }
+        // Show limited views when disconnected
+        await toggleViewsVisibility(false)
       }
-    } catch (error) {
-      logger.error("Error removing project", error)
-      vscode.window.showErrorMessage("Error removing project. See output log for details.")
+    } else {
+      logger.info("No YouTrack instance URL configured. Showing not-connected view.")
+      await updateConnectionStatus(false)
+      await toggleViewsVisibility(false)
     }
-  })
 
-  // Register set active project command
-  const setActiveProjectCommand = vscode.commands.registerCommand(COMMAND_SET_ACTIVE_PROJECT, async (item: any) => {
-    try {
-      // Check if we have a valid item with project info
-      if (!item) {
-        logger.error("Error setting active project: No item received")
-        return
-      }
+    // Register all commands
+    registerAuthenticationCommands(
+      context,
+      youtrackService,
+      configService,
+      updateConnectionStatus,
+      refreshAllViews,
+      toggleViewsVisibility,
+    )
+    registerProjectCommands(context, youtrackService, projectsProvider)
+    registerIssueCommands(context, youtrackService, issuesProvider, markdownPreviewProvider)
+    registerArticleCommands(context, youtrackService, articlesProvider, markdownPreviewProvider)
+    registerNavigationCommands(context, markdownPreviewProvider)
 
-      // Extract project information based on the shape of the item
-      let projectShortName: string | undefined
-      let projectName: string | undefined
-
-      if (item.project && typeof item.project === "object") {
-        // Case: item is { project: Project }
-        projectShortName = item.project.shortName
-        projectName = item.project.name
-      } else if (item.shortName && item.name) {
-        // Case: item is directly a Project or ProjectTreeItem
-        projectShortName = item.shortName
-        projectName = item.name
-      }
-
-      if (projectShortName && projectName) {
-        projectsProvider.setActiveProject(projectShortName)
-        // Add debug logging to track command execution
-        logger.info(`Active project set to: ${projectName} (${projectShortName})`)
+    // Update status bar when server connection changes
+    youtrackService.onServerChanged((baseUrl: string | undefined) => {
+      if (baseUrl) {
+        statusBarService.updateState(StatusBarState.Authenticated, baseUrl)
       } else {
-        logger.error("Error setting active project: Invalid project object received", item)
+        statusBarService.updateState(StatusBarState.NotAuthenticated)
       }
-    } catch (error) {
-      logger.error("Error setting active project", error)
-      vscode.window.showErrorMessage("Error setting active project. See output log for details.")
-    }
-  })
-
-  // Register commands related to issues
-  const refreshIssuesCommand = vscode.commands.registerCommand("youtrack.refreshIssues", () => {
-    logger.info("Refreshing issues panel")
-    issuesProvider.refresh()
-  })
-  context.subscriptions.push(refreshIssuesCommand)
-
-  // Command for filtering issues with input box
-  const filterIssuesCommand = vscode.commands.registerCommand("youtrack.filterIssues", async () => {
-    const currentFilter = issuesProvider.filter
-    const filterText = await vscode.window.showInputBox({
-      title: "Filter Issues",
-      prompt: "Enter issue filter text (YouTrack query syntax supported)",
-      value: currentFilter,
-      placeHolder: "project: {project} #unresolved",
     })
 
-    // Only update if the user didn't cancel and the value changed
-    if (filterText !== undefined) {
-      logger.info(`Setting issues filter to: ${filterText}`)
-      issuesProvider.filter = filterText
-    }
-  })
-  context.subscriptions.push(filterIssuesCommand)
-
-  // Command for toggling issues view mode
-  const toggleIssuesViewModeCommand = vscode.commands.registerCommand("youtrack.toggleIssuesViewMode", () => {
-    const newMode = issuesProvider.viewMode === ISSUE_VIEW_MODE_LIST ? ISSUE_VIEW_MODE_LIST : ISSUE_VIEW_MODE_LIST
-    logger.info(`Changing issues view mode to: ${newMode}`)
-    issuesProvider.toggleViewMode()
-
-    // Show a notification with the current mode
-    const modeName = newMode === ISSUE_VIEW_MODE_LIST ? "List View" : "List View"
-    vscode.window.showInformationMessage(`Issues panel switched to ${modeName}`)
-  })
-  context.subscriptions.push(toggleIssuesViewModeCommand)
-
-  // Command for refreshing knowledge base
-  const refreshKnowledgeBaseCommand = vscode.commands.registerCommand("youtrack.refreshKnowledgeBase", () => {
-    logger.info("Refreshing knowledge base panel")
-    knowledgeBaseProvider.refresh()
-  })
-  context.subscriptions.push(refreshKnowledgeBaseCommand)
-
-  // Command for opening articles
-  const openArticleCommand = vscode.commands.registerCommand(COMMAND_OPEN_ARTICLE, async (item: { article: any }) => {
-    try {
-      if (!item || !item.article) {
-        logger.error("No article provided to open")
-        return
-      }
-
-      const article = item.article
-      logger.info(`Opening article: ${article.title} (${article.id})`)
-
-      // For now, we'll just show a simple webview with the article content
-      // Create a webview panel to display the article
-      const panel = vscode.window.createWebviewPanel("youtrackArticle", article.title, vscode.ViewColumn.One, {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-      })
-
-      // Create article content with HTML
-      panel.webview.html = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${article.title}</title>
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-              padding: 20px;
-              line-height: 1.5;
-            }
-            h1 { 
-              margin-bottom: 10px;
-              border-bottom: 1px solid #eee;
-              padding-bottom: 10px;
-            }
-            .metadata {
-              color: #666;
-              margin-bottom: 20px;
-              font-size: 0.9em;
-            }
-            .content {
-              margin-top: 20px;
-            }
-          </style>
-        </head>
-        <body>
-          <h1>${article.title}</h1>
-          <div class="metadata">
-            <div>Project: ${article.project.name}</div>
-            <div>Updated: ${new Date(article.updatedDate).toLocaleString()}</div>
-          </div>
-          <div class="content">${article.content || "No content available"}</div>
-        </body>
-        </html>
-      `
-    } catch (error) {
-      logger.error("Error opening article", error)
-      vscode.window.showErrorMessage("Error opening article. See output log for details.")
-    }
-  })
-  context.subscriptions.push(openArticleCommand)
-
-  // Command for previewing an issue in Markdown
-  const previewIssueCommand = vscode.commands.registerCommand(COMMAND_PREVIEW_ISSUE, async (issueId: string) => {
-    try {
-      logger.info(`Previewing issue with ID: ${issueId}`)
-      const issue = await youtrackService.getIssueById(issueId)
-
-      if (issue) {
-        await markdownPreviewProvider.showPreview(issue)
-      } else {
-        vscode.window.showErrorMessage(`Cannot preview issue: Issue with ID ${issueId} not found`)
-      }
-    } catch (error) {
-      logger.error(`Error previewing issue ${issueId}:`, error)
-      vscode.window.showErrorMessage(`Error previewing issue: ${error}`)
-    }
-  })
-  context.subscriptions.push(previewIssueCommand)
-
-  // Command for previewing an article in Markdown
-  const previewArticleCommand = vscode.commands.registerCommand(COMMAND_PREVIEW_ARTICLE, async (articleId: string) => {
-    try {
-      logger.info(`Previewing article with ID: ${articleId}`)
-      const article = await youtrackService.getArticleById(articleId)
-
-      if (article) {
-        await markdownPreviewProvider.showPreview(article)
-      } else {
-        vscode.window.showErrorMessage(`Cannot preview article: Article with ID ${articleId} not found`)
-      }
-    } catch (error) {
-      logger.error(`Error previewing article ${articleId}:`, error)
-      vscode.window.showErrorMessage(`Error previewing article: ${error}`)
-    }
-  })
-  context.subscriptions.push(previewArticleCommand)
-
-  // Command for handling internal links
-  const openInternalLinkCommand = vscode.commands.registerCommand(COMMAND_OPEN_INTERNAL_LINK, async (id: string) => {
-    try {
-      logger.info(`Command triggered for internal link: ${id}`)
-      // Delegate to the markdown preview provider which already has this logic
-      await markdownPreviewProvider.handleInternalLink(id)
-    } catch (error) {
-      logger.error("Error opening internal link:", error)
-      vscode.window.showErrorMessage(`Error opening internal link: ${error}`)
-    }
-  })
-  context.subscriptions.push(openInternalLinkCommand)
-
-  // Add commands to subscriptions
-  context.subscriptions.push(connectCommand)
-  context.subscriptions.push(addProjectCommand)
-  context.subscriptions.push(removeProjectCommand)
-  context.subscriptions.push(setActiveProjectCommand)
+    logger.info("YouTrack extension activated")
+  } catch (error) {
+    logger.error("Error activating extension", error)
+    vscode.window.showErrorMessage(`Error activating YouTrack extension: ${error}`)
+  }
 }
 
 /**
  * Register tree data providers and their tree views
  */
 function registerTreeDataProviders(context: vscode.ExtensionContext, cacheService: CacheService): void {
-  // Create tree data providers
+  logger.info("Registering tree data providers")
+
+  // Create "not connected" webview provider
+  const notConnectedProvider = new NotConnectedWebviewProvider(context.extensionUri)
+  const notConnectedView = vscode.window.registerWebviewViewProvider(VIEW_NOT_CONNECTED, notConnectedProvider)
+  context.subscriptions.push(notConnectedView)
+
+  // Create markdown preview provider
+  markdownPreviewProvider = new MarkdownPreviewProvider(youtrackService)
+  context.subscriptions.push(markdownPreviewProvider)
+
+  // Create projects tree provider
   projectsProvider = new ProjectsTreeDataProvider(youtrackService, cacheService)
+  const projectsView = vscode.window.createTreeView(VIEW_PROJECTS, {
+    treeDataProvider: projectsProvider,
+    showCollapseAll: false,
+  })
+  context.subscriptions.push(projectsView)
+
+  // Create issues tree provider
   issuesProvider = new IssuesTreeDataProvider(youtrackService, cacheService, projectsProvider)
-  knowledgeBaseProvider = new ArticlesTreeDataProvider(youtrackService, projectsProvider)
-  recentIssuesProvider = new RecentIssuesTreeDataProvider(youtrackService, cacheService)
-  recentArticlesProvider = new RecentArticlesTreeDataProvider(youtrackService, cacheService)
-
-  // Register the WebView provider for Not Connected view
-  const webviewRegistration = vscode.window.registerWebviewViewProvider(
-    VIEW_NOT_CONNECTED,
-    new NotConnectedWebviewProvider(context.extensionUri),
-  )
-  context.subscriptions.push(webviewRegistration)
-  logger.info("Registered WebView provider for Not Connected view")
-
-  // Register tree data providers
-  vscode.window.registerTreeDataProvider(VIEW_PROJECTS, projectsProvider)
-
-  // Register Issues view as TreeView instead of just a data provider
   const issuesView = vscode.window.createTreeView(VIEW_ISSUES, {
     treeDataProvider: issuesProvider,
-    showCollapseAll: true,
+    showCollapseAll: false,
   })
   context.subscriptions.push(issuesView)
 
-  // Register Articles view as TreeView instead of just a data provider
-  const articlesView = vscode.window.createTreeView(VIEW_KNOWLEDGE_BASE, {
-    treeDataProvider: knowledgeBaseProvider,
+  // Create knowledge base tree provider
+  articlesProvider = new ArticlesTreeDataProvider(youtrackService, projectsProvider)
+  const knowledgeBaseView = vscode.window.createTreeView(VIEW_KNOWLEDGE_BASE, {
+    treeDataProvider: articlesProvider,
     showCollapseAll: true,
   })
-  context.subscriptions.push(articlesView)
+  context.subscriptions.push(knowledgeBaseView)
 
-  vscode.window.registerTreeDataProvider(VIEW_RECENT_ISSUES, recentIssuesProvider)
-  vscode.window.registerTreeDataProvider(VIEW_RECENT_ARTICLES, recentArticlesProvider)
-
-  // Subscribe to active project changes to update the Issues view title
-  projectsProvider.onDidChangeActiveProject((project) => {
-    if (project) {
-      // Update Issues view title to include active project
-      issuesView.title = `${project.shortName}: Issues`
-      articlesView.title = `${project.shortName}: Knowledge Base`
-      logger.info(`Updated Issues/Articles view title with ${project.shortName}`)
-    } else {
-      // Reset to default title if no active project
-      issuesView.title = "Issues"
-      articlesView.title = "Knowledge Base"
-      logger.info("Reset Issues/Articles view title to default")
-    }
+  // Create recent issues tree provider
+  recentIssuesProvider = new RecentIssuesTreeDataProvider(youtrackService, cacheService)
+  const recentIssuesView = vscode.window.createTreeView(VIEW_RECENT_ISSUES, {
+    treeDataProvider: recentIssuesProvider,
+    showCollapseAll: false,
   })
+  context.subscriptions.push(recentIssuesView)
 
-  logger.info("Registered tree data providers for YouTrack views")
+  // Create recent articles tree provider
+  recentArticlesProvider = new RecentArticlesTreeDataProvider(youtrackService, cacheService)
+  const recentArticlesView = vscode.window.createTreeView(VIEW_RECENT_ARTICLES, {
+    treeDataProvider: recentArticlesProvider,
+    showCollapseAll: false,
+  })
+  context.subscriptions.push(recentArticlesView)
+
+  // Update issues when active project changes
+  projectsProvider.onDidChangeActiveProject(() => {
+    logger.info("Active project changed, refreshing issues and knowledge base")
+    issuesProvider.refresh()
+    articlesProvider.refresh()
+  })
 }
 
 /**
  * Toggle the visibility of views based on configuration state
  */
 async function toggleViewsVisibility(isConfigured: boolean): Promise<void> {
-  logger.info(`Setting view visibility. isConfigured: ${isConfigured}`)
+  logger.info(`Toggling views visibility. isConfigured=${isConfigured}`)
 
-  // Always show Projects view
+  // Update context to control view visibility based on connection status
   await vscode.commands.executeCommand("setContext", STATUS_CONNECTED, isConfigured)
-  logger.info(`Set ${STATUS_CONNECTED} to ${!isConfigured}`)
 
-  logger.info(`View visibility updated: ${isConfigured ? "All views visible" : "Only Projects view visible"}`)
+  if (isConfigured) {
+    // If configured, refresh everything to make sure the latest data is shown
+    refreshAllViews()
+  }
 }
 
 /**
  * Update extension's connection status
  */
 async function updateConnectionStatus(connected: boolean): Promise<void> {
+  logger.info(`Updating connection status: ${connected ? "connected" : "disconnected"}`)
+
+  // Update the status based on authentication status
   if (connected) {
     statusBarService.updateState(StatusBarState.Authenticated, youtrackService.baseUrl)
   } else {
     statusBarService.updateState(StatusBarState.NotAuthenticated)
   }
 
-  // Update view visibility based on connection status
-  await toggleViewsVisibility(connected)
-
-  logger.info(`Connection status updated: ${connected ? "Connected" : "Disconnected"}`)
+  // Set the context value to control UI components
+  await vscode.commands.executeCommand("setContext", STATUS_CONNECTED, connected)
 }
 
 /**
  * Refresh all YouTrack views
  */
 function refreshAllViews(): void {
+  logger.info("Refreshing all views")
   projectsProvider.refresh()
   issuesProvider.refresh()
-  knowledgeBaseProvider.refresh()
+  articlesProvider.refresh()
   recentIssuesProvider.refresh()
   recentArticlesProvider.refresh()
-  // WebView providers don't need to be refreshed the same way as TreeDataProviders
-
-  logger.info("Refreshing all YouTrack views")
 }
-
-// Update status bar based on server connection status
-youtrackService.onServerChanged((baseUrl: string | undefined) => {
-  if (baseUrl) {
-    statusBarService.updateState(StatusBarState.Authenticated, baseUrl)
-  } else {
-    statusBarService.updateState(StatusBarState.NotAuthenticated)
-  }
-})
 
 /**
  * This method is called when your extension is deactivated
  */
 export function deactivate(): void {
-  // Dispose of the status bar item
+  logger.info("YouTrack extension deactivated")
   statusBarService.dispose()
-
-  logger.info("YouTrack integration extension is now deactivated.")
 }
