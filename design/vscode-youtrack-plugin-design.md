@@ -30,13 +30,17 @@ The VSCode YouTrack Plugin aims to seamlessly integrate YouTrack issue and knowl
 ### 2.2 Issue Management
 - Add and remove YouTrack projects from the Projects panel
 - Browse issues for selected projects
-- View issue descriptions, comments, and custom fields
-- Edit issue descriptions
+- View issue descriptions, comments, and custom fields in a read-only preview using VS Code's built-in Markdown viewer
+- Edit issue descriptions in a separate editing phase
 - Support for issue attachments
+- Internal links to other issues open in new preview tabs
 
 ### 2.3 Knowledge Base Management
-- Browse article hierarchy
-- View articles in preview mode with Mermaid diagram support
+- Browse article hierarchy 
+- View articles in preview mode with VS Code's built-in Markdown viewer and Mermaid diagram support
+- Preview triggered by user selection, not automatically
+- Internal links parsed based on project shortName cache
+- Internal links to other articles open in new preview tabs
 - Download articles to temporary folder for editing via explicit action
 - Save edited articles back to YouTrack with explicit "Save to YouTrack" action
 - Track temporary files and clean up on editor close
@@ -73,11 +77,13 @@ The plugin will follow a modular architecture with the following components:
 1. User authenticates with YouTrack instance using a permanent token
 2. Plugin fetches and caches available projects, issues, and articles
 3. User browses or searches for content
-4. Selected content is fetched and displayed in preview mode with Mermaid diagram support
-5. When "Download for Editing" is requested, content is copied to a configurable temporary location
-6. User edits the content in VSCode's native markdown editor
-7. When "Save to YouTrack" is triggered, changes are synchronized back to YouTrack and temp file is deleted
-8. When editor tab is closed, any remaining temporary files are cleaned up
+4. Selected content is fetched and displayed in preview mode using VS Code's built-in Markdown viewer with Mermaid diagram support
+5. Internal links in content are detected and parsed based on project shortName cache for navigation
+6. When user clicks internal links, they open in new preview tabs
+7. When "Download for Editing" is requested, content is copied to a configurable temporary location
+8. User edits the content in VSCode's native markdown editor
+9. When "Save to YouTrack" is triggered, changes are synchronized back to YouTrack and temp file is deleted
+10. When editor tab is closed, any remaining temporary files are cleaned up
 
 ### 3.4 User Interface Components
 - YouTrack Explorer view in Activity Bar
