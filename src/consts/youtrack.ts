@@ -4,9 +4,9 @@ import type { Article, Issue, Schema, User, Project } from "youtrack-client"
  * Constants used for YouTrack integration
  */
 
-export const USER_PROFILE_FIELDS: Schema<User> = ["login", "email", "fullName"] as const
-export const PROJECT_FIELDS: Schema<Project> = ["id", "name", "shortName", "description"] as const
-export const ISSUE_FIELDS: Schema<Issue> = [
+export const USER_PROFILE_FIELDS = ["login", "email", "fullName"] as const satisfies Schema<User>
+export const PROJECT_FIELDS = ["id", "name", "shortName", "description"] as const satisfies Schema<Project>
+export const ISSUE_FIELDS = [
   "id",
   "idReadable",
   "summary",
@@ -16,20 +16,19 @@ export const ISSUE_FIELDS: Schema<Issue> = [
   "resolved",
   { project: ["id"] },
   { links: [{ linkType: ["name"] }, "direction", { issues: ["id"] }, "id"] },
-] as const
+] as const satisfies Schema<Issue>
 
 /**
  * Fields to fetch for articles
  */
-export const ARTICLE_FIELDS: Schema<Article> = [
+export const ARTICLE_FIELDS = [
   "id",
+  "idReadable",
   "summary",
   "content",
-  "updatedDate",
-  "createdDate",
+  "updated",
+  "created",
   { parentArticle: ["id"] },
-  { visibility: ["id", "name"] },
-  { project: PROJECT_FIELDS },
-  { folders: ["id", "name", { articles: ["id"] }] },
-  { childArticles: ["id", "summary", "content", { visibility: ["id", "name"] }] },
-] as const
+  { project: ["id"] },
+  { childArticles: ["id"] },
+] as const satisfies Schema<Article>

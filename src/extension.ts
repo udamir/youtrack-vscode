@@ -6,7 +6,7 @@ import { StatusBarService, StatusBarState } from "./services/status-bar"
 import { CacheService } from "./services/cache-service"
 import { ProjectsTreeDataProvider } from "./views/projects-tree-view"
 import { IssuesTreeDataProvider } from "./views/issues-tree-view"
-import { KnowledgeBaseTreeDataProvider } from "./views/knowledge-base-tree-view"
+import { ArticlesTreeDataProvider } from "./views/articles-tree-view"
 import { RecentIssuesTreeDataProvider } from "./views/recent-issues-tree-view"
 import { RecentArticlesTreeDataProvider } from "./views/recent-articles-tree-view"
 import { NotConnectedWebviewProvider } from "./views/not-connected-webview"
@@ -35,7 +35,7 @@ const statusBarService = new StatusBarService()
 // Tree view providers (will be initialized in registerTreeDataProviders)
 let projectsProvider: ProjectsTreeDataProvider
 let issuesProvider: IssuesTreeDataProvider
-let knowledgeBaseProvider: KnowledgeBaseTreeDataProvider
+let knowledgeBaseProvider: ArticlesTreeDataProvider
 let recentIssuesProvider: RecentIssuesTreeDataProvider
 let recentArticlesProvider: RecentArticlesTreeDataProvider
 
@@ -291,15 +291,10 @@ function registerCommands(context: vscode.ExtensionContext): void {
 
       // For now, we'll just show a simple webview with the article content
       // Create a webview panel to display the article
-      const panel = vscode.window.createWebviewPanel(
-        'youtrackArticle',
-        article.title,
-        vscode.ViewColumn.One,
-        {
-          enableScripts: true,
-          retainContextWhenHidden: true
-        }
-      )
+      const panel = vscode.window.createWebviewPanel("youtrackArticle", article.title, vscode.ViewColumn.One, {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+      })
 
       // Create article content with HTML
       panel.webview.html = `
@@ -336,7 +331,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
             <div>Project: ${article.project.name}</div>
             <div>Updated: ${new Date(article.updatedDate).toLocaleString()}</div>
           </div>
-          <div class="content">${article.content || 'No content available'}</div>
+          <div class="content">${article.content || "No content available"}</div>
         </body>
         </html>
       `
@@ -363,7 +358,7 @@ function registerTreeDataProviders(context: vscode.ExtensionContext): void {
 
   projectsProvider = new ProjectsTreeDataProvider(youtrackService, cacheService)
   issuesProvider = new IssuesTreeDataProvider(youtrackService, cacheService, projectsProvider)
-  knowledgeBaseProvider = new KnowledgeBaseTreeDataProvider(youtrackService, projectsProvider)
+  knowledgeBaseProvider = new ArticlesTreeDataProvider(youtrackService, projectsProvider)
   recentIssuesProvider = new RecentIssuesTreeDataProvider(youtrackService, cacheService)
   recentArticlesProvider = new RecentArticlesTreeDataProvider(youtrackService, cacheService)
 
@@ -396,12 +391,12 @@ function registerTreeDataProviders(context: vscode.ExtensionContext): void {
   vscode.window.registerTreeDataProvider(VIEW_RECENT_ARTICLES, recentArticlesProvider)
 
   // Subscribe to active project changes to update the Issues view title
-  projectsProvider.onDidChangeActiveProject((event) => {
-    if (event.project) {
+  projectsProvider.onDidChangeActiveProject((project) => {
+    if (project) {
       // Update Issues view title to include active project
-      issuesView.title = `${event.project.shortName}: Issues`
-      articlesView.title = `${event.project.shortName}: Knowledge Base`
-      logger.info(`Updated Issues/Articles view title with ${event.project.shortName}`)
+      issuesView.title = `${project.shortName}: Issues`
+      articlesView.title = `${project.shortName}: Knowledge Base`
+      logger.info(`Updated Issues/Articles view title with ${project.shortName}`)
     } else {
       // Reset to default title if no active project
       issuesView.title = "Issues"

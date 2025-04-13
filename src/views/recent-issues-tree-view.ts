@@ -26,7 +26,7 @@ export class RecentIssueItem extends YouTrackTreeItem {
 /**
  * Tree data provider for YouTrack recent issues
  */
-export class RecentIssuesTreeDataProvider extends BaseTreeDataProvider {
+export class RecentIssuesTreeDataProvider extends BaseTreeDataProvider<RecentIssueItem | YouTrackTreeItem> {
   private _issues: IssueEntity[] = []
   private _serverChangeDisposable: vscode.Disposable | undefined
 

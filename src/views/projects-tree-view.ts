@@ -1,18 +1,12 @@
 import * as vscode from "vscode"
+
 import { BaseTreeDataProvider, YouTrackTreeItem } from "./base-tree-view"
 import { createLoadingItem } from "./tree-view-utils"
+
+import type { YouTrackService, CacheService } from "../services"
+import { COMMAND_SET_ACTIVE_PROJECT } from "../consts"
 import type { ProjectEntity } from "../models"
 import * as logger from "../utils/logger"
-import type { YouTrackService } from "../services/youtrack-client"
-import type { CacheService } from "../services/cache-service"
-import { COMMAND_SET_ACTIVE_PROJECT } from "../consts/vscode"
-
-/**
- * Event fired when the active project changes
- */
-export interface ProjectChangeEvent {
-  project: ProjectEntity | undefined
-}
 
 /**
  * Tree item representing a YouTrack project
@@ -56,10 +50,10 @@ export class ProjectTreeItem extends YouTrackTreeItem {
 /**
  * Tree data provider for YouTrack Projects view
  */
-export class ProjectsTreeDataProvider extends BaseTreeDataProvider {
+export class ProjectsTreeDataProvider extends BaseTreeDataProvider<ProjectTreeItem | YouTrackTreeItem> {
   private _selectedProjects: ProjectEntity[] = []
   private _activeProject?: ProjectEntity
-  private _onDidChangeActiveProject = new vscode.EventEmitter<ProjectChangeEvent>()
+  private _onDidChangeActiveProject = new vscode.EventEmitter<ProjectEntity | undefined>()
   private _serverChangeDisposable: vscode.Disposable | undefined
 
   /**
@@ -71,26 +65,12 @@ export class ProjectsTreeDataProvider extends BaseTreeDataProvider {
     return this._activeProject?.shortName
   }
 
-  set activeProjectKey(key: string | undefined) {
-    this.activeProject = this.selectedProjects.find((project) => project.shortName === key)
-  }
-
   get selectedProjects(): ProjectEntity[] {
     return [...this._selectedProjects]
   }
 
-  set selectedProjects(value: ProjectEntity[]) {
-    this._selectedProjects = [...value]
-    this._cacheService.saveSelectedProjects(this._selectedProjects)
-  }
-
   get activeProject(): ProjectEntity | undefined {
     return this._activeProject
-  }
-
-  set activeProject(value: ProjectEntity | undefined) {
-    this._activeProject = value
-    this._cacheService.saveActiveProject(this._activeProject?.shortName)
   }
 
   /**
@@ -162,7 +142,7 @@ export class ProjectsTreeDataProvider extends BaseTreeDataProvider {
     this._selectedProjects = this._cacheService.getSelectedProjects()
 
     // Load active project short name
-    this.activeProjectKey = this._cacheService.getActiveProject()
+    this.setActiveProject(this._cacheService.getActiveProjectKey())
 
     // Remove loading state and refresh view
     this.isLoading = false
@@ -171,10 +151,11 @@ export class ProjectsTreeDataProvider extends BaseTreeDataProvider {
   /**
    * Add a project to the selected projects list
    */
-  public addProject(project: ProjectEntity): void {
+  public async addProject(project: ProjectEntity): Promise<void> {
     // Check if project already exists
     if (!this.selectedProjects.some((p) => p.shortName === project.shortName)) {
-      this.selectedProjects = [...this.selectedProjects, project]
+      this._selectedProjects = [...this.selectedProjects, project]
+      await this._cacheService.saveSelectedProjects(this._selectedProjects)
       this.refresh()
     }
   }
@@ -184,7 +165,7 @@ export class ProjectsTreeDataProvider extends BaseTreeDataProvider {
    */
   public removeProject(projectShortName: string): void {
     const initialLength = this.selectedProjects.length
-    this.selectedProjects = this.selectedProjects.filter((p) => p.shortName !== projectShortName)
+    this._selectedProjects = this.selectedProjects.filter((p) => p.shortName !== projectShortName)
 
     // Only persist and refresh if something was actually removed
     if (initialLength !== this.selectedProjects.length) {
@@ -201,15 +182,16 @@ export class ProjectsTreeDataProvider extends BaseTreeDataProvider {
    * Set the active project
    * @param projectShortName Short name of the project to set as active, or undefined to clear active project
    */
-  public setActiveProject(projectShortName: string | undefined): void {
+  public async setActiveProject(projectShortName: string | undefined): Promise<void> {
     if (projectShortName === this.activeProjectKey) {
       return // No change needed
     }
 
-    this.activeProjectKey = projectShortName
+    // Find the project by short name
+    this._activeProject = this._selectedProjects.find((p) => p.shortName === projectShortName)
 
     // Emit change event
-    this._onDidChangeActiveProject.fire({ project: this.activeProject })
+    this._onDidChangeActiveProject.fire(this._activeProject)
 
     // Refresh the view to update the UI
     this.refresh()

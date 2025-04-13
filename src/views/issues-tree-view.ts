@@ -1,13 +1,12 @@
 import * as vscode from "vscode"
+
+import { COMMAND_OPEN_ISSUE, ISSUE_VIEW_MODE_LIST, ISSUE_VIEW_MODE_TREE } from "../consts"
+import type { IssueEntity, ProjectEntity, IssuesViewMode } from "../models"
 import { BaseTreeDataProvider, YouTrackTreeItem } from "./base-tree-view"
+import type { ProjectsTreeDataProvider } from "./projects-tree-view"
+import type { CacheService, YouTrackService } from "../services"
 import { createLoadingItem } from "./tree-view-utils"
 import * as logger from "../utils/logger"
-import type { IssueEntity, ProjectEntity } from "../models"
-import type { YouTrackService } from "../services/youtrack-client"
-import type { ProjectsTreeDataProvider, ProjectChangeEvent } from "./projects-tree-view"
-import type { CacheService } from "../services/cache-service"
-import { COMMAND_OPEN_ISSUE, ISSUE_VIEW_MODE_LIST, ISSUE_VIEW_MODE_TREE } from "../consts/vscode"
-import type { IssuesViewMode } from "../models/cache"
 
 /**
  * Tree item representing a YouTrack issue
@@ -30,7 +29,7 @@ export class IssueTreeItem extends YouTrackTreeItem {
     this.id = issue.idReadable
 
     // Set description to show the issue ID
-    this.description = issue.idReadable
+    this.description = issue.summary
 
     // Set tooltip to include additional info
     const status = issue.resolved ? "Resolved" : "Open"
@@ -48,7 +47,7 @@ export class IssueTreeItem extends YouTrackTreeItem {
 /**
  * Tree data provider for YouTrack Issues view
  */
-export class IssuesTreeDataProvider extends BaseTreeDataProvider {
+export class IssuesTreeDataProvider extends BaseTreeDataProvider<IssueTreeItem | YouTrackTreeItem> {
   private _filter = ""
   private _viewMode: IssuesViewMode = ISSUE_VIEW_MODE_LIST
   private _activeProject?: ProjectEntity
@@ -133,7 +132,7 @@ export class IssuesTreeDataProvider extends BaseTreeDataProvider {
    */
   protected async getConfiguredChildren(element?: YouTrackTreeItem): Promise<YouTrackTreeItem[]> {
     if (!this.activeProjectKey) {
-      const noProject = new YouTrackTreeItem("No project selected", vscode.TreeItemCollapsibleState.None)
+      const noProject = new YouTrackTreeItem("No active project", vscode.TreeItemCollapsibleState.None)
       noProject.description = "Select a project in the Projects panel"
       noProject.tooltip = "Go to the Projects panel and select a project to view its issues"
       return [noProject]
@@ -189,8 +188,8 @@ export class IssuesTreeDataProvider extends BaseTreeDataProvider {
   /**
    * Handle project change events
    */
-  private _onProjectChanged(e: ProjectChangeEvent): void {
-    this._activeProject = e.project
+  private _onProjectChanged(project: ProjectEntity | undefined): void {
+    this._activeProject = project
     this.refresh()
   }
 

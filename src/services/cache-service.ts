@@ -1,9 +1,8 @@
 import type * as vscode from "vscode"
 import * as logger from "../utils/logger"
-import type { ProjectEntity, IssueEntity, ArticleEntity } from "../models"
+import type { ProjectEntity, IssueEntity, ArticleEntity, IssuesViewMode, ServerCache } from "../models"
 import type { YouTrackService } from "./youtrack-client"
-import type { IssuesViewMode, ServerCache } from "../models/cache"
-import { ISSUE_VIEW_MODE_LIST } from "../consts/vscode"
+import { ISSUE_VIEW_MODE_LIST } from "../consts"
 
 /**
  * Cache service for YouTrack data
@@ -122,17 +121,17 @@ export class CacheService {
    * Get the active project for the current server
    * @returns The active project or undefined if none is set
    */
-  public getActiveProject(): string | undefined {
-    return this.getValue("activeProject")
+  public getActiveProjectKey(): string | undefined {
+    return this.getValue("activeProjectKey")
   }
 
   /**
    * Save the active project for the current server
-   * @param project The project to save as active, or undefined to clear
+   * @param projectKey The project to save as active, or undefined to clear
    * @returns Promise that resolves when the active project is saved
    */
-  public async saveActiveProject(project: string | undefined): Promise<void> {
-    await this.setValue("activeProject", project)
+  public async saveActiveProject(projectKey: string | undefined): Promise<void> {
+    await this.setValue("activeProjectKey", projectKey)
   }
 
   // Issues View Mode

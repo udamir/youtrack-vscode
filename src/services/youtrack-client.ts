@@ -357,12 +357,11 @@ export class YouTrackService {
       logger.info(`Fetching articles for project ID: ${projectId}`)
 
       // Fetch articles for the project using more specific typing and any type to bypass strict typing
-      const articles = await this.client.Articles.getArticles({
+      const articles = await this.client.Admin.Projects.getProjectArticles(projectId, {
         $skip: 0,
         $top: 100,
-        fields: [...ARTICLE_FIELDS] as any[],
-        query: `project: {${projectId}}`,
-      } as any) // Cast to any to bypass type checking
+        fields: [...ARTICLE_FIELDS],
+      })
 
       if (!articles || !articles.length) {
         logger.info(`No articles found for project ${projectId}`)
@@ -398,17 +397,17 @@ export class YouTrackService {
       logger.info(`Fetching child articles for parent article ID: ${parentArticleId}`)
 
       // Fetch parent article with children
-      const article = await this.client.Articles.getArticle(parentArticleId, {
-        fields: ["id", { childArticles: [...ARTICLE_FIELDS] }] as any[],
+      const articles = await this.client.Articles.getChildArticles(parentArticleId, {
+        fields: ARTICLE_FIELDS,
       })
 
-      if (!article || !article.childArticles || !article.childArticles.length) {
+      if (!articles || !articles.length) {
         logger.info(`No child articles found for article ${parentArticleId}`)
         return []
       }
 
       // Map children to our simplified Article model
-      return article.childArticles.map((child: any) => getArticleEntity(child))
+      return articles.map((article) => getArticleEntity(article))
     } catch (error) {
       logger.error(`Error fetching child articles for article ${parentArticleId}:`, error)
       return []

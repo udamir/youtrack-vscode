@@ -33,19 +33,12 @@ export interface IssueEntity {
  */
 export interface ArticleEntity {
   id: string
-  title: string
-  summary?: string
-  content?: string
-  updatedDate: number
-  createdDate: number
+  idReadable: string
+  summary: string
+  content: string
+  updated: number
+  created: number
   parentArticleId?: string
-  visibility: string
-  project: {
-    id: string
-    name: string
-    shortName: string
-  }
-  folders: string[]
-  isFolder: boolean
-  childArticles: ArticleEntity[]
+  projectId: string
+  childArticles: { id: string }[]
 }

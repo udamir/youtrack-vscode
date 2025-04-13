@@ -20,6 +20,10 @@ export const CONFIG_RECENT_ITEMS_LIMIT = "youtrack.recentItemsLimit"
 export const TOKEN_STORAGE_SECURE = "secure"
 export const TOKEN_STORAGE_SETTINGS = "settings"
 
+// Storage keys
+export const SECURE_STORAGE_KEY_TOKEN = "youtrack-token"
+export const SECURE_STORAGE_KEY_BASE_URL = "youtrack-base-url"
+
 // Environment variable names
 export const ENV_YOUTRACK_BASE_URL = "YOUTRACK_BASE_URL"
 export const ENV_YOUTRACK_TOKEN = "YOUTRACK_TOKEN"

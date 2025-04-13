@@ -5,7 +5,7 @@ import type { ArticleEntity, IssueEntity } from "../models"
 export const getIssueEntity = (issue: Entity<Issue, typeof ISSUE_FIELDS>): IssueEntity => ({
   id: issue.id,
   idReadable: issue.idReadable,
-  summary: issue.summary || "",
+  summary: issue.summary || "Untitled Issue",
   description: issue.description || "",
   resolved: issue.resolved || 0,
   projectId: issue.project?.id || "",
@@ -22,30 +22,16 @@ export const getIssueEntity = (issue: Entity<Issue, typeof ISSUE_FIELDS>): Issue
  * @param article YouTrack API article object
  * @returns ArticleEntity
  */
-export function getArticleEntity(article: any): ArticleEntity {
-  // Check if we have a valid article object
-  if (!article || !article.id) {
-    throw new Error("Invalid article object")
-  }
-  
-  const isFolder = Boolean(article.childArticles && article.childArticles.length > 0)
-  
+export function getArticleEntity(article: Entity<Article, typeof ARTICLE_FIELDS>): ArticleEntity {
   return {
     id: article.id,
-    title: article.summary || "Untitled Article",
-    summary: article.summary || "",
+    idReadable: article.idReadable,
+    summary: article.summary || "Untitled Article",
     content: article.content || "",
-    updatedDate: article.updatedDate || article.updated || Date.now(),
-    createdDate: article.createdDate || article.created || Date.now(),
+    updated: article.updated,
+    created: article.created,
     parentArticleId: article.parentArticle?.id,
-    visibility: article.visibility?.name || "Default",
-    project: {
-      id: article.project?.id || "",
-      name: article.project?.name || "",
-      shortName: article.project?.shortName || "",
-    },
-    folders: (article.folders || []).map((f: any) => f.name),
-    isFolder,
-    childArticles: (article.childArticles || []).map((child: any) => getArticleEntity(child)),
+    projectId: article.project?.id || "",
+    childArticles: (article.childArticles || []).map((child) => ({ id: child.id })),
   }
 }

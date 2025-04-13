@@ -27,7 +27,7 @@ export type AuthState =
  */
 export interface ServerCache {
   selectedProjects: ProjectEntity[]
-  activeProject?: string
+  activeProjectKey?: string
   recentIssues?: IssueEntity[]
   recentArticles?: ArticleEntity[]
   issuesViewMode?: IssuesViewMode

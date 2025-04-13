@@ -1,63 +1,49 @@
 import * as assert from "node:assert"
-import { IssuesTreeDataProvider, type IssueTreeItem } from "../../src/views/issues-tree-view"
-import { YouTrackService } from "../../src/services/youtrack-client"
-import { CacheService } from "../../src/services/cache-service"
-import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN, ISSUE_VIEW_MODE_LIST, ISSUE_VIEW_MODE_TREE } from "../../src/consts"
-import type { ProjectEntity, IssueEntity } from "../../src/models"
 import * as dotenv from "dotenv"
+
+import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN, ISSUE_VIEW_MODE_LIST, ISSUE_VIEW_MODE_TREE } from "../../src/consts"
+import { IssuesTreeDataProvider, IssueTreeItem } from "../../src/views/issues-tree-view"
 import { VSCodeMock, VSCodeMockHelper, MockEventEmitter } from "../helpers/vscode-mock"
 import { ProjectsTreeDataProvider } from "../../src/views/projects-tree-view"
+import { YouTrackService, CacheService } from "../../src/services"
+import type { ProjectEntity } from "../../src/models"
 
 // Load environment variables from .env file
 dotenv.config()
-
-// Check if we have YouTrack credentials for integration tests
-const hasCredentials = !!process.env[ENV_YOUTRACK_TOKEN] && !!process.env[ENV_YOUTRACK_BASE_URL]
-
-// Conditionally run tests only if credentials are available
-const testRunner = hasCredentials ? describe : describe.skip
 
 /**
  * This is an integration test for the issues tree view
  * It requires real YouTrack credentials to be set in the environment
  */
-testRunner("Issues Tree View Integration Test", () => {
+describe("Issues Tree View Integration Test", () => {
   // Services
   let youtrackService: YouTrackService
   let cacheService: CacheService
   let issuesProvider: IssuesTreeDataProvider
+  let projectsProvider: ProjectsTreeDataProvider
 
   // Test data
   let testProject: ProjectEntity
-  let testProjectIssues: IssueEntity[]
 
   // VS Code mock
   let vscodeMock: VSCodeMock
-  let projectChangeEmitter: MockEventEmitter<{
-    projectId: string
-    project: ProjectEntity | undefined
-  }>
+  let projectChangeEmitter: MockEventEmitter<ProjectEntity | undefined>
 
   beforeAll(async () => {
-    if (!hasCredentials) {
-      console.warn(" Skipping issues tree view tests - no valid credentials provided")
-      return
+    const baseUrl = process.env[ENV_YOUTRACK_BASE_URL]
+    const token = process.env[ENV_YOUTRACK_TOKEN]
+
+    if (!baseUrl || !token) {
+      throw new Error("⚠️ Skipping issues tree view tests - no valid credentials provided")
     }
 
     try {
       // Create event emitters for mocked events
-      projectChangeEmitter = new MockEventEmitter<{
-        projectId: string
-        project: ProjectEntity | undefined
-      }>()
+      projectChangeEmitter = new MockEventEmitter<ProjectEntity | undefined>()
 
       // Initialize VSCodeMock with YouTrack test configuration
       vscodeMock = new VSCodeMock(
-        VSCodeMockHelper.createYouTrackMockConfig({
-          baseUrl: process.env[ENV_YOUTRACK_BASE_URL],
-          token: process.env[ENV_YOUTRACK_TOKEN],
-          issuesViewMode: ISSUE_VIEW_MODE_LIST,
-        }),
+        VSCodeMockHelper.createYouTrackMockConfig({ baseUrl, token, issuesViewMode: ISSUE_VIEW_MODE_LIST }),
       )
 
       // Then initialize YouTrack service with the extension context
@@ -72,22 +58,15 @@ testRunner("Issues Tree View Integration Test", () => {
 
       testProject = projects[0]
 
-      // Get issues for the test project
-      testProjectIssues = await youtrackService.getIssues(testProject.id)
-
-      // Update the VSCodeMock with the actual project data
-      // This allows us to use this data in subsequent tests
-      await vscodeMock.extensionContext.globalState.update("youtrack-active-project-id", testProject.id)
-      await vscodeMock.extensionContext.workspaceState.update("youtrack-selected-projects", [testProject])
-
-      // Create the cache service with youtrackService and workspaceState
+      // Create the cache service
       cacheService = new CacheService(youtrackService, vscodeMock.extensionContext.workspaceState)
 
-      // Create projects provider
-      const projectsProvider = new ProjectsTreeDataProvider(youtrackService, cacheService)
-
-      // Create issues provider
+      // Create projects and issues providers
+      projectsProvider = new ProjectsTreeDataProvider(youtrackService, cacheService)
       issuesProvider = new IssuesTreeDataProvider(youtrackService, cacheService, projectsProvider)
+
+      await projectsProvider.addProject(testProject)
+      await projectsProvider.setActiveProject(testProject.shortName)
     } catch (error) {
       console.error("Error setting up issues tree view test:", error)
       throw error
@@ -95,8 +74,6 @@ testRunner("Issues Tree View Integration Test", () => {
   })
 
   it("should get issues as list items when in list mode", async () => {
-    if (!hasCredentials) return
-
     // Ensure we're in list mode
     issuesProvider.viewMode = ISSUE_VIEW_MODE_LIST
 
@@ -105,24 +82,18 @@ testRunner("Issues Tree View Integration Test", () => {
 
     // Verify we got items
     assert.ok(Array.isArray(items), "Items should be an array")
-    if (testProjectIssues.length > 0) {
-      assert.ok(items.length > 0, "Should have at least one item if project has issues")
+    assert.ok(items.length > 0, "Should have at least one item if project has issues")
 
-      // Check the first item has the right structure
-      const firstItem = items[0] as IssueTreeItem
-      assert.ok(firstItem.label, "Item should have a label")
-      assert.ok(firstItem.issue, "Item should have an issue object")
-    }
+    // Check the first item has the right structure
+    const firstItem = items[0]
+    assert.ok(firstItem instanceof IssueTreeItem, "First item should be an IssueTreeItem")
+    assert.ok(firstItem.label, "Item should have a label")
+    assert.ok(firstItem.issue, "Item should have an issue object")
   })
 
   it("should handle project change events", async () => {
-    if (!hasCredentials) return
-
     // Simulate a project change event
-    projectChangeEmitter.fire({
-      projectId: testProject.id,
-      project: testProject,
-    })
+    projectChangeEmitter.fire(testProject)
 
     // Wait for the event to be processed
     await new Promise((resolve) => setTimeout(resolve, 100))
@@ -135,8 +106,6 @@ testRunner("Issues Tree View Integration Test", () => {
   })
 
   it("should toggle between list and tree view modes", () => {
-    if (!hasCredentials) return
-
     // Initial state
     assert.strictEqual(issuesProvider.viewMode, ISSUE_VIEW_MODE_LIST)
 

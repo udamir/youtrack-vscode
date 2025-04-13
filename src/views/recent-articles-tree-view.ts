@@ -6,9 +6,9 @@ import type { ArticleEntity } from "../models"
 import { createLoadingItem } from "./tree-view-utils"
 
 /**
- * Tree item representing a YouTrack knowledge base article
+ * Tree item representing a YouTrack knowledge base article in the recent articles view
  */
-export class ArticleTreeItem extends YouTrackTreeItem {
+export class RecentArticleTreeItem extends YouTrackTreeItem {
   constructor(
     public readonly article: ArticleEntity,
     public readonly command?: vscode.Command,
@@ -26,7 +26,7 @@ export class ArticleTreeItem extends YouTrackTreeItem {
 /**
  * Tree data provider for YouTrack recent articles
  */
-export class RecentArticlesTreeDataProvider extends BaseTreeDataProvider {
+export class RecentArticlesTreeDataProvider extends BaseTreeDataProvider<RecentArticleTreeItem | YouTrackTreeItem> {
   private _articles: ArticleEntity[] = []
   private _serverChangeDisposable: vscode.Disposable | undefined
 
@@ -72,7 +72,7 @@ export class RecentArticlesTreeDataProvider extends BaseTreeDataProvider {
 
     return this._articles.map(
       (article) =>
-        new ArticleTreeItem(article, {
+        new RecentArticleTreeItem(article, {
           command: "vscode.open",
           title: "Open Article",
           arguments: [vscode.Uri.parse(`${this._cacheService.baseUrl}/articles/${article.id}`)],

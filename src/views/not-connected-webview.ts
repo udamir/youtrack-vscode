@@ -1,5 +1,5 @@
 import * as vscode from "vscode"
-import { COMMAND_CONNECT } from "../consts/vscode"
+import { COMMAND_CONNECT } from "../consts"
 
 /**
  * WebView provider for the Not Configured panel

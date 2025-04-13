@@ -79,14 +79,14 @@ export class YouTrackTreeItem extends vscode.TreeItem {
  * Base tree data provider for YouTrack views
  * Handles the common logic for displaying the setup button when not configured
  */
-export abstract class BaseTreeDataProvider implements vscode.TreeDataProvider<YouTrackTreeItem> {
-  private _onDidChangeTreeData: vscode.EventEmitter<YouTrackTreeItem | undefined>
-  readonly onDidChangeTreeData: vscode.Event<YouTrackTreeItem | undefined>
+export abstract class BaseTreeDataProvider<T extends YouTrackTreeItem> implements vscode.TreeDataProvider<T> {
+  private _onDidChangeTreeData: vscode.EventEmitter<T | undefined>
+  readonly onDidChangeTreeData: vscode.Event<T | undefined>
 
   private _isLoading = false
 
   constructor(protected youtrackService: YouTrackService) {
-    this._onDidChangeTreeData = new vscode.EventEmitter<YouTrackTreeItem | undefined>()
+    this._onDidChangeTreeData = new vscode.EventEmitter<T | undefined>()
 
     this.onDidChangeTreeData = this._onDidChangeTreeData.event
   }
@@ -103,7 +103,7 @@ export abstract class BaseTreeDataProvider implements vscode.TreeDataProvider<Yo
    * Refresh the tree view
    * @param item Optional specific item to refresh, or undefined to refresh everything
    */
-  public refresh(item?: YouTrackTreeItem): void {
+  public refresh(item?: T): void {
     this._onDidChangeTreeData.fire(item)
   }
 
@@ -119,7 +119,7 @@ export abstract class BaseTreeDataProvider implements vscode.TreeDataProvider<Yo
    * If not configured, return a setup button
    * Otherwise, call the implementation-specific getConfiguredChildren method
    */
-  public async getChildren(element?: YouTrackTreeItem): Promise<YouTrackTreeItem[]> {
+  public async getChildren(element?: T): Promise<T[]> {
     return this.getConfiguredChildren(element)
   }
 
@@ -155,5 +155,5 @@ export abstract class BaseTreeDataProvider implements vscode.TreeDataProvider<Yo
    * Get children when YouTrack is configured
    * To be implemented by specific tree data providers
    */
-  protected abstract getConfiguredChildren(element?: YouTrackTreeItem): Promise<YouTrackTreeItem[]>
+  protected abstract getConfiguredChildren(element?: T): Promise<T[]>
 }

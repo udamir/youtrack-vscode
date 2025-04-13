@@ -1,11 +1,12 @@
 import * as vscode from "vscode"
+
 import { BaseTreeDataProvider, YouTrackTreeItem } from "./base-tree-view"
-import { createLoadingItem } from "./tree-view-utils"
-import * as logger from "../utils/logger"
+import type { ProjectsTreeDataProvider } from "./projects-tree-view"
 import type { ArticleEntity, ProjectEntity } from "../models"
-import type { YouTrackService } from "../services/youtrack-client"
-import type { ProjectsTreeDataProvider, ProjectChangeEvent } from "./projects-tree-view"
+import { createLoadingItem } from "./tree-view-utils"
+import type { YouTrackService } from "../services"
 import { COMMAND_OPEN_ARTICLE } from "../consts"
+import * as logger from "../utils/logger"
 
 /**
  * Tree item representing a YouTrack knowledge base article
@@ -13,30 +14,32 @@ import { COMMAND_OPEN_ARTICLE } from "../consts"
 export class ArticleTreeItem extends YouTrackTreeItem {
   constructor(public readonly article: ArticleEntity) {
     super(
-      article.title,
-      // Set collapsible state based on whether the article is a folder or has children
-      article.isFolder ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
+      article.summary,
+      // Set collapsible state based on whether the article has children
+      article.childArticles.length > 0
+        ? vscode.TreeItemCollapsibleState.Collapsed
+        : vscode.TreeItemCollapsibleState.None,
       {
         command: COMMAND_OPEN_ARTICLE,
         title: "Open Article",
         arguments: [{ article }],
       },
-      article.isFolder ? "folder" : "document",
+      article.childArticles.length > 0 ? "folder" : "document",
     )
 
     // Set the id property to match the article id for tracking
     this.id = article.id
 
     // Set tooltip to include additional info
-    this.tooltip = article.title
+    this.tooltip = article.summary
 
     // Set description showing the folder path if available
-    if (article.folders && article.folders.length > 0) {
-      this.description = article.folders.join(" / ")
+    if (article.childArticles.length > 0) {
+      this.description = article.childArticles.length.toString()
     }
 
     // Set icon based on folder status
-    if (article.isFolder) {
+    if (article.childArticles.length > 0) {
       this.iconPath = new vscode.ThemeIcon("folder")
     } else {
       this.iconPath = new vscode.ThemeIcon("book")
@@ -47,7 +50,7 @@ export class ArticleTreeItem extends YouTrackTreeItem {
 /**
  * Tree data provider for YouTrack Knowledge Base view
  */
-export class KnowledgeBaseTreeDataProvider extends BaseTreeDataProvider {
+export class ArticlesTreeDataProvider extends BaseTreeDataProvider<ArticleTreeItem | YouTrackTreeItem> {
   private _activeProject?: ProjectEntity
   private _articles: ArticleEntity[] = []
   private _projectChangeDisposable: vscode.Disposable | undefined
@@ -85,9 +88,9 @@ export class KnowledgeBaseTreeDataProvider extends BaseTreeDataProvider {
   /**
    * Get children for the Knowledge Base view when configured
    */
-  protected async getConfiguredChildren(element?: YouTrackTreeItem): Promise<YouTrackTreeItem[]> {
+  protected async getConfiguredChildren(element?: ArticleTreeItem): Promise<YouTrackTreeItem[]> {
     if (!this.activeProjectId) {
-      const noProject = new YouTrackTreeItem("No project selected", vscode.TreeItemCollapsibleState.None)
+      const noProject = new YouTrackTreeItem("No active project", vscode.TreeItemCollapsibleState.None)
       noProject.description = "Select a project in the Projects panel"
       noProject.tooltip = "Go to the Projects panel and select a project to view its knowledge base"
       return [noProject]
@@ -109,7 +112,7 @@ export class KnowledgeBaseTreeDataProvider extends BaseTreeDataProvider {
           : [this._createNoArticlesItem()]
       }
 
-      if (element instanceof ArticleTreeItem && element.article.isFolder) {
+      if (element instanceof ArticleTreeItem && element.article.childArticles.length > 0) {
         // Get child articles for the folder
         const children = await this.youtrackService.getChildArticles(element.article.id)
 
@@ -151,8 +154,8 @@ export class KnowledgeBaseTreeDataProvider extends BaseTreeDataProvider {
   /**
    * Handle project change events
    */
-  private _onProjectChanged(e: ProjectChangeEvent): void {
-    this._activeProject = e.project
+  private _onProjectChanged(project?: ProjectEntity): void {
+    this._activeProject = project
     this.refresh()
   }
 }

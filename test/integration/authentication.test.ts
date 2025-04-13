@@ -1,5 +1,8 @@
 import * as assert from "node:assert"
-import { AuthenticationService } from "../../src/services/authentication"
+import * as dotenv from "dotenv"
+
+import { VSCodeMock, VSCodeMockHelper } from "../helpers/vscode-mock"
+import { AuthenticationService } from "../../src/services"
 import {
   ENV_YOUTRACK_BASE_URL,
   ENV_YOUTRACK_TOKEN,
@@ -7,8 +10,6 @@ import {
   AUTHENTICATION_FAILED,
   NOT_AUTHENTICATED,
 } from "../../src/consts"
-import * as dotenv from "dotenv"
-import { VSCodeMock, VSCodeMockHelper } from "../helpers/vscode-mock"
 
 // Load environment variables from .env file
 dotenv.config()
