@@ -2,11 +2,11 @@
 
 ## Task 4.1: Create Custom Editor Provider Infrastructure
 - **ID**: TASK-4.1
-- **Description**: Set up the infrastructure for custom editor providers to handle YouTrack content in both preview and edit modes.
-- **Dependencies**: TASK-1.6
+- **Description**: Set up the infrastructure for custom editor providers to handle YouTrack content in edit mode.
+- **Dependencies**: TASK-1.6, TASK-2.5
 - **Acceptance Criteria**:
   - Custom editor provider registration in package.json
-  - Base custom editor provider class with support for preview and edit modes
+  - Base custom editor provider class with support for edit mode
   - Virtual document handling for YouTrack content
   - Editor context registration
   - File associations for YouTrack content
@@ -29,18 +29,16 @@
 - **Estimated Effort**: Medium
 - **Priority**: P0
 
-## Task 4.3: Implement Issue Preview Mode
+## Task 4.3: Extend the Preview Mode with Edit Capabilities
 - **ID**: TASK-4.3
-- **Description**: Create the preview mode for issue descriptions with markdown and Mermaid diagram support.
-- **Dependencies**: TASK-4.1
+- **Description**: Extend the preview mode from Task 2.5 with editing capabilities for issue and article content.
+- **Dependencies**: TASK-4.1, TASK-2.5
 - **Acceptance Criteria**:
-  - Integration with VSCode's markdown preview
-  - Support for Mermaid diagrams in preview
-  - Interactive internal links in preview mode
-  - Read-only view of issue content
-  - Support for issue description formatting
-  - Refresh action to update content from YouTrack
-- **Estimated Effort**: Medium
+  - Integration with the existing preview functionality from Task 2.5
+  - Edit button to switch from preview to edit mode
+  - Toggle between preview and edit modes
+  - Visual indication of current mode (preview/edit)
+- **Estimated Effort**: Small
 - **Priority**: P0
 
 ## Task 4.4: Implement Issue Edit Mode

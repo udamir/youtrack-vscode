@@ -64,8 +64,24 @@
 - **Priority**: P0
 - **Status**: ✅ Completed (April 13, 2025)
 
-## Task 2.5: Implement Recent Issues Panel
+## Task 2.5 Implement Issues and Articles preview as Markdown in WebView
 - **ID**: TASK-2.5
+- **Description**: Create the preview of issues and articles as Markdown in the WebView.
+- **Dependencies**: TASK-2.3, TASK-2.4
+- **Acceptance Criteria**:
+  - Markdown rendering for issue and article content
+  - Support for Mermaid diagrams in preview
+  - Interactive internal links (e.g., to other issues or articles) in preview mode
+    - Find issues and articles readable ids and convert to internal links
+    - Navigate to other issues or articles when clicked
+  - Read-only view of issue/content
+  - Support for issue/content formatting
+  - Refresh action to update content from YouTrack
+- **Estimated Effort**: Medium
+- **Priority**: P0
+
+## Task 2.6: Implement Recent Issues Panel
+- **ID**: TASK-2.6
 - **Description**: Create the Recent Issues panel showing recently accessed issues across all projects.
 - **Dependencies**: TASK-2.1
 - **Acceptance Criteria**:
@@ -78,8 +94,8 @@
 - **Estimated Effort**: Medium
 - **Priority**: P1
 
-## Task 2.6: Implement Recent Articles Panel
-- **ID**: TASK-2.6
+## Task 2.7: Implement Recent Articles Panel
+- **ID**: TASK-2.7
 - **Description**: Create the Recent Articles panel showing recently accessed articles across all projects.
 - **Dependencies**: TASK-2.1
 - **Acceptance Criteria**:
@@ -92,10 +108,10 @@
 - **Estimated Effort**: Medium
 - **Priority**: P1
 
-## Task 2.7: Implement Context Menus for Tree Items
-- **ID**: TASK-2.7
+## Task 2.8: Implement Context Menus for Tree Items
+- **ID**: TASK-2.8
 - **Description**: Create context menus for all tree item types with relevant actions.
-- **Dependencies**: TASK-2.2, TASK-2.3, TASK-2.4, TASK-2.5, TASK-2.6
+- **Dependencies**: TASK-2.2, TASK-2.3, TASK-2.4, TASK-2.6, TASK-2.7
 - **Acceptance Criteria**:
   - Context menu registrations in package.json
   - Command handlers for each context menu action
@@ -106,8 +122,8 @@
 - **Estimated Effort**: Medium
 - **Priority**: P1
 
-## Task 2.8: Enhance Issues Panel with Issue Filters
-- **ID**: TASK-2.8
+## Task 2.9: Enhance Issues Panel with Issue Filters
+- **ID**: TASK-2.9
 - **Description**: Add support for different issue filters in the Issues panel: by types (Epic, Feature, Task, Bug) and by resolution status.
 - **Dependencies**: TASK-2.3
 - **Acceptance Criteria**:
@@ -126,8 +142,8 @@
 - **Estimated Effort**: Medium
 - **Priority**: P1
 
-## Task 2.9: Implement Saved Search Support in Projects Panel
-- **ID**: TASK-2.9
+## Task 2.10: Implement Saved Search Support in Projects Panel
+- **ID**: TASK-2.10
 - **Description**: Add support for saved searches in the Projects panel.
 - **Dependencies**: TASK-2.2
 - **Acceptance Criteria**:
@@ -140,10 +156,10 @@
 - **Estimated Effort**: Medium
 - **Priority**: P1
 
-## Task 2.10: Implement Connection Messaging for Empty States
-- **ID**: TASK-2.10
+## Task 2.11: Implement Connection Messaging for Empty States
+- **ID**: TASK-2.11
 - **Description**: Create consistent messaging and UI elements for panels when connection is not configured or fails.
-- **Dependencies**: TASK-2.9
+- **Dependencies**: TASK-2.10
 - **Acceptance Criteria**:
   - Design consistent empty state UI for unconfigured connection
   - Design error state UI for failed connection
