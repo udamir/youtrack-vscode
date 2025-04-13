@@ -1,11 +1,15 @@
 import * as vscode from "vscode"
-import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN, ISSUE_VIEW_MODE_LIST } from "../../consts"
-import type { ProjectEntity } from "../../models"
+import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN, ISSUE_VIEW_MODE_LIST } from "../../src/consts"
+import type { ProjectEntity } from "../../src/models"
 
 /**
  * Simple EventEmitter implementation for testing
  */
-export class MockEventEmitter<T> {
+export class MockEventEmitter<T> implements vscode.EventEmitter<T> {
+  dispose(): void {
+    this.listeners = []
+  }
+
   private listeners: ((e: T) => any)[] = []
 
   get event() {

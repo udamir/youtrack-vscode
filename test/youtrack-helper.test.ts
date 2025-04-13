@@ -2,7 +2,7 @@ import dotenv from "dotenv"
 import * as assert from "node:assert"
 import { YouTrackHelper } from "./helpers/youtrack-helper"
 import { YouTrack } from "youtrack-client"
-import type { IssueEntity, ProjectEntity } from "../models"
+import type { IssueEntity, ProjectEntity } from "../src/models"
 import axios from "axios"
 
 // Load environment variables from .env file before creating any clients
@@ -89,8 +89,8 @@ describe("YouTrackHelper", () => {
 
         assert.ok(issue, "Should create a new issue")
         assert.ok(issue.id, "New issue should have an ID")
-        assert.ok(issue.project, "Issue should have a project")
-        assert.strictEqual(issue.project?.id, testProject.id, "Issue should be in the correct project")
+        assert.ok(issue.projectId, "Issue should have a project ID")
+        assert.strictEqual(issue.projectId, testProject.id, "Issue should be in the correct project")
 
         // Save for later tests
         testIssue = issue as IssueEntity

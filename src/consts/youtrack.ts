@@ -13,5 +13,6 @@ export const ISSUE_FIELDS = [
   "description",
   "resolved",
   { project: ["id"] },
+  { links: [{ linkType: ["name"] }, "direction", { issues: ["id"] }, "id"] },
 ] as const
 export const ARTICLE_FIELDS = ["id", "idReadable", "summary", "content", "created", "updated"] as const

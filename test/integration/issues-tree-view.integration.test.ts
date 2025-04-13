@@ -1,17 +1,12 @@
 import * as assert from "node:assert"
-import type { IssuesTreeDataProvider } from "../../views/issues-tree-view"
-import { YouTrackService } from "../../services/youtrack-client"
-import { CacheService } from "../../services/cache-service"
-import { AuthenticationService } from "../../services/authentication"
-import {
-  ENV_YOUTRACK_BASE_URL,
-  ENV_YOUTRACK_TOKEN,
-  ISSUE_VIEW_MODE_LIST,
-  ISSUE_VIEW_MODE_TREE,
-} from "../../consts/vscode"
-import type { ProjectEntity, IssueEntity } from "../../models"
+import { IssuesTreeDataProvider } from "../../src/views/issues-tree-view"
+import { YouTrackService } from "../../src/services/youtrack-client"
+import { CacheService } from "../../src/services/cache-service"
+import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN, ISSUE_VIEW_MODE_LIST, ISSUE_VIEW_MODE_TREE } from "../../src/consts"
+import type { ProjectEntity, IssueEntity } from "../../src/models"
 import * as dotenv from "dotenv"
 import { VSCodeMock, VSCodeMockHelper, MockEventEmitter } from "../helpers/vscode-mock"
+import { ProjectsTreeDataProvider } from "../../src/views/projects-tree-view"
 
 // Load environment variables from .env file
 dotenv.config()
@@ -30,7 +25,6 @@ testRunner("Issues Tree View Integration Test", () => {
   // Services
   let youtrackService: YouTrackService
   let cacheService: CacheService
-  let authService: AuthenticationService
   let issuesProvider: IssuesTreeDataProvider
 
   // Test data
@@ -60,22 +54,9 @@ testRunner("Issues Tree View Integration Test", () => {
         }),
       )
 
-      // Initialize services
-      // First the auth service
-      authService = new AuthenticationService(vscodeMock.extensionContext)
-      await authService.initialize()
-
       // Then initialize YouTrack service with the extension context
       youtrackService = new YouTrackService()
       await youtrackService.initialize(vscodeMock.extensionContext)
-
-      // Force set the client from auth service to ensure it's properly configured
-      // This is a workaround for the test environment
-      const authClient = authService.getClient()
-      if (authClient) {
-        // Use non-public property assignment via type assertion for testing purposes
-        ;(youtrackService as any).client = authClient
-      }
 
       // Get a test project to use
       const projects = await youtrackService.getProjects()
@@ -96,25 +77,11 @@ testRunner("Issues Tree View Integration Test", () => {
       // Create the cache service with youtrackService and workspaceState
       cacheService = new CacheService(youtrackService, vscodeMock.extensionContext.workspaceState)
 
-      // Create mock projects provider implementing the required interface
-      const mockProjectsProvider = {
-        activeProjectId: testProject.id,
-        onDidChangeActiveProject: projectChangeEmitter.event,
-        activeProject: testProject,
-        // Required for ProjectsTreeDataProvider interface
-        getChildren: jest.fn().mockResolvedValue([]),
-        getTreeItem: jest.fn().mockReturnValue({}),
-        setActiveProject: jest.fn(),
-        addProject: jest.fn(),
-        removeProject: jest.fn(),
-        refreshProjects: jest.fn(),
-        selectedProjects: [testProject],
-        dispose: jest.fn(),
-      }
+      // Create projects provider
+      const projectsProvider = new ProjectsTreeDataProvider(youtrackService, cacheService)
 
-      // Use dynamic import to get the IssuesTreeDataProvider class
-      const { IssuesTreeDataProvider } = require("../../views/issues-tree-view")
-      issuesProvider = new IssuesTreeDataProvider(youtrackService, cacheService, mockProjectsProvider)
+      // Create issues provider
+      issuesProvider = new IssuesTreeDataProvider(youtrackService, cacheService, projectsProvider)
     } catch (error) {
       console.error("Error setting up issues tree view test:", error)
       throw error

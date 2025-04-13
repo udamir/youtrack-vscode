@@ -43,8 +43,16 @@ The explorer sidebar will contain five separate collapsible panels:
    - Includes a filter input field at the top
    - Toggle button to switch between list and tree view modes
    - List view: flat list of issues for the selected project
-   - Tree view: hierarchical display based on issue links
-   - Each issue displays ID, summary, and potentially status icon
+   - Tree view: hierarchical display based on subtask relationships
+   - Each issue displays:
+     - ID (in readable format, e.g., "PROJECT-123")
+     - Summary
+     - Status indication (resolved/open)
+     - Different icons for resolved vs. open issues
+     - Collapsible state for issues with subtasks
+   - Proper loading states during data fetching
+   - User-friendly empty states with helpful messages
+   - View mode preference persisted across sessions
 
 3. **Knowledge Base Panel**
    - Displays articles for the currently selected project

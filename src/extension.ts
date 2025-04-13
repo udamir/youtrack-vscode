@@ -354,8 +354,7 @@ async function toggleViewsVisibility(isConfigured: boolean): Promise<void> {
  */
 async function updateConnectionStatus(connected: boolean): Promise<void> {
   if (connected) {
-    const baseUrl = youtrackService.getBaseUrl()
-    statusBarService.updateState(StatusBarState.Authenticated, baseUrl)
+    statusBarService.updateState(StatusBarState.Authenticated, youtrackService.baseUrl)
   } else {
     statusBarService.updateState(StatusBarState.NotAuthenticated)
   }

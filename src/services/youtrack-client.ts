@@ -4,12 +4,13 @@ import * as logger from "../utils/logger"
 import { AuthenticationService } from "./authentication"
 import type { AuthState, IssueEntity, ProjectEntity } from "../models"
 import { AUTHENTICATED, AUTHENTICATION_FAILED, NOT_AUTHENTICATED, ISSUE_FIELDS, PROJECT_FIELDS } from "../consts"
+import { getIssueEntity } from "../utils/youtrack"
 
 /**
  * Service for interacting with YouTrack API
  */
 export class YouTrackService {
-  private client: YouTrack | null = null
+  private _client: YouTrack | null = null
   private _authService: AuthenticationService | null = null
   private previousBaseUrl: string | undefined
   private readonly _onServerChanged = new vscode.EventEmitter<string | undefined>()
@@ -37,7 +38,7 @@ export class YouTrackService {
 
       // Update client reference if authentication was successful
       if (success) {
-        this.client = this._authService.getClient()
+        this._client = this._authService.getClient()
 
         // Force a server change event on initialization
         const currentBaseUrl = this._authService.getBaseUrl()
@@ -56,18 +57,10 @@ export class YouTrackService {
   }
 
   /**
-   * Get the authentication service instance
-   * @returns The authentication service instance or null if not initialized
-   */
-  public get authService(): AuthenticationService | null {
-    return this._authService
-  }
-
-  /**
    * Get the current YouTrack base URL
    * @returns The base URL or undefined if not connected
    */
-  public getBaseUrl(): string | undefined {
+  public get baseUrl(): string | undefined {
     return this._authService?.getBaseUrl()
   }
 
@@ -78,7 +71,7 @@ export class YouTrackService {
    */
   private handleAuthStateChange(state: AuthState): void {
     if (state === AUTHENTICATED && this._authService) {
-      this.client = this._authService.getClient()
+      this._client = this._authService.getClient()
 
       // Get the current base URL
       const currentBaseUrl = this._authService.getBaseUrl()
@@ -103,7 +96,7 @@ export class YouTrackService {
 
       logger.info("YouTrack client updated due to authentication state change")
     } else if (state === NOT_AUTHENTICATED || state === AUTHENTICATION_FAILED) {
-      this.client = null
+      this._client = null
 
       // If we were previously authenticated and are now disconnected
       if (this.previousBaseUrl) {
@@ -140,7 +133,7 @@ export class YouTrackService {
 
       // Update client reference if authentication was successful
       if (success) {
-        this.client = this._authService.getClient()
+        this._client = this._authService.getClient()
 
         // If this is a different server than before, explicitly fire a server change event
         if (isServerChange) {
@@ -168,15 +161,15 @@ export class YouTrackService {
     }
 
     await this._authService.logout()
-    this.client = null
+    this._client = null
   }
 
   /**
    * Get YouTrack client instance
    * @returns YouTrack client instance or null if not initialized
    */
-  public getClient(): YouTrack | null {
-    return this.client
+  public get client(): YouTrack | null {
+    return this._client
   }
 
   /**
@@ -184,7 +177,7 @@ export class YouTrackService {
    * @returns True if YouTrack is configured with valid credentials
    */
   public isConnected(): boolean {
-    return this.client !== null && this.authService?.isAuthenticated() === true
+    return this._client !== null && this._authService?.isAuthenticated() === true
   }
 
   /**
@@ -193,13 +186,12 @@ export class YouTrackService {
    */
   public async getProjects(): Promise<ProjectEntity[]> {
     try {
-      const client = this.getClient()
-      if (!client) {
+      if (!this.client) {
         throw new Error("YouTrack client is not initialized")
       }
 
       // Fetch projects from the YouTrack client
-      return (await client.Admin.Projects.getProjects({
+      return (await this.client.Admin.Projects.getProjects({
         fields: PROJECT_FIELDS,
       })) as ProjectEntity[]
     } catch (error) {
@@ -232,13 +224,12 @@ export class YouTrackService {
    */
   public async getProjectById(projectId: string): Promise<ProjectEntity | null> {
     try {
-      const client = this.getClient()
-      if (!client) {
+      if (!this.client) {
         throw new Error("YouTrack client is not initialized")
       }
 
       // Get project details from YouTrack
-      return (await client.Admin.Projects.getProjectById(projectId, {
+      return (await this.client.Admin.Projects.getProjectById(projectId, {
         fields: PROJECT_FIELDS,
       })) as ProjectEntity
     } catch (error) {
@@ -274,14 +265,8 @@ export class YouTrackService {
    */
   public async getIssues(projectShortName: string, filter?: string): Promise<IssueEntity[]> {
     try {
-      if (!this.isConnected()) {
+      if (!this.isConnected() || !this.client) {
         logger.warn("YouTrack service not connected, cannot get issues")
-        return []
-      }
-
-      const client = this.getClient()
-      if (!client) {
-        logger.error("Failed to get YouTrack client")
         return []
       }
 
@@ -295,30 +280,10 @@ export class YouTrackService {
 
       logger.info(`Fetching issues with query: ${query}`)
 
-      const issues = await client.Issues.getIssues({
-        query,
-        fields: ISSUE_FIELDS,
-        $top: 50, // Limit to 50 issues for performance
-      })
+      const issues = await this.client.Issues.getIssues({ query, fields: ISSUE_FIELDS, $top: 50 })
 
       // Map to our simplified Issue model
-      return issues.map((issue: any) => ({
-        id: issue.id,
-        idReadable: issue.idReadable,
-        summary: issue.summary || "",
-        description: issue.description,
-        resolved: issue.resolved || 0,
-        project: { id: issue.project?.id || "" },
-        created: issue.created,
-        updated: issue.updated,
-        hasChildren: issue.subtasks && issue.subtasks.length > 0,
-        parentIssue: issue.parentIssue
-          ? {
-              id: issue.parentIssue.id,
-              idReadable: issue.parentIssue.idReadable,
-            }
-          : null,
-      }))
+      return issues.map(getIssueEntity)
     } catch (error) {
       logger.error("Error fetching issues:", error)
       return []
@@ -348,39 +313,22 @@ export class YouTrackService {
    */
   public async getIssueById(issueId: string): Promise<IssueEntity | null> {
     try {
-      if (!this.isConnected()) {
+      if (!this.isConnected() || !this.client) {
         logger.warn("YouTrack service not connected, cannot get issue")
-        return null
-      }
-
-      const client = this.getClient()
-      if (!client) {
-        logger.warn("YouTrack client not available")
         return null
       }
 
       logger.info(`Fetching issue with ID: ${issueId}`)
 
       // Fetch issue details
-      const issue = await client.Issues.getIssueById(issueId, {
-        fields: ISSUE_FIELDS,
-      })
+      const issue = await this.client.Issues.getIssueById(issueId, { fields: ISSUE_FIELDS })
 
       if (!issue) {
         return null
       }
 
       // Map to our simplified Issue model
-      return {
-        id: issue.id,
-        idReadable: issue.idReadable,
-        summary: issue.summary || "",
-        description: issue.description || "",
-        resolved: issue.resolved || 0,
-        project: { id: issue.project?.id || "" },
-        created: issue.created,
-        updated: issue.updated,
-      }
+      return getIssueEntity(issue)
     } catch (error) {
       logger.error(`Error fetching issue ${issueId}:`, error)
       return null

@@ -1,43 +1,34 @@
-import type { Project, Issue, Article, User, Entity } from "youtrack-client"
-import type { ISSUE_FIELDS, PROJECT_FIELDS, ARTICLE_FIELDS, USER_PROFILE_FIELDS } from "../consts"
-
 /**
  * Interface representing a YouTrack entities
  */
 
-export interface UserEntity extends Entity<User, typeof USER_PROFILE_FIELDS> {
+export interface UserEntity {
   login: string
   fullName: string
   email: string
   id: string
 }
 
-export interface ProjectEntity extends Entity<Project, typeof PROJECT_FIELDS> {
+export interface ProjectEntity {
   id: string
   description: string
   name: string
   shortName: string
 }
 
-export interface IssueEntity extends Entity<Issue, typeof ISSUE_FIELDS> {
+export interface IssueEntity {
   id: string
   created: number
   idReadable: string
-  project: {
-    id: string
-  } | null
+  projectId: string
   resolved: number
   summary: string
   updated: number
-  hasChildren?: boolean
   description: string | null
-  parentIssue?: {
-    id: string
-    idReadable?: string
-  } | null
+  subtasks: { id: string }[]
 }
 
-export interface ArticleEntity extends Entity<Article, typeof ARTICLE_FIELDS> {
+export interface ArticleEntity {
   id: string
   content: string
   summary: string

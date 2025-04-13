@@ -233,6 +233,7 @@
       "^.+\\.ts$": ["ts-jest"]
     },
     "testMatch": ["**/test/**/*.test.ts"],
-    "testPathIgnorePatterns": ["/node_modules/", "/out/", "/dist/"]
+    "testPathIgnorePatterns": ["/node_modules/", "/out/", "/dist/"],
+    "setupFilesAfterEnv": ["<rootDir>/test/helpers/mock-setup.ts"]
   }
 }

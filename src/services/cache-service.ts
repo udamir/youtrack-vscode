@@ -33,7 +33,7 @@ export class CacheService {
     this._workspaceState = workspaceState
 
     // Initialize base URL from the YouTrack service
-    this._baseUrl = this.youtrackService.getBaseUrl()
+    this._baseUrl = this.youtrackService.baseUrl
 
     // Subscribe to server change events
     this._serverChangeDisposable = this.youtrackService.onServerChanged(this.handleServerChange.bind(this))

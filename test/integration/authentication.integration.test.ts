@@ -1,12 +1,12 @@
 import * as assert from "node:assert"
-import { AuthenticationService } from "../../services/authentication"
+import { AuthenticationService } from "../../src/services/authentication"
 import {
   ENV_YOUTRACK_BASE_URL,
   ENV_YOUTRACK_TOKEN,
   AUTHENTICATED,
   AUTHENTICATION_FAILED,
   NOT_AUTHENTICATED,
-} from "../../consts/vscode"
+} from "../../src/consts"
 import * as dotenv from "dotenv"
 import { VSCodeMock, VSCodeMockHelper } from "../helpers/vscode-mock"
 

@@ -17,7 +17,7 @@ export class IssueTreeItem extends YouTrackTreeItem {
     super(
       issue.summary,
       // Set collapsible state based on whether the issue has children
-      issue.hasChildren ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
+      issue.subtasks.length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
       {
         command: COMMAND_OPEN_ISSUE,
         title: "Open Issue",
@@ -27,7 +27,7 @@ export class IssueTreeItem extends YouTrackTreeItem {
     )
 
     // Set the id property to match the issue id for tracking
-    this.id = issue.id
+    this.id = issue.idReadable
 
     // Set description to show the issue ID
     this.description = issue.idReadable
