@@ -46,6 +46,11 @@
         "command": "youtrack.toggleIssuesViewMode",
         "title": "YouTrack: Toggle Issues View Mode",
         "icon": "$(list-tree)"
+      },
+      {
+        "command": "youtrack.refreshKnowledgeBase",
+        "title": "YouTrack: Refresh Knowledge Base",
+        "icon": "$(refresh)"
       }
     ],
     "viewsContainers": {
@@ -112,6 +117,11 @@
         {
           "command": "youtrack.toggleIssuesViewMode",
           "when": "view == youtrackIssues && youtrack.status.connected",
+          "group": "navigation"
+        },
+        {
+          "command": "youtrack.refreshKnowledgeBase",
+          "when": "view == youtrackKnowledgeBase && youtrack.status.connected",
           "group": "navigation"
         }
       ],

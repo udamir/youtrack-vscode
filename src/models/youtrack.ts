@@ -28,11 +28,24 @@ export interface IssueEntity {
   subtasks: { id: string }[]
 }
 
+/**
+ * Represents a YouTrack knowledge base article entity
+ */
 export interface ArticleEntity {
   id: string
-  content: string
-  summary: string
-  created: number
-  idReadable: string
-  updated: number
+  title: string
+  summary?: string
+  content?: string
+  updatedDate: number
+  createdDate: number
+  parentArticleId?: string
+  visibility: string
+  project: {
+    id: string
+    name: string
+    shortName: string
+  }
+  folders: string[]
+  isFolder: boolean
+  childArticles: ArticleEntity[]
 }

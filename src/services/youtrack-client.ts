@@ -2,9 +2,16 @@ import * as vscode from "vscode"
 import type { YouTrack } from "youtrack-client"
 import * as logger from "../utils/logger"
 import { AuthenticationService } from "./authentication"
-import type { AuthState, IssueEntity, ProjectEntity } from "../models"
-import { AUTHENTICATED, AUTHENTICATION_FAILED, NOT_AUTHENTICATED, ISSUE_FIELDS, PROJECT_FIELDS } from "../consts"
-import { getIssueEntity } from "../utils/youtrack"
+import type { AuthState, IssueEntity, ProjectEntity, ArticleEntity } from "../models"
+import {
+  AUTHENTICATED,
+  AUTHENTICATION_FAILED,
+  NOT_AUTHENTICATED,
+  ISSUE_FIELDS,
+  PROJECT_FIELDS,
+  ARTICLE_FIELDS,
+} from "../consts"
+import { getIssueEntity, getArticleEntity } from "../utils/youtrack"
 
 /**
  * Service for interacting with YouTrack API
@@ -332,6 +339,79 @@ export class YouTrackService {
     } catch (error) {
       logger.error(`Error fetching issue ${issueId}:`, error)
       return null
+    }
+  }
+
+  /**
+   * Get knowledge base articles for a project
+   * @param projectId Project ID to fetch articles for
+   * @returns Array of articles or empty array if not found/error
+   */
+  public async getArticles(projectId: string): Promise<ArticleEntity[]> {
+    try {
+      if (!this.isConnected() || !this.client) {
+        logger.warn("YouTrack service not connected, cannot get articles")
+        return []
+      }
+
+      logger.info(`Fetching articles for project ID: ${projectId}`)
+
+      // Fetch articles for the project using more specific typing and any type to bypass strict typing
+      const articles = await this.client.Articles.getArticles({
+        $skip: 0,
+        $top: 100,
+        fields: [...ARTICLE_FIELDS] as any[],
+        query: `project: {${projectId}}`,
+      } as any) // Cast to any to bypass type checking
+
+      if (!articles || !articles.length) {
+        logger.info(`No articles found for project ${projectId}`)
+        return []
+      }
+
+      // Filter to only top-level articles (no parent)
+      const topLevelArticles = articles.filter((a: any) => {
+        // Use type assertion to avoid TypeScript errors
+        return !a.$type || (a.$type === "Article" && !a.parentArticle)
+      })
+
+      // Map to our simplified Article model
+      return topLevelArticles.map((article) => getArticleEntity(article))
+    } catch (error) {
+      logger.error(`Error fetching articles for project ${projectId}:`, error)
+      return []
+    }
+  }
+
+  /**
+   * Get child articles for a parent article
+   * @param parentArticleId Parent article ID to fetch children for
+   * @returns Array of child articles or empty array if not found/error
+   */
+  public async getChildArticles(parentArticleId: string): Promise<ArticleEntity[]> {
+    try {
+      if (!this.isConnected() || !this.client) {
+        logger.warn("YouTrack service not connected, cannot get child articles")
+        return []
+      }
+
+      logger.info(`Fetching child articles for parent article ID: ${parentArticleId}`)
+
+      // Fetch parent article with children
+      const article = await this.client.Articles.getArticle(parentArticleId, {
+        fields: ["id", { childArticles: [...ARTICLE_FIELDS] }] as any[],
+      })
+
+      if (!article || !article.childArticles || !article.childArticles.length) {
+        logger.info(`No child articles found for article ${parentArticleId}`)
+        return []
+      }
+
+      // Map children to our simplified Article model
+      return article.childArticles.map((child: any) => getArticleEntity(child))
+    } catch (error) {
+      logger.error(`Error fetching child articles for article ${parentArticleId}:`, error)
+      return []
     }
   }
 }

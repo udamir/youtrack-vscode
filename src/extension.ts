@@ -15,6 +15,7 @@ import {
   COMMAND_ADD_PROJECT,
   COMMAND_REMOVE_PROJECT,
   COMMAND_SET_ACTIVE_PROJECT,
+  COMMAND_OPEN_ARTICLE,
   VIEW_PROJECTS,
   VIEW_ISSUES,
   VIEW_RECENT_ISSUES,
@@ -270,6 +271,82 @@ function registerCommands(context: vscode.ExtensionContext): void {
   })
   context.subscriptions.push(toggleIssuesViewModeCommand)
 
+  // Command for refreshing knowledge base
+  const refreshKnowledgeBaseCommand = vscode.commands.registerCommand("youtrack.refreshKnowledgeBase", () => {
+    logger.info("Refreshing knowledge base panel")
+    knowledgeBaseProvider.refresh()
+  })
+  context.subscriptions.push(refreshKnowledgeBaseCommand)
+
+  // Command for opening articles
+  const openArticleCommand = vscode.commands.registerCommand(COMMAND_OPEN_ARTICLE, async (item: { article: any }) => {
+    try {
+      if (!item || !item.article) {
+        logger.error("No article provided to open")
+        return
+      }
+
+      const article = item.article
+      logger.info(`Opening article: ${article.title} (${article.id})`)
+
+      // For now, we'll just show a simple webview with the article content
+      // Create a webview panel to display the article
+      const panel = vscode.window.createWebviewPanel(
+        'youtrackArticle',
+        article.title,
+        vscode.ViewColumn.One,
+        {
+          enableScripts: true,
+          retainContextWhenHidden: true
+        }
+      )
+
+      // Create article content with HTML
+      panel.webview.html = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>${article.title}</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+              padding: 20px;
+              line-height: 1.5;
+            }
+            h1 { 
+              margin-bottom: 10px;
+              border-bottom: 1px solid #eee;
+              padding-bottom: 10px;
+            }
+            .metadata {
+              color: #666;
+              margin-bottom: 20px;
+              font-size: 0.9em;
+            }
+            .content {
+              margin-top: 20px;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${article.title}</h1>
+          <div class="metadata">
+            <div>Project: ${article.project.name}</div>
+            <div>Updated: ${new Date(article.updatedDate).toLocaleString()}</div>
+          </div>
+          <div class="content">${article.content || 'No content available'}</div>
+        </body>
+        </html>
+      `
+    } catch (error) {
+      logger.error("Error opening article", error)
+      vscode.window.showErrorMessage("Error opening article. See output log for details.")
+    }
+  })
+  context.subscriptions.push(openArticleCommand)
+
   // Add commands to subscriptions
   context.subscriptions.push(connectCommand)
   context.subscriptions.push(addProjectCommand)
@@ -286,7 +363,7 @@ function registerTreeDataProviders(context: vscode.ExtensionContext): void {
 
   projectsProvider = new ProjectsTreeDataProvider(youtrackService, cacheService)
   issuesProvider = new IssuesTreeDataProvider(youtrackService, cacheService, projectsProvider)
-  knowledgeBaseProvider = new KnowledgeBaseTreeDataProvider(youtrackService)
+  knowledgeBaseProvider = new KnowledgeBaseTreeDataProvider(youtrackService, projectsProvider)
   recentIssuesProvider = new RecentIssuesTreeDataProvider(youtrackService, cacheService)
   recentArticlesProvider = new RecentArticlesTreeDataProvider(youtrackService, cacheService)
 

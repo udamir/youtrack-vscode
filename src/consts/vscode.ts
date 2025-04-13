@@ -29,11 +29,13 @@ export const STATUS_CONNECTED = "youtrack.status.connected"
 
 // Command IDs
 export const COMMAND_CONNECT = "youtrack.connect"
+export const COMMAND_DISCONNECT = "youtrack.disconnect"
 export const COMMAND_ADD_PROJECT = "youtrack.addProject"
 export const COMMAND_REMOVE_PROJECT = "youtrack.removeProject"
 export const COMMAND_SET_ACTIVE_PROJECT = "youtrack.setActiveProject"
 export const COMMAND_REFRESH_PROJECTS = "youtrack.refreshProjects"
 export const COMMAND_OPEN_ISSUE = "youtrack.openIssue"
+export const COMMAND_OPEN_ARTICLE = "youtrack.openArticle"
 export const COMMAND_FILTER_ISSUES = "youtrack.filterIssues"
 export const COMMAND_TOGGLE_ISSUES_VIEW_MODE = "youtrack.toggleIssuesViewMode"
 
