@@ -1,5 +1,5 @@
 import * as assert from "node:assert"
-import { IssuesTreeDataProvider } from "../../src/views/issues-tree-view"
+import { IssuesTreeDataProvider, type IssueTreeItem } from "../../src/views/issues-tree-view"
 import { YouTrackService } from "../../src/services/youtrack-client"
 import { CacheService } from "../../src/services/cache-service"
 import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN, ISSUE_VIEW_MODE_LIST, ISSUE_VIEW_MODE_TREE } from "../../src/consts"
@@ -33,7 +33,10 @@ testRunner("Issues Tree View Integration Test", () => {
 
   // VS Code mock
   let vscodeMock: VSCodeMock
-  let projectChangeEmitter: MockEventEmitter<{ projectId: string; project: ProjectEntity | undefined }>
+  let projectChangeEmitter: MockEventEmitter<{
+    projectId: string
+    project: ProjectEntity | undefined
+  }>
 
   beforeAll(async () => {
     if (!hasCredentials) {
@@ -43,7 +46,10 @@ testRunner("Issues Tree View Integration Test", () => {
 
     try {
       // Create event emitters for mocked events
-      projectChangeEmitter = new MockEventEmitter<{ projectId: string; project: ProjectEntity | undefined }>()
+      projectChangeEmitter = new MockEventEmitter<{
+        projectId: string
+        project: ProjectEntity | undefined
+      }>()
 
       // Initialize VSCodeMock with YouTrack test configuration
       vscodeMock = new VSCodeMock(
@@ -103,7 +109,7 @@ testRunner("Issues Tree View Integration Test", () => {
       assert.ok(items.length > 0, "Should have at least one item if project has issues")
 
       // Check the first item has the right structure
-      const firstItem = items[0] as any
+      const firstItem = items[0] as IssueTreeItem
       assert.ok(firstItem.label, "Item should have a label")
       assert.ok(firstItem.issue, "Item should have an issue object")
     }

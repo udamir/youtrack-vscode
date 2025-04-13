@@ -31,23 +31,30 @@ The explorer sidebar will contain five separate collapsible panels:
 1. **Projects Panel**
    - A dedicated panel showing manually added YouTrack projects (not all available projects)
    - "Add Project" button at the top of the panel to add projects from YouTrack
-   - Context menu option to remove projects from the panel
+   - "Add Saved Search" button to add saved searches from YouTrack
+   - Projects and saved searches are displayed in separate collapsible sections
+   - Context menu options to remove projects or saved searches from the panel
    - Project persistence across sessions (remembered between restarts)
-   - Single-select functionality (only one project can be selected at a time)
-   - Project selection affects the content shown in Issues and Knowledge Base panels
+   - Single-select functionality (only one project or saved search can be selected at a time)
+   - Project/search selection affects the content shown in Issues and Knowledge Base panels
    - Each project displays name and potentially icon/status
+   - Each saved search displays name and query information
    - When YouTrack is not configured, displays a prominent "Setup Connection" button that launches the Configuration Wizard
 
 2. **Issues Panel**
    - Displays issues for the currently selected project
    - Includes a filter input field at the top
    - Toggle button to switch between list and tree view modes
+   - Quick filter buttons for issue types (Epic, Feature, Task, Bug)
+   - Toggle button to hide/show resolved issues
    - List view: flat list of issues for the selected project
    - Tree view: hierarchical display based on subtask relationships
    - Each issue displays:
      - ID (in readable format, e.g., "PROJECT-123")
      - Summary
      - Status indication (resolved/open)
+     - Type-specific icon (Epic, Feature, Task, Bug)
+     - Priority indicator with color coding (Critical, Major, Normal, Minor)
      - Different icons for resolved vs. open issues
      - Collapsible state for issues with subtasks
    - Proper loading states during data fetching
@@ -83,15 +90,20 @@ The explorer sidebar will contain five separate collapsible panels:
 YOUTRACK                 [Refresh]
 
 PROJECTS                 [▼]
-  ├── Project A (selected) 
-  ├── Project B
-  └── Project C
+  ├── Projects
+  │   ├── Project A (selected) 
+  │   ├── Project B
+  │   └── Project C
+  ├── Saved Searches
+  │   ├── Search 1
+  │   └── Search 2
 
 ISSUES                   [▼]
-  Filter: [____________] [List|Tree]
-  ├── PRJ-1: Issue title
-  ├── PRJ-2: Issue title
-  └── PRJ-3: Issue title
+  Filter: [____________] [List|Tree] [Epic] [Feature] [Task] [Bug] [Show Resolved]
+  ├── [🔴] PRJ-1: Critical issue title
+  ├── [🟠] PRJ-2: Major issue title
+  ├── [🟢] PRJ-3: Normal issue title
+  └── [🔵] PRJ-4: Minor issue title
 
 KNOWLEDGE BASE           [▼]
   ├── Category 1
@@ -473,31 +485,35 @@ This section maps interface components to functional requirements to ensure comp
 │  E  │ EXPLORER: YOUTRACK                                   ⟳                      │
 │  x  │ ┌───────────────────────────────────────────────────────────────────┐       │
 │  p  │ │ PROJECTS                                          [▼]             │       │
-│  l  │ │   ├── Project Alpha (selected)                                    │       │
-│  o  │ │   ├── Project Beta                                                │       │
-│  r  │ │   └── Project Gamma                                               │       │
-│  e  │ │                                                                   │       │
-│  r  │ │ ISSUES                                            [▼]             │       │
-│     │ │   Filter: [priority: high           ]  [List|Tree]                │       │
-│  B  │ │   ├── ALPHA-123: Fix critical login bug                           │       │
-│  a  │ │   ├── ALPHA-127: Update documentation                             │       │
-│  r  │ │   └── ALPHA-129: Improve error handling                           │       │
+│  l  │ │   ├── Projects                                     │       │
+│  o  │ │   │   ├── Project Alpha (selected)                │       │
+│  r  │ │   │   ├── Project Beta                            │       │
+│  e  │ │   │   └── Project Gamma                          │       │
+│  r  │ │   ├── Saved Searches                             │       │
+│     │ │   │   ├── Search 1                               │       │
+│  B  │ │   │   └── Search 2                              │       │
+│  a  │ │ ISSUES                                            [▼]             │       │
+│  r  │ │   Filter: [priority: high           ]  [List|Tree] [Epic] [Feature] [Task] [Bug] [Show Resolved]│       │
+│     │ │   ├── [🔴] PRJ-1: Critical issue title                          │       │
+│     │ │   ├── [🟠] PRJ-2: Major issue title                          │       │
+│     │ │   ├── [🟢] PRJ-3: Normal issue title                          │       │
+│     │ │   └── [🔵] PRJ-4: Minor issue title                          │       │
 │     │ │                                                                   │       │
 │  [F]│ │ KNOWLEDGE BASE                                    [▼]             │       │
-│  [D]│ │   ├── Development                                                 │       │
-│  [E]│ │   │   ├── Setup Guide                                             │       │
-│  [Y]│ │   │   └── Coding Standards                                        │       │
-│  [S]│ │   └── User Manual                                                 │       │
+│  [D]│ │   ├── Development                                 │       │
+│  [E]│ │   │   ├── Setup Guide                             │       │
+│  [Y]│ │   │   └── Coding Standards                        │       │
+│  [S]│ │   └── User Manual                                 │       │
 │  [G]│ │                                                                   │       │
 │     │ │ RECENT ISSUES                                     [▼]             │       │
-│     │ │   ├── PRJ-1: Issue title (3m ago)                                 │       │
-│     │ │   ├── PROJ-45: Issue title (1h ago)                               │       │
-│     │ │   └── DEV-12: Issue title (2d ago)                                │       │
+│     │ │   ├── PRJ-1: Issue title (3m ago)                 │       │
+│     │ │   ├── PROJ-45: Issue title (1h ago)               │       │
+│     │ │   └── DEV-12: Issue title (2d ago)                │       │
 │     │ │                                                                   │       │
 │     │ │ RECENT ARTICLES                                   [▼]             │       │
-│     │ │   ├── Article 1 (1h ago)                                          │       │
-│     │ │   ├── Setup Guide (2d ago)                                        │       │
-│     │ │   └── Release Notes (3d ago)                                      │       │
+│     │ │   ├── Article 1 (1h ago)                          │       │
+│     │ │   ├── Setup Guide (2d ago)                        │       │
+│     │ │   └── Release Notes (3d ago)                      │       │
 │     │ └───────────────────────────────────────────────────────────────────┘       │
 ├─────┼─────────────────────────────────────────────────────────────────────────────┤
 │  S  │ SEARCH                                              [Clear]                 │

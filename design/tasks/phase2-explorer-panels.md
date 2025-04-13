@@ -105,31 +105,39 @@
 - **Estimated Effort**: Medium
 - **Priority**: P1
 
-## Task 2.8: Implement Panel State Persistence
+## Task 2.8: Enhance Issues Panel with Issue Filters
 - **ID**: TASK-2.8
-- **Description**: Ensure panel state (expanded/collapsed, selected items) persists across sessions.
-- **Dependencies**: TASK-2.2, TASK-2.3, TASK-2.4, TASK-2.5, TASK-2.6
+- **Description**: Add support for different issue filters in the Issues panel: by types (Epic, Feature, Task, Bug) and by resolution status.
+- **Dependencies**: TASK-2.3
 - **Acceptance Criteria**:
-  - Selected project persistence
-  - Panel expansion state persistence
-  - View mode preference persistence
-  - Restoration of state on extension activation
-  - Memory-efficient storage of panel state
-- **Estimated Effort**: Small
-- **Priority**: P2
+  - Type-specific icons for issues based on their type
+  - Quick filter buttons for each issue type in the panel header
+  - Toggle button to hide/show resolved issues
+  - Priority indicators with color coding:
+    - 🔴 Critical (Red)
+    - 🟠 Major (Orange)
+    - 🟢 Normal (Green)
+    - 🔵 Minor (Blue)
+  - Update YouTrack client to fetch issue type information and priority data
+  - Support for filtering issues by type and resolution status
+  - Visual indication of active filters
+  - Persistence of filter preferences across sessions
+- **Estimated Effort**: Medium
+- **Priority**: P1
 
-## Task 2.9: Implement Configuration Status Detection in Explorer
+## Task 2.9: Implement Saved Search Support in Projects Panel
 - **ID**: TASK-2.9
-- **Description**: Create a mechanism to detect the configuration status and manage the visibility of the "Setup Connection" button in the Explorer view.
-- **Dependencies**: TASK-1.14, TASK-2.2
+- **Description**: Add support for saved searches in the Projects panel.
+- **Dependencies**: TASK-2.2
 - **Acceptance Criteria**:
-  - Configuration detection service that integrates with explorer panels
-  - Dynamic visibility of setup button based on configuration state
-  - Proper handling of connection changes (setup/disconnect events)
-  - Performance optimized state detection to avoid UI lagging
-  - Event system for notifying panels of configuration changes
-- **Estimated Effort**: Small
-- **Priority**: P0
+  - "Add Saved Search" button in the Projects panel
+  - Organize Projects panel into collapsible sections for Projects and Saved Searches
+  - Allow selecting a saved search to display matching issues in the Issues panel
+  - Context menu option to remove saved searches
+  - Persistence of saved searches across sessions
+  - Update YouTrack client to fetch and execute saved searches
+- **Estimated Effort**: Medium
+- **Priority**: P1
 
 ## Task 2.10: Implement Connection Messaging for Empty States
 - **ID**: TASK-2.10
