@@ -66,17 +66,20 @@
 
 ## Task 2.5 Implement Issues and Articles preview as Markdown in WebView
 - **ID**: TASK-2.5
-- **Description**: Create the preview of issues and articles as Markdown in the WebView.
+- **Description**: Create the preview of issues and articles as Markdown content using VS Code's standard Markdown viewer capabilities.
 - **Dependencies**: TASK-2.3, TASK-2.4
 - **Acceptance Criteria**:
-  - Markdown rendering for issue and article content
+  - Markdown rendering for issue and article content using VS Code's built-in Markdown viewer
   - Support for Mermaid diagrams in preview
+  - Preview should be triggered when the user selects an issue/article, not automatically
   - Interactive internal links (e.g., to other issues or articles) in preview mode
-    - Find issues and articles readable ids and convert to internal links
-    - Navigate to other issues or articles when clicked
-  - Read-only view of issue/content
+    - Internal links should be parsed based on project shortName cache in advance
+    - Internal links should open in a new preview tab when clicked
+  - Read-only view of issue/content (no content caching)
   - Support for issue/content formatting
   - Refresh action to update content from YouTrack
+  - Error handling for content that fails to load
+  - WebView persistence for better performance
 - **Estimated Effort**: Medium
 - **Priority**: P0
 
