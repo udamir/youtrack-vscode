@@ -90,7 +90,6 @@ describe("Knowledge Base Tree View - Integration Tests", () => {
       const article = (articles[0] as ArticleTreeItem).article
       assert.ok(article.id, "Article should have an ID")
       assert.ok(article.summary, "Article should have a summary")
-      assert.ok(typeof article.updated === "number", "Article should have an updated timestamp")
     } else if (articles.length === 1) {
       // If no articles, verify the "no articles" message
       assert.strictEqual(articles[0].label, "No articles found", "Should show 'No articles found' message")

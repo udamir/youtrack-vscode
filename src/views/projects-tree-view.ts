@@ -192,7 +192,7 @@ export class ProjectsTreeDataProvider extends BaseTreeDataProvider<ProjectTreeIt
 
     // Save to cache so it persists across VS Code restarts
     await this._cacheService.saveActiveProject(projectShortName)
-    
+
     // Emit change event
     this._onDidChangeActiveProject.fire(this._activeProject)
 

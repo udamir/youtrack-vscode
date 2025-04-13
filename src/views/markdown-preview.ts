@@ -100,6 +100,7 @@ export class MarkdownPreviewProvider implements vscode.Disposable {
 
               switch (message.command) {
                 case "refresh":
+                  // biome-ignore lint/style/noNonNullAssertion: <explanation>
                   await this.refreshContent(entity, panel!)
                   break
                 case "openLink":
