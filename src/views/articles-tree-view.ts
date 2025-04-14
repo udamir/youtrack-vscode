@@ -34,7 +34,9 @@ export class ArticleTreeItem extends YouTrackTreeItem {
 
     // Set description showing the folder path if available
     if (article.childArticles.length > 0) {
-      this.description = article.childArticles.length.toString()
+      this.description = `${article.idReadable} (${article.childArticles.length})`
+    } else {
+      this.description = article.idReadable
     }
 
     // Set icon based on folder status

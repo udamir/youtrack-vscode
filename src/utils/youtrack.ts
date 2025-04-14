@@ -1,6 +1,13 @@
-import type { Article, Entity, Issue } from "youtrack-client"
+import type { Article, Entity, Issue, SingleEnumIssueCustomField } from "youtrack-client"
 import type { ARTICLE_FIELDS, ARTICLE_FIELDS_FULL, ISSUE_FIELDS, ISSUE_FIELDS_FULL } from "../consts"
 import type { ArticleBaseEntity, ArticleEntity, IssueBaseEntity, IssueEntity } from "../models"
+
+export const getIssueType = (issue: Entity<Issue, typeof ISSUE_FIELDS>): string => {
+  const typeField = issue.customFields.find(
+    ({ name, value }) => name === "Type" && typeof value === "object" && "name" in value,
+  ) as SingleEnumIssueCustomField
+  return typeField?.value.name || ""
+}
 
 export const getIssueBaseEntity = (issue: Entity<Issue, typeof ISSUE_FIELDS>): IssueBaseEntity => ({
   id: issue.id,
@@ -12,6 +19,7 @@ export const getIssueBaseEntity = (issue: Entity<Issue, typeof ISSUE_FIELDS>): I
     issue.links
       .find(({ linkType, direction }) => linkType?.name === "Subtask" && direction === "OUTWARD")
       ?.issues.map((issue) => ({ id: issue.id })) || [],
+  type: getIssueType(issue),
 })
 
 export const getIssueEntity = (issue: Entity<Issue, typeof ISSUE_FIELDS_FULL>): IssueEntity => ({

@@ -135,6 +135,26 @@
         }
       ]
     },
+    "colors": [
+      {
+        "id": "youtrackItem.resolvedForeground",
+        "description": "Color for resolved YouTrack issues",
+        "defaults": {
+          "dark": "#8c8c8c",
+          "light": "#8c8c8c",
+          "highContrast": "#8c8c8c"
+        }
+      },
+      {
+        "id": "youtrackItem.bugForeground",
+        "description": "Color for YouTrack bug issues",
+        "defaults": {
+          "dark": "#f14c4c",
+          "light": "#cc0000",
+          "highContrast": "#cc0000"
+        }
+      }
+    ],
     "configuration": {
       "title": "YouTrack extension for VSCode",
       "properties": {

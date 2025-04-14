@@ -45,6 +45,7 @@ export const COMMAND_TOGGLE_ISSUES_VIEW_MODE = "youtrack.toggleIssuesViewMode"
 export const COMMAND_OPEN_INTERNAL_LINK = "youtrack.openInternalLink"
 export const COMMAND_PREVIEW_ISSUE = "youtrack.previewIssue"
 export const COMMAND_PREVIEW_ARTICLE = "youtrack.previewArticle"
+export const COMMAND_REFRESH_ISSUES = "youtrack.refreshIssues"
 
 // Maximum length for tab titles in the preview
 export const MAX_TITLE_LENGTH = 30

@@ -58,6 +58,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Create cache service
     const cacheService = new CacheService(youtrackService, context.workspaceState)
 
+    // Register file decoration provider for custom colors
+    const fileDecorProvider = registerFileDecorationProvider()
+    context.subscriptions.push(fileDecorProvider)
+
     // Register tree data providers (creates project and issue tree views)
     registerTreeDataProviders(context, cacheService)
 
@@ -83,10 +87,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     } else {
       logger.info("No YouTrack instance URL configured. Showing not-connected view.")
       await updateConnectionStatus(false)
+
       await toggleViewsVisibility(false)
     }
 
-    // Register all commands
+    // Register commands to handle YouTrack operations
     registerAuthenticationCommands(
       context,
       youtrackService,
@@ -110,9 +115,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
 
     logger.info("YouTrack extension activated")
-  } catch (error) {
-    logger.error("Error activating extension", error)
-    vscode.window.showErrorMessage(`Error activating YouTrack extension: ${error}`)
+  } catch (err: any) {
+    logger.error("Failed to activate YouTrack extension", err)
+    vscode.window.showErrorMessage(`Failed to activate YouTrack extension: ${err.message}`)
   }
 }
 
@@ -221,6 +226,33 @@ function refreshAllViews(): void {
   articlesProvider.refresh()
   recentIssuesProvider.refresh()
   recentArticlesProvider.refresh()
+}
+
+/**
+ * Register a file decoration provider for custom TreeView item colors
+ */
+function registerFileDecorationProvider(): vscode.Disposable {
+  return vscode.window.registerFileDecorationProvider({
+    provideFileDecoration(uri) {
+      // Apply gray color to resolved issues
+      if (uri.scheme === "youtrack" && uri.path === "resolved") {
+        return {
+          color: new vscode.ThemeColor("youtrackItem.resolvedForeground"),
+          tooltip: "Resolved Issue",
+        }
+      }
+
+      // Apply dark red color to bug issues
+      if (uri.scheme === "youtrack" && uri.path === "bug") {
+        return {
+          color: new vscode.ThemeColor("youtrackItem.bugForeground"),
+          tooltip: "Bug",
+        }
+      }
+
+      return undefined
+    },
+  })
 }
 
 /**

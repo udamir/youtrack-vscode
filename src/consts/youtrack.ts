@@ -12,6 +12,7 @@ export const ISSUE_FIELDS = [
   "summary",
   "resolved",
   { project: ["id"] },
+  { customFields: ["name", { value: ["name", { color: ["id", "background"] }] }] },
   { links: [{ linkType: ["name"] }, "direction", { issues: ["id"] }, "id"] },
 ] as const satisfies Schema<Issue>
 
@@ -24,6 +25,7 @@ export const ISSUE_FIELDS_FULL = [
   "description",
   "resolved",
   { project: ["id"] },
+  { customFields: ["name", { value: ["name", { color: ["id", "background"] }] }] },
   { links: [{ linkType: ["name"] }, "direction", { issues: ["id"] }, "id"] },
 ] as const satisfies Schema<Issue>
 

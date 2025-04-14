@@ -26,6 +26,7 @@ export interface IssueBaseEntity {
   resolved: number
   summary: string
   subtasks: { id: string }[]
+  type: string
 }
 
 export interface IssueEntity extends IssueBaseEntity {

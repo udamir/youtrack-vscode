@@ -42,7 +42,12 @@
   - Issues tree data provider implementation
   - Filter input box in panel header
   - Toggle button for list/tree view modes
-  - Issue tree item representation with ID and summary
+  - Issue tree item representation with ID, summary, and description
+  - Issue tree item with customizable fields (e.g., assignee, priority, tags)
+  - Special formatting for issues:
+    - Resolved issues shown with strikethrough formatting and gray text color
+    - Bug issues shown with dark red text color
+    - Type-specific icons for Bug, Task, Feature, and Epic issue types
   - Panel updates when selected project changes
   - Proper handling of empty state when no project is selected
 - **Estimated Effort**: Large

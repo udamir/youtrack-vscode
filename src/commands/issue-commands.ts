@@ -1,6 +1,13 @@
 import * as vscode from "vscode"
 import { BaseCommandHandler } from "./base-command"
-import { COMMAND_PREVIEW_ISSUE, ISSUE_VIEW_MODE_LIST } from "../consts"
+import {
+  COMMAND_FILTER_ISSUES,
+  COMMAND_PREVIEW_ISSUE,
+  COMMAND_REFRESH_ISSUES,
+  COMMAND_TOGGLE_ISSUES_VIEW_MODE,
+  ISSUE_VIEW_MODE_LIST,
+  ISSUE_VIEW_MODE_TREE,
+} from "../consts"
 import type { YouTrackService } from "../services/youtrack-client"
 import type { IssuesTreeDataProvider } from "../views/issues-tree-view"
 import type { MarkdownPreviewProvider } from "../views/markdown-preview"
@@ -102,14 +109,19 @@ export class ToggleIssuesViewModeCommandHandler extends BaseCommandHandler {
    */
   async execute(): Promise<void> {
     try {
-      const newMode =
-        this.issuesProvider.viewMode === ISSUE_VIEW_MODE_LIST ? ISSUE_VIEW_MODE_LIST : ISSUE_VIEW_MODE_LIST
-      logger.info(`Changing issues view mode to: ${newMode}`)
+      // Get the current view mode
+      const currentMode = this.issuesProvider.viewMode
+
+      // Toggle to the opposite mode
+      const newMode = currentMode === ISSUE_VIEW_MODE_LIST ? ISSUE_VIEW_MODE_TREE : ISSUE_VIEW_MODE_LIST
+
+      // Update the view mode (this will trigger a refresh)
+      logger.info(`Changing issues view mode from ${currentMode} to: ${newMode}`)
       this.issuesProvider.toggleViewMode()
 
       // Show a notification with the current mode
-      const modeName = newMode === ISSUE_VIEW_MODE_LIST ? "List View" : "List View"
-      vscode.window.showInformationMessage(`Issues panel switched to ${modeName}`)
+      const modeName = newMode === ISSUE_VIEW_MODE_LIST ? "List View" : "Tree View"
+      vscode.window.showInformationMessage(`Switched to ${modeName}`)
     } catch (error) {
       this.handleError("Error toggling issues view mode", error)
     }
@@ -136,20 +148,23 @@ export function registerIssueCommands(
   // Refresh issues command
   const refreshIssuesHandler = new RefreshIssuesCommandHandler(issuesProvider)
   const refreshIssuesDisposable = vscode.commands.registerCommand(
-    "youtrack.refreshIssues",
+    COMMAND_REFRESH_ISSUES,
     refreshIssuesHandler.execute.bind(refreshIssuesHandler),
   )
   context.subscriptions.push(refreshIssuesDisposable)
 
   // Filter issues command
   const filterIssuesHandler = new FilterIssuesCommandHandler(issuesProvider)
-  const filterIssuesDisposable = vscode.commands.registerCommand("youtrack.filterIssues", filterIssuesHandler.execute)
+  const filterIssuesDisposable = vscode.commands.registerCommand(
+    COMMAND_FILTER_ISSUES,
+    filterIssuesHandler.execute.bind(filterIssuesHandler),
+  )
   context.subscriptions.push(filterIssuesDisposable)
 
   // Toggle issues view mode command
   const toggleIssuesViewModeHandler = new ToggleIssuesViewModeCommandHandler(issuesProvider)
   const toggleIssuesViewModeDisposable = vscode.commands.registerCommand(
-    "youtrack.toggleIssuesViewMode",
+    COMMAND_TOGGLE_ISSUES_VIEW_MODE,
     toggleIssuesViewModeHandler.execute.bind(toggleIssuesViewModeHandler),
   )
   context.subscriptions.push(toggleIssuesViewModeDisposable)
