@@ -45,14 +45,35 @@
         "icon": "$(filter)"
       },
       {
-        "command": "youtrack.toggleIssuesViewMode",
-        "title": "YouTrack: Toggle Issues View Mode",
+        "command": "youtrack.toggleIssuesViewModeList",
+        "title": "YouTrack: Switch to List View",
+        "icon": "$(list-flat)"
+      },
+      {
+        "command": "youtrack.toggleIssuesViewModeTree",
+        "title": "YouTrack: Switch to Tree View",
         "icon": "$(list-tree)"
       },
       {
         "command": "youtrack.refreshKnowledgeBase",
         "title": "YouTrack: Refresh Knowledge Base",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "youtrack.previewArticle",
+        "title": "YouTrack: Preview Article"
+      },
+      {
+        "command": "youtrack.previewIssue",
+        "title": "YouTrack: Preview Issue"
+      },
+      {
+        "command": "youtrack.openInternalLink",
+        "title": "YouTrack: Open Internal Link"
+      },
+      {
+        "command": "youtrack.setActiveProject",
+        "title": "YouTrack: Set Active Project"
       }
     ],
     "viewsContainers": {
@@ -117,8 +138,13 @@
           "group": "navigation"
         },
         {
-          "command": "youtrack.toggleIssuesViewMode",
-          "when": "view == youtrackIssues && youtrack.status.connected",
+          "command": "youtrack.toggleIssuesViewModeList",
+          "when": "view == youtrackIssues && youtrack.status.connected && youtrack.viewMode == 'tree'",
+          "group": "navigation"
+        },
+        {
+          "command": "youtrack.toggleIssuesViewModeTree",
+          "when": "view == youtrackIssues && youtrack.status.connected && youtrack.viewMode == 'list'",
           "group": "navigation"
         },
         {

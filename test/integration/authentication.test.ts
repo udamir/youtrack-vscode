@@ -3,13 +3,8 @@ import * as dotenv from "dotenv"
 
 import { VSCodeMock, VSCodeMockHelper } from "../helpers/vscode-mock"
 import { AuthenticationService } from "../../src/services"
-import {
-  ENV_YOUTRACK_BASE_URL,
-  ENV_YOUTRACK_TOKEN,
-  AUTHENTICATED,
-  AUTHENTICATION_FAILED,
-  NOT_AUTHENTICATED,
-} from "../../src/consts"
+import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN } from "../../src/services/vscode"
+import { AUTHENTICATED, AUTHENTICATION_FAILED, NOT_AUTHENTICATED } from "../../src/services/youtrack"
 
 // Load environment variables from .env file
 dotenv.config()

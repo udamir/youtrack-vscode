@@ -58,6 +58,9 @@ jest.mock("vscode", () => {
         hide: jest.fn(),
         dispose: jest.fn(),
       }),
+      registerFileDecorationProvider: jest.fn().mockImplementation((provider: any) => ({
+        dispose: jest.fn(),
+      })),
       showInformationMessage: jest.fn(),
       showErrorMessage: jest.fn(),
       showWarningMessage: jest.fn(),

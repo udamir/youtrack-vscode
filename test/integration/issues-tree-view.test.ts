@@ -1,12 +1,16 @@
 import * as assert from "node:assert"
 import * as dotenv from "dotenv"
 
-import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN, ISSUE_VIEW_MODE_LIST, ISSUE_VIEW_MODE_TREE } from "../../src/consts"
-import { IssuesTreeDataProvider, IssueTreeItem } from "../../src/views/issues-tree-view"
 import { VSCodeMock, VSCodeMockHelper, MockEventEmitter } from "../helpers/vscode-mock"
-import { ProjectsTreeDataProvider } from "../../src/views/projects-tree-view"
-import { YouTrackService, CacheService } from "../../src/services"
-import type { ProjectEntity } from "../../src/models"
+import {
+  YouTrackService,
+  CacheService,
+  ViewService,
+  ENV_YOUTRACK_BASE_URL,
+  ENV_YOUTRACK_TOKEN,
+} from "../../src/services"
+import { ISSUE_VIEW_MODE_LIST, ISSUE_VIEW_MODE_TREE, IssuesTreeView, IssueTreeItem } from "../../src/views/issues"
+import { type ProjectEntity, ProjectsTreeView } from "../../src/views/projects"
 
 // Load environment variables from .env file
 dotenv.config()
@@ -19,8 +23,8 @@ describe("Issues Tree View Integration Test", () => {
   // Services
   let youtrackService: YouTrackService
   let cacheService: CacheService
-  let issuesProvider: IssuesTreeDataProvider
-  let projectsProvider: ProjectsTreeDataProvider
+  let issuesTreeView: IssuesTreeView
+  let projectsTreeView: ProjectsTreeView
 
   // Test data
   let testProject: ProjectEntity
@@ -60,13 +64,12 @@ describe("Issues Tree View Integration Test", () => {
 
       // Create the cache service
       cacheService = new CacheService(youtrackService, vscodeMock.extensionContext.workspaceState)
+      const viewService = new ViewService()
+      projectsTreeView = new ProjectsTreeView(vscodeMock.extensionContext, youtrackService, viewService, cacheService)
+      issuesTreeView = new IssuesTreeView(vscodeMock.extensionContext, youtrackService, viewService, cacheService)
 
-      // Create projects and issues providers
-      projectsProvider = new ProjectsTreeDataProvider(youtrackService, cacheService)
-      issuesProvider = new IssuesTreeDataProvider(youtrackService, cacheService, projectsProvider)
-
-      await projectsProvider.addProject(testProject)
-      await projectsProvider.setActiveProject(testProject.shortName)
+      await projectsTreeView.addProject(testProject)
+      await projectsTreeView.setActiveProject(testProject.shortName)
     } catch (error) {
       console.error("Error setting up issues tree view test:", error)
       throw error
@@ -75,10 +78,10 @@ describe("Issues Tree View Integration Test", () => {
 
   it("should get issues as list items when in list mode", async () => {
     // Ensure we're in list mode
-    issuesProvider.viewMode = ISSUE_VIEW_MODE_LIST
+    await issuesTreeView.setListViewMode()
 
     // Get tree items
-    const items = await issuesProvider.getChildren()
+    const items = await issuesTreeView.getChildren()
 
     // Verify we got items
     assert.ok(Array.isArray(items), "Items should be an array")
@@ -99,22 +102,22 @@ describe("Issues Tree View Integration Test", () => {
     await new Promise((resolve) => setTimeout(resolve, 100))
 
     // Get tree items
-    const items = await issuesProvider.getChildren()
+    const items = await issuesTreeView.getChildren()
 
     // Verify we got items for the new project
     assert.ok(Array.isArray(items), "Items should be an array")
   })
 
-  it("should toggle between list and tree view modes", () => {
+  it("should toggle between list and tree view modes", async () => {
     // Initial state
-    assert.strictEqual(issuesProvider.viewMode, ISSUE_VIEW_MODE_LIST)
+    assert.strictEqual(issuesTreeView.viewMode, ISSUE_VIEW_MODE_LIST)
 
     // Toggle to tree mode
-    issuesProvider.viewMode = ISSUE_VIEW_MODE_TREE
-    assert.strictEqual(issuesProvider.viewMode, ISSUE_VIEW_MODE_TREE)
+    await issuesTreeView.setTreeViewMode()
+    assert.strictEqual(issuesTreeView.viewMode, ISSUE_VIEW_MODE_TREE)
 
     // Toggle back to list mode
-    issuesProvider.viewMode = ISSUE_VIEW_MODE_LIST
-    assert.strictEqual(issuesProvider.viewMode, ISSUE_VIEW_MODE_LIST)
+    await issuesTreeView.setListViewMode()
+    assert.strictEqual(issuesTreeView.viewMode, ISSUE_VIEW_MODE_LIST)
   })
 })

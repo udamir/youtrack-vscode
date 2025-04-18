@@ -1,0 +1,98 @@
+import * as vscode from "vscode"
+import { BaseTreeView, YouTrackTreeItem, createLoadingItem } from "../base"
+import { RecentArticleTreeItem } from "./recent-articles.tree-item"
+import type { CacheService, YouTrackService } from "../../services"
+
+import { VIEW_RECENT_ARTICLES } from "./recent-articles.consts"
+import type { ArticleEntity } from "../articles"
+
+/**
+ * Tree data provider for YouTrack recent articles
+ */
+export class RecentArticlesTreeView extends BaseTreeView<RecentArticleTreeItem | YouTrackTreeItem> {
+  private _articles: ArticleEntity[] = []
+  private _serverChangeDisposable: vscode.Disposable | undefined
+
+  /**
+   * Create a new recent articles tree data provider
+   * @param youtrackService The YouTrack service
+   * @param cacheService The cache service to use for storing/retrieving articles
+   */
+  constructor(
+    _context: vscode.ExtensionContext,
+    private readonly _youtrackService: YouTrackService,
+    private readonly _cacheService: CacheService,
+  ) {
+    super(VIEW_RECENT_ARTICLES, _context)
+
+    // Register for server change events
+    this._serverChangeDisposable = this._youtrackService.onServerChanged(this.loadFromCache.bind(this))
+
+    // Load initial data from cache
+    this.loadFromCache()
+  }
+
+  /**
+   * Dispose of resources
+   */
+  public dispose(): void {
+    if (this._serverChangeDisposable) {
+      this._serverChangeDisposable.dispose()
+    }
+  }
+
+  /**
+   * Get children for the recent articles view
+   * @returns Tree items representing recent articles
+   */
+  public async getChildren(): Promise<YouTrackTreeItem[]> {
+    if (this.isLoading) {
+      return [createLoadingItem("Loading recent articles...")]
+    }
+
+    if (this._articles.length === 0) {
+      return [YouTrackTreeItem.withThemeIcon("No recent articles", vscode.TreeItemCollapsibleState.None, "info")]
+    }
+
+    return this._articles.map(
+      (article) =>
+        new RecentArticleTreeItem(article, {
+          command: "vscode.open",
+          title: "Open Article",
+          arguments: [vscode.Uri.parse(`${this._cacheService.baseUrl}/articles/${article.id}`)],
+        }),
+    )
+  }
+
+  /**
+   * Load recent articles from cache
+   */
+  private loadFromCache(): void {
+    this.isLoading = true
+    this._articles = this._cacheService.getRecentArticles()
+    this.isLoading = false
+  }
+
+  /**
+   * Add an article to the recent articles list
+   * @param article The article to add
+   */
+  public addArticle(article: ArticleEntity): void {
+    // Check if article already exists in the list
+    const existingIndex = this._articles.findIndex((a) => a.id === article.id)
+
+    // If it exists, remove it so we can add it to the front
+    if (existingIndex >= 0) {
+      this._articles.splice(existingIndex, 1)
+    }
+
+    // Add to the front of the list
+    this._articles = [article, ...this._articles]
+
+    // Save to cache
+    this._cacheService.saveRecentArticles(this._articles)
+
+    // Refresh the view
+    this.refresh()
+  }
+}

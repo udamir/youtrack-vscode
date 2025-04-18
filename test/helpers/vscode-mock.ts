@@ -1,6 +1,7 @@
 import * as vscode from "vscode"
-import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN, ISSUE_VIEW_MODE_LIST } from "../../src/consts"
-import type { ProjectEntity } from "../../src/models"
+import { ISSUE_VIEW_MODE_LIST } from "../../src/views/issues"
+import type { ProjectEntity } from "../../src/views"
+import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN } from "../../src/services"
 
 /**
  * Simple EventEmitter implementation for testing
@@ -255,10 +256,67 @@ export class VSCodeMock {
   }
 
   /**
+   * Define the namespace for vscode elements
+   */
+  private static createVSCodeNamespace(): Record<string, any> {
+    return {
+      // ThemeColor implementation for styling
+      ThemeColor: class {
+        constructor(public id: string) {}
+      },
+
+      // Status bar alignment constants
+      StatusBarAlignment: {
+        Left: 1,
+        Right: 2,
+      },
+
+      // Tree item collapse states
+      TreeItemCollapsibleState: {
+        None: 0,
+        Collapsed: 1,
+        Expanded: 2,
+      },
+
+      // Standard URI implementation used in VS Code
+      Uri: {
+        parse: (uri: string) => ({
+          scheme: uri.split(":")[0],
+          path: uri.split(":")[1],
+          toString: () => uri,
+        }),
+        file: (path: string) => ({
+          scheme: "file",
+          path,
+          toString: () => `file:${path}`,
+        }),
+      },
+
+      // VS Code disposable API mocked implementation
+      Disposable: {
+        from: (...disposables: { dispose: () => any }[]) => ({
+          dispose: () => {
+            disposables.forEach((d) => d.dispose())
+          },
+        }),
+      },
+    }
+  }
+
+  /**
    * Create a mock implementation of the VS Code API
    */
   public createMockVSCodeApi(): typeof vscode {
+    // Get the vscode namespace with constants
+    const vsNamespace = VSCodeMock.createVSCodeNamespace()
+
     return {
+      // Include the VS Code namespace constants
+      ...vsNamespace,
+
+      // Events emitters
+      EventEmitter: MockEventEmitter,
+
       // Commands API
       commands: {
         registerCommand: jest.fn().mockImplementation((commandId: string, handler: (...args: any[]) => any) => {
@@ -274,7 +332,7 @@ export class VSCodeMock {
           if (handler) {
             return Promise.resolve(handler(...args))
           }
-          return Promise.reject(new Error(`Command '${commandId}' not found`))
+          return Promise.resolve(undefined)
         }),
         getCommands: jest.fn().mockImplementation(() => {
           return Promise.resolve(Array.from(this.commands.keys()))
@@ -283,55 +341,50 @@ export class VSCodeMock {
 
       // Window API
       window: {
-        showInformationMessage: jest.fn().mockResolvedValue(undefined),
-        showWarningMessage: jest.fn().mockResolvedValue(undefined),
-        showErrorMessage: jest.fn().mockResolvedValue(undefined),
-        showQuickPick: jest.fn().mockImplementation(async (items: any[], _options?: any) => {
-          // Default to returning the first item
-          return Array.isArray(items) && items.length > 0 ? items[0] : undefined
-        }),
-        showInputBox: jest.fn().mockResolvedValue(""),
-        createOutputChannel: jest.fn().mockImplementation((name: string) => {
-          const channel = new MockOutputChannel(name)
-          this.outputChannels.set(name, channel)
-          return channel
-        }),
-        createStatusBarItem: jest
-          .fn()
-          .mockImplementation((alignment?: vscode.StatusBarAlignment, priority?: number) => {
-            const item = new MockStatusBarItem(alignment || vscode.StatusBarAlignment.Left, priority || 0)
-            this.statusBarItems.push(item)
-            return item
-          }),
+        showInformationMessage: jest.fn(),
+        showWarningMessage: jest.fn(),
+        showErrorMessage: jest.fn(),
+        showInputBox: jest.fn(),
+        showQuickPick: jest.fn(),
         createTreeView: jest.fn().mockImplementation((viewId: string, options: vscode.TreeViewOptions<any>) => {
           const treeView = new MockTreeView(viewId, options)
           this.treeViews.set(viewId, treeView)
           return treeView
         }),
-        withProgress: jest
-          .fn()
-          .mockImplementation(
-            async (
-              _options: vscode.ProgressOptions,
-              task: (progress: vscode.Progress<{ message?: string; increment?: number }>) => Thenable<any>,
-            ) => {
-              const progress = {
-                report: jest.fn(),
-              }
-              return task(progress)
-            },
-          ),
-        activeTextEditor: {
-          get: () => this.activeTextEditor,
-          set: (editor: vscode.TextEditor | undefined) => {
-            this.activeTextEditor = editor
-            this.onDidChangeActiveTextEditorEmitter.fire(editor)
-          },
-        },
+        createTextEditorDecorationType: jest.fn(),
+        showTextDocument: jest.fn(),
         onDidChangeActiveTextEditor: this.onDidChangeActiveTextEditorEmitter.event,
+        get activeTextEditor() {
+          return this.activeTextEditor
+        },
+        set activeTextEditor(editor: vscode.TextEditor | undefined) {
+          this.activeTextEditor = editor
+          this.onDidChangeActiveTextEditorEmitter.fire(editor)
+        },
         visibleTextEditors: [],
         terminals: [],
         createTerminal: jest.fn(),
+        createOutputChannel: jest.fn().mockImplementation((name: string) => {
+          const channel = new MockOutputChannel(name)
+          this.outputChannels.set(name, channel)
+          return channel
+        }),
+        createStatusBarItem: jest.fn().mockImplementation((alignment?: vscode.StatusBarAlignment, priority?: number) => {
+          const item = new MockStatusBarItem(alignment || vscode.StatusBarAlignment.Left, priority || 0)
+          this.statusBarItems.push(item)
+          return item
+        }),
+        registerWebviewPanelSerializer: jest.fn(),
+        registerTreeDataProvider: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+        registerFileDecorationProvider: jest.fn().mockImplementation((provider: any) => ({
+          dispose: jest.fn(),
+        })),
+        withProgress: jest.fn().mockImplementation(
+          (_options: vscode.ProgressOptions, task: (progress: vscode.Progress<{ message?: string; increment?: number }>) => Thenable<any>) => {
+            const progress = { report: jest.fn() }
+            return task(progress)
+          }
+        ),
       },
 
       // Workspace API
@@ -407,13 +460,10 @@ export class VSCodeMock {
       },
 
       // Enums
-      StatusBarAlignment: vscode.StatusBarAlignment,
       ConfigurationTarget: vscode.ConfigurationTarget,
-      TreeItemCollapsibleState: vscode.TreeItemCollapsibleState,
 
       // Other parts of the API that might be needed can be added here
       Uri: vscode.Uri,
-      EventEmitter: MockEventEmitter,
       MarkdownString: vscode.MarkdownString,
       ThemeIcon: vscode.ThemeIcon,
       Range: vscode.Range,

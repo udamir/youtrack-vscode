@@ -1,6 +1,6 @@
 import * as vscode from "vscode"
-import type { ConfigurationService } from "../services/configuration"
-import { TOKEN_STORAGE_SECURE, TOKEN_STORAGE_SETTINGS } from "../consts/vscode"
+import type { ConfigurationService } from "../services/vscode/vscode.config"
+import { TOKEN_STORAGE_SECURE, TOKEN_STORAGE_SETTINGS } from "../services/vscode/vscode.consts"
 import * as fs from "node:fs"
 import * as path from "node:path"
 

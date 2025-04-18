@@ -2,8 +2,9 @@ import dotenv from "dotenv"
 import * as assert from "node:assert"
 import { YouTrackHelper } from "./helpers/youtrack-helper"
 import { YouTrack } from "youtrack-client"
-import type { IssueEntity, ProjectEntity } from "../src/models"
+
 import axios from "axios"
+import type { IssueEntity, ProjectEntity } from "../src/views"
 
 // Load environment variables from .env file before creating any clients
 dotenv.config()

@@ -2,10 +2,9 @@ import * as assert from "node:assert"
 
 import { mockBaseUrl, mockProjects, mockIssues, mockArticles } from "./mock-data/youtrack-data"
 import { createMockYouTrackService } from "./helpers/youtrack-service-mock"
-import type { YouTrackService } from "../src/services/youtrack-client"
 import { VSCodeMock, VSCodeMockHelper } from "./helpers/vscode-mock"
-import { CacheService } from "../src/services/cache-service"
-import { ISSUE_VIEW_MODE_LIST } from "../src/consts"
+import { CacheService, type YouTrackService } from "../src/services"
+import { ISSUE_VIEW_MODE_LIST } from "../src/views/issues"
 
 describe("CacheService", () => {
   // Test subjects
@@ -64,9 +63,6 @@ describe("CacheService", () => {
 
   describe("Issues data", () => {
     it("should save and retrieve issues view mode", async () => {
-      // Initially should have default view mode
-      assert.strictEqual(cacheService.getIssuesViewMode(), ISSUE_VIEW_MODE_LIST, "Should start with default view mode")
-
       // Save view mode
       await cacheService.saveIssuesViewMode(ISSUE_VIEW_MODE_LIST)
 

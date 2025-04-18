@@ -2,10 +2,15 @@
  * Helper class for YouTrack testing with direct API access
  * Provides utilities for CRUD operations on YouTrack entities
  */
-import type { ProjectEntity, IssueEntity } from "../../src/models"
 import type { YouTrack } from "youtrack-client"
-import { ISSUE_FIELDS, PROJECT_FIELDS, USER_PROFILE_FIELDS } from "../../src/consts"
-import { getIssueEntity } from "../../src/utils/youtrack"
+import type { IssueEntity, ProjectEntity } from "../../src/views"
+import {
+  getIssueEntity,
+  ISSUE_FIELDS,
+  ISSUE_FIELDS_FULL,
+  PROJECT_FIELDS,
+  USER_PROFILE_FIELDS,
+} from "../../src/services"
 
 /**
  * Helper class for YouTrack testing
@@ -81,7 +86,7 @@ export class YouTrackHelper {
         project: { id: projectId } as any,
         ...issue,
       },
-      { fields: ISSUE_FIELDS },
+      { fields: ISSUE_FIELDS_FULL },
     )
 
     // Track created issues for cleanup
@@ -97,7 +102,7 @@ export class YouTrackHelper {
 
   public async updateIssue(id: string, issue: Partial<IssueEntity> = {}): Promise<IssueEntity> {
     const updatedIssue = await this.client.Issues.updateIssue(id, issue as any, {
-      fields: ISSUE_FIELDS,
+      fields: ISSUE_FIELDS_FULL,
     })
     return getIssueEntity(updatedIssue)
   }

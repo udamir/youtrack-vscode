@@ -1,4 +1,4 @@
-import type { YouTrackService } from "../../src/services/youtrack-client"
+import type { YouTrackService } from "../../src/services"
 
 /**
  * Creates a mock YouTrack service with configurable baseUrl and server change event

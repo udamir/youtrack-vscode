@@ -1,5 +1,5 @@
 import * as vscode from "vscode"
-import { EXTENSION_DISPLAY_NAME } from "../consts/vscode"
+import { EXTENSION_DISPLAY_NAME } from "../services/vscode/vscode.consts"
 
 /**
  * Logger functions for the extension
@@ -22,6 +22,10 @@ let logLevel: LogLevel = LogLevel.DEBUG
  */
 export function initializeLogger(context: vscode.ExtensionContext): void {
   outputChannel.channel = vscode.window.createOutputChannel(EXTENSION_DISPLAY_NAME)
+
+  // Set default log level to DEBUG during development
+  setLogLevel(LogLevel.DEBUG)
+  debug("Debug logging enabled by default")
 
   // Subscribe to configuration changes
   context.subscriptions.push(

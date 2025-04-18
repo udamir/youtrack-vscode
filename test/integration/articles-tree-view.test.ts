@@ -1,13 +1,11 @@
 import * as assert from "node:assert"
 import * as dotenv from "dotenv"
 
-import { ArticlesTreeDataProvider, ArticleTreeItem } from "../../src/views/articles-tree-view"
-import { ProjectsTreeDataProvider } from "../../src/views/projects-tree-view"
-import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN } from "../../src/consts"
+import { ArticlesTreeView, ArticleTreeItem } from "../../src/views/articles"
 import { VSCodeMock, VSCodeMockHelper } from "../helpers/vscode-mock"
-import { YouTrackService } from "../../src/services/youtrack-client"
-import { CacheService } from "../../src/services/cache-service"
-import type { ProjectEntity } from "../../src/models"
+import { CacheService, ViewService, YouTrackService } from "../../src/services"
+import { type ProjectEntity, ProjectsTreeView } from "../../src/views/projects"
+import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN } from "../../src/services/vscode"
 
 // Load environment variables from .env file if it exists
 dotenv.config()
@@ -20,8 +18,8 @@ describe("Knowledge Base Tree View - Integration Tests", () => {
   // Services
   let youtrackService: YouTrackService
   let cacheService: CacheService
-  let projectsProvider: ProjectsTreeDataProvider
-  let articlesProvider: ArticlesTreeDataProvider
+  let projectsTreeView: ProjectsTreeView
+  let articlesTreeView: ArticlesTreeView
 
   // Test data
   let testProject: ProjectEntity
@@ -53,33 +51,34 @@ describe("Knowledge Base Tree View - Integration Tests", () => {
     testProject = projects[0]
 
     cacheService = new CacheService(youtrackService, vscodeMock.extensionContext.workspaceState)
+    const viewService = new ViewService()
 
     // Set up providers
-    projectsProvider = new ProjectsTreeDataProvider(youtrackService, cacheService)
-    articlesProvider = new ArticlesTreeDataProvider(youtrackService, projectsProvider)
+    projectsTreeView = new ProjectsTreeView(vscodeMock.extensionContext, youtrackService, viewService, cacheService)
+    articlesTreeView = new ArticlesTreeView(vscodeMock.extensionContext, youtrackService, viewService)
 
-    await projectsProvider.addProject(testProject)
-    await projectsProvider.setActiveProject(testProject.shortName)
+    await projectsTreeView.addProject(testProject)
+    await projectsTreeView.setActiveProject(testProject.shortName)
   }, 30000) // Increase timeout for API calls
 
   it("should return a message when no active project is selected", async () => {
-    const activeProject = projectsProvider.activeProject?.shortName
-    await projectsProvider.setActiveProject(undefined)
+    const activeProject = projectsTreeView.activeProject?.shortName
+    await projectsTreeView.setActiveProject(undefined)
 
     // Get top-level items
-    const articles = await articlesProvider.getChildren()
+    const articles = await articlesTreeView.getChildren()
 
     // If no active project available, should show message
     assert.strictEqual(articles.length, 1, "Should return exactly one item")
     assert.strictEqual(articles[0].label, "No active project", "Should show 'No active project' message")
 
     // Restore original active project
-    await projectsProvider.setActiveProject(activeProject)
+    await projectsTreeView.setActiveProject(activeProject)
   })
 
   it("should fetch articles for a selected project", async () => {
     // Get articles
-    const articles = await articlesProvider.getChildren()
+    const articles = await articlesTreeView.getChildren()
 
     // Verify the response (either articles or a "no articles" message)
     assert.ok(Array.isArray(articles), "Should return an array of items")
@@ -99,12 +98,12 @@ describe("Knowledge Base Tree View - Integration Tests", () => {
   it("should handle refresh correctly", () => {
     // Set up a listener for the onDidChangeTreeData event
     let eventFired = false
-    const disposable = articlesProvider.onDidChangeTreeData(() => {
+    const disposable = articlesTreeView.onDidChangeTreeData(() => {
       eventFired = true
     })
 
     // Call refresh
-    articlesProvider.refresh()
+    articlesTreeView.refresh()
 
     // Verify event was fired
     assert.strictEqual(eventFired, true, "Refresh should fire onDidChangeTreeData event")
