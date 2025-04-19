@@ -187,8 +187,8 @@
   - Context menu registrations in package.json
   - Command handlers for each context menu action
   - Project context menu: Open in browser, Refresh, etc.
-  - Issue context menu: Open, Copy ID, Copy Link, etc.
-  - Article context menu: Open, Copy Link, etc.
+  - Issue context menu: Open in browser, Copy ID, Copy Link, etc.
+  - Article context menu: Open in browser, Copy Link, etc.
   - Context value-based enablement of menu items
 - **Estimated Effort**: Medium
 - **Priority**: P1

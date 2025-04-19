@@ -3,9 +3,9 @@
 ## Task 7.1: Setup MCP Server Infrastructure
 - **ID**: TASK-7.1
 - **Description**: Create the infrastructure for the MCP (Message Control Program) server that will allow AI assistants to interact with the extension.
-- **Dependencies**: TASK-1.6, TASK-6.3
+- **Dependencies**: TASK-1.6
 - **Acceptance Criteria**:
-  - WebSocket server implementation
+  - MCP server implementation
   - Server activation/deactivation with extension lifecycle
   - Basic request/response protocol definition
   - Error handling and logging
