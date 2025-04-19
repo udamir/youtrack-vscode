@@ -1,10 +1,10 @@
 import * as vscode from "vscode"
 import * as path from "node:path"
-import type { YouTrackService } from "../../services/youtrack/youtrack.service"
+import type { YouTrackService } from "../../services"
 import * as logger from "../../utils/logger"
 import MarkdownIt from "markdown-it"
 import markdownitTaskLists from "markdown-it-task-lists"
-import { BasePreview } from "../base/base.preview"
+import { BasePreview } from "../base"
 import {
   COMMAND_OPEN_INTERNAL_LINK,
   COMMAND_PREVIEW_ARTICLE,

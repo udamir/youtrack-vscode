@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { YouTrackTreeItem } from "../base"
 import type { ArticleBaseEntity } from "./articles.types"
-import { COMMAND_PREVIEW_ARTICLE } from "./articles.consts"
+import { COMMAND_PREVIEW_ARTICLE } from "../preview"
 
 /**
  * Tree item representing a YouTrack knowledge base article

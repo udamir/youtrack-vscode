@@ -12,8 +12,8 @@ import {
   ISSUE_VIEW_MODE_TREE,
 } from "./issues.consts"
 import type { IssueBaseEntity, IssuesViewMode } from "./issues.types"
-import { createBasicItem, createLoadingItem } from "../base/base.utils"
-import { BaseTreeView, type YouTrackTreeItem } from "../base"
+import { createBasicItem, createLoadingItem, BaseTreeView } from "../base"
+import type { YouTrackTreeItem } from "../base"
 import { IssueTreeItem } from "./issues.tree-item"
 import type { ProjectEntity } from "../projects"
 

@@ -1,17 +1,16 @@
 import * as vscode from "vscode"
-import { YouTrackService } from "./services/youtrack/youtrack.service"
-import { ProjectsTreeView } from "./views/projects"
-import { ArticlesTreeView } from "./views/articles"
-import { RecentIssuesTreeView } from "./views/recent-issues/recent-issues.tree-view"
-import { RecentArticlesTreeView } from "./views/recent-articles/recent-articles.tree-view"
-import { AuthSidebar } from "./views/auth/auth.webview"
-import { MarkdownPreview } from "./views/preview/preview.view"
+import { CacheService, ViewService, YouTrackService, ConfigurationService } from "./services"
+import {
+  ProjectsTreeView,
+  ArticlesTreeView,
+  RecentArticlesTreeView,
+  RecentIssuesTreeView,
+  AuthSidebar,
+  MarkdownPreview,
+  IssuesTreeView,
+  StatusBarView,
+} from "./views"
 import * as logger from "./utils/logger"
-import { ConfigurationService } from "./services/vscode/vscode.config"
-import { StatusBarView } from "./views/statusbar/statusbar"
-import { CacheService } from "./services/cache/cache.service"
-import { ViewService } from "./services/view-service"
-import { IssuesTreeView } from "./views"
 
 // Service instances
 const youtrackService = new YouTrackService()

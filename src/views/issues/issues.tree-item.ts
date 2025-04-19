@@ -2,7 +2,8 @@ import * as vscode from "vscode"
 import { YouTrackTreeItem } from "../base"
 
 import type { IssueBaseEntity, IssuesViewMode } from "./issues.types"
-import { COMMAND_PREVIEW_ISSUE, ISSUE_VIEW_MODE_TREE } from "./issues.consts"
+import { ISSUE_VIEW_MODE_TREE } from "./issues.consts"
+import { COMMAND_PREVIEW_ISSUE } from "../preview"
 
 /**
  * TreeItem for YouTrack issues in the tree view

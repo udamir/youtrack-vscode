@@ -1,9 +1,9 @@
 import * as vscode from "vscode"
-import * as logger from "../../utils/logger"
-import type { ConfigurationService } from "../../services/vscode"
-import { BaseWebview } from "../base/base.webview"
+
+import type { ViewService, YouTrackService, ConfigurationService } from "../../services"
 import { COMMAND_CONNECT, VIEW_NOT_CONNECTED } from "./auth.consts"
-import type { ViewService, YouTrackService } from "../../services"
+import { BaseWebview } from "../base/base.webview"
+import * as logger from "../../utils/logger"
 
 /**
  * WebView provider for the Not Configured panel
