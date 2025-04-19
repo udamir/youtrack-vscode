@@ -1,127 +1,85 @@
-# Phase 4: Issue Editor Implementation
+# Phase 4: YouTrack Content Editor Implementation
 
-## Task 4.1: Create Custom Editor Provider Infrastructure
+## Overview
+This phase focuses on implementing a robust editor experience for YouTrack content (issues and articles) that allows users to edit content directly in VS Code and synchronize changes with YouTrack.
+
+The editor implementation will use temporary local files with a structured format that includes both metadata and content, with appropriate synchronization mechanisms to keep local and remote content in sync.
+
+## File Format
+YouTrack content will be represented as `.yt` files with the following structure:
+- Filename format: `[idReadable].yt` (e.g., `PROJECT-123.yt` for issues, `KB-456.yt` for articles)
+- Content structure:
+  - YAML frontmatter section containing metadata (ID, summary, project, status, assignee, etc.)
+  - Markdown content section containing the description/content
+
+## Task 4.1: Create Edit File Infrastructure
 - **ID**: TASK-4.1
-- **Description**: Set up the infrastructure for custom editor providers to handle YouTrack content in edit mode.
+- **Description**: Set up the infrastructure for editing YouTrack content using standard file editor.
 - **Dependencies**: TASK-1.6, TASK-2.5
 - **Acceptance Criteria**:
-  - Custom editor provider registration in package.json
-  - Base custom editor provider class with support for edit mode
-  - Virtual document handling for YouTrack content
-  - Editor context registration
-  - File associations for YouTrack content
   - Configuration option for temporary file storage location
+  - Disable editor functionality when temp storage is not configured
+  - File associations for `.yt` content
+  - Create commands to edit YouTrack issues and articles by idReadable, which should create `.yt` files and open them in the standard file editor
+  - Generate properly formatted `.yt` files when creating from issues or articles
+  - Display local `.yt` files as children under their respective projects in the Projects panel (Add project to selected project if it was not added)
+  - Add settings action button to Projects panel to open extension settings
 - **Estimated Effort**: Medium
 - **Priority**: P0
 
-## Task 4.2: Implement Issue Metadata Panel
+## Task 4.2: Implement "Open in Editor" Context Actions
 - **ID**: TASK-4.2
-- **Description**: Create the metadata panel showing issue attributes and information.
+- **Description**: Add context menu actions to open issues and articles in the standard file editor from various views.
 - **Dependencies**: TASK-4.1
 - **Acceptance Criteria**:
-  - Display of issue ID, summary, and project
-  - Display of issue status, priority, and assignee
-  - Links section showing linked issues grouped by link type
-  - Each linked issue shows ID and summary
-  - Clickable links to navigate to related issues
-  - Proper layout and styling consistent with VSCode
-  - Sidebar edit action button
+  - Add "Open in Editor" action to issue context menu in Issues and Recent Issues views
+  - Add "Open in Editor" action to article context menu in Knowledge Base and Recent Articles views
+  - Ensure proper error handling when file creation fails
+  - Add visual indicators to show that content is being edited locally
 - **Estimated Effort**: Medium
 - **Priority**: P0
 
-## Task 4.3: Extend the Preview Mode with Edit Capabilities
+## Task 4.3: Implement Sync Status Management
 - **ID**: TASK-4.3
-- **Description**: Extend the preview mode from Task 2.5 with editing capabilities for issue and article content.
-- **Dependencies**: TASK-4.1, TASK-2.5
+- **Description**: Create mechanisms to track and visualize synchronization status between local files and YouTrack.
+- **Dependencies**: TASK-4.1
 - **Acceptance Criteria**:
-  - Integration with the existing preview functionality from Task 2.5
-  - Edit button to switch from preview to edit mode
-  - Toggle between preview and edit modes
-  - Visual indication of current mode (preview/edit)
-- **Estimated Effort**: Small
-- **Priority**: P0
+  - Show sync status indicator for files in the Projects panel:
+    - "Synced" when file content matches server content
+    - "Modified" when local changes exist
+    - "Conflict" when both local and remote content changed
+  - Add context menu actions for each file:
+    - "Fetch from YouTrack" (refresh local content from server)
+    - "Save to YouTrack" (upload local changes to server)
+    - "Unlink" (remove file from temp directory and project panel)
+  - Implement two-way synchronization logic (local ↔ remote)
+  - Handle conflict scenarios appropriately
+- **Estimated Effort**: Large
+- **Priority**: P1
 
-## Task 4.4: Implement Issue Edit Mode
+## Task 4.4: Implement File Format and Parsing
 - **ID**: TASK-4.4
-- **Description**: Create the edit mode that allows downloading content to a temporary location and explicitly saving back to YouTrack.
-- **Dependencies**: TASK-4.3
+- **Description**: Implement YAML frontmatter handling and content synchronization.
+- **Dependencies**: TASK-4.1
 - **Acceptance Criteria**:
-  - "Download for Editing" action in sidebar that downloads content to predefined temporary folder
-  - Visual indication that the document is in edit mode (e.g., "(Editing)" suffix in the title)
-  - VSCode native markdown editor integration for edit mode
-  - Content change tracking
-  - "Save to YouTrack" action that syncs changes to YouTrack and deletes the temp file
-  - "Discard Changes" action that removes temp file without saving
-  - Success/failure notifications for sync operations
-  - Cleanup of temporary files when editing tab is closed
-  - Syntax highlighting for markdown
+  - Implement YAML frontmatter parsing and generation for entity metadata
+  - Parse updated files to extract changes to both metadata and content
+  - Handle entity-specific metadata fields appropriately (different for issues vs articles)
+  - Support updating both content and key metadata fields when saving to YouTrack
 - **Estimated Effort**: Medium
-- **Priority**: P0
+- **Priority**: P1
 
-## Task 4.5: Implement Tabbed Interface for Issue Content
+## Task 4.5: Implement Content Synchronization
 - **ID**: TASK-4.5
-- **Description**: Create a tabbed interface to navigate between description, comments, and attachments.
-- **Dependencies**: TASK-4.2, TASK-4.3, TASK-4.4
+- **Description**: Implement synchronization between local files and YouTrack entities.
+- **Dependencies**: TASK-4.3, TASK-4.4
 - **Acceptance Criteria**:
-  - Tab UI implementation
-  - Description tab with markdown preview
-  - Comments tab with comment list and timestamps
-  - Attachments tab with attachment list and download options
-  - Tab switching functionality
-  - Visual indication of current tab
-- **Estimated Effort**: Medium
-- **Priority**: P0
-
-## Task 4.6: Implement Comments View
-- **ID**: TASK-4.6
-- **Description**: Create a read-only view of issue comments with formatting.
-- **Dependencies**: TASK-4.5
-- **Acceptance Criteria**:
-  - Display comments in chronological order
-  - Show author, timestamp, and content for each comment
-  - Markdown rendering for comment content
-  - Support for nested comments (thread structure)
-  - Visual distinction between different authors
-  - Empty state handling when no comments exist
-- **Estimated Effort**: Medium
-- **Priority**: P1
-
-## Task 4.7: Implement Attachments View
-- **ID**: TASK-4.7
-- **Description**: Create a view for issue attachments with download functionality.
-- **Dependencies**: TASK-4.5
-- **Acceptance Criteria**:
-  - List of attachments with name, size, and type
-  - Download action for each attachment
-  - Open in default application action
-  - Visual indicators for different file types
-  - Empty state handling when no attachments exist
-- **Estimated Effort**: Medium
-- **Priority**: P1
-
-## Task 4.8: Implement Save and Refresh Functionality
-- **ID**: TASK-4.8
-- **Description**: Add toolbar actions for saving changes and refreshing content.
-- **Dependencies**: TASK-4.4
-- **Acceptance Criteria**:
-  - Save button to submit changes to YouTrack
-  - Refresh button to reload content from YouTrack
-  - Visual feedback during save/refresh operations
-  - Error handling for failed operations
-  - Dirty state tracking for unsaved changes
-  - Confirmation dialog for discarding changes
-- **Estimated Effort**: Medium
-- **Priority**: P0
-
-## Task 4.9: Add Editor Command Integration
-- **ID**: TASK-4.9
-- **Description**: Integrate editor with VSCode commands and keyboard shortcuts.
-- **Dependencies**: TASK-4.8
-- **Acceptance Criteria**:
-  - Command palette entries for issue actions
-  - Keyboard shortcuts for common operations
-  - Command enablement based on editor state
-  - Consistent command naming scheme
-  - Documentation of available commands
-- **Estimated Effort**: Small
+  - Implement "Save to YouTrack" functionality that updates both attributes and content
+  - Implement "Fetch from YouTrack" to update local file with remote changes
+  - Provide visual feedback during sync operations
+  - Handle and report synchronization errors appropriately
+  - Detect conflicts between local and remote changes
+  - Clean up temporary files when they are unlinked or when editor is closed
+  - Track open files to restore editing session across IDE restarts
+- **Estimated Effort**: Large
 - **Priority**: P1

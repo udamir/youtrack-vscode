@@ -31,9 +31,10 @@ The VSCode YouTrack Plugin aims to seamlessly integrate YouTrack issue and knowl
 - Add and remove YouTrack projects from the Projects panel
 - Browse issues for selected projects
 - View issue descriptions, comments, and custom fields in a read-only preview using VS Code's built-in Markdown viewer
-- Edit issue descriptions in a separate editing phase
+- Edit issue descriptions in a custom editor with YAML frontmatter and Markdown content
 - Support for issue attachments
 - Internal links to other issues open in new preview tabs
+- Two-way synchronization between local edits and YouTrack server
 
 ### 2.3 Knowledge Base Management
 - Browse article hierarchy 
@@ -41,8 +42,10 @@ The VSCode YouTrack Plugin aims to seamlessly integrate YouTrack issue and knowl
 - Preview triggered by user selection, not automatically
 - Internal links parsed based on project shortName cache
 - Internal links to other articles open in new preview tabs
-- Download articles to temporary folder for editing via explicit action
+- Edit articles in a custom editor with YAML frontmatter and Markdown content
 - Save edited articles back to YouTrack with explicit "Save to YouTrack" action
+- Fetch latest content from YouTrack with "Fetch from YouTrack" action
+- Visual indicators for sync status (synced, not-synced, conflict)
 - Track temporary files and clean up on editor close
 
 ### 2.4 Search and Navigation
@@ -65,6 +68,7 @@ The plugin will follow a modular architecture with the following components:
 - Authentication Module
 - YouTrack API Client (based on youtrack-client)
 - Document Manager (handling YouTrack content in VSCode editors)
+- Content Synchronization Engine
 - Search and Indexing Engine
 - VSCode Extension Interface
 - MCP Server for AI Integration
@@ -80,16 +84,26 @@ The plugin will follow a modular architecture with the following components:
 4. Selected content is fetched and displayed in preview mode using VS Code's built-in Markdown viewer with Mermaid diagram support
 5. Internal links in content are detected and parsed based on project shortName cache for navigation
 6. When user clicks internal links, they open in new preview tabs
-7. When "Download for Editing" is requested, content is copied to a configurable temporary location
-8. User edits the content in VSCode's native markdown editor
-9. When "Save to YouTrack" is triggered, changes are synchronized back to YouTrack and temp file is deleted
-10. When editor tab is closed, any remaining temporary files are cleaned up
+7. When "Open in Editor" is requested, content is created in a configurable temporary location as a .yt file with YAML frontmatter and Markdown content
+8. User edits the content in VSCode's editor
+9. The extension tracks sync status (synced, not-synced, conflict) based on local and remote timestamps and content
+10. When "Save to YouTrack" is triggered, changes are synchronized back to YouTrack
+11. When "Fetch from YouTrack" is triggered, local content is updated from the server
+12. When "Unlink" is triggered or editor tab is closed, temporary files are cleaned up
 
 ### 3.4 User Interface Components
 - YouTrack Explorer view in Activity Bar
-- VSCode's native markdown editor for YouTrack content
+- Projects panel with list of projects, issues, articles, and locally edited files
+- Custom editor for .yt files with YAML frontmatter and Markdown content
+- Sync status indicators for edited files
+- Context menus for common actions:
+  - Open in Editor
+  - Save to YouTrack
+  - Fetch from YouTrack
+  - Unlink
+- Settings button for quick access to configuration
+- VSCode's native markdown editor for content editing
 - Search interface with filtering options
-- Context menus for common actions
 
 ### 3.5 Authentication and Security
 - Secure storage of YouTrack permanent tokens
@@ -143,10 +157,16 @@ vscode-youtrack-plugin/
 ```
 
 ### 4.3 Development Phases
-1. Setup project and implement authentication
-2. Implement basic browse and search functionality
-3. Integrate with VSCode's native markdown viewing and editing capability
-4. Implement save functionality for issue descriptions and articles
+1. Setup project and implement authentication 
+2. Implement basic browse and search functionality 
+3. Integrate with VSCode's native markdown viewing and editing capability 
+4. Implement YouTrack content editor with synchronization capabilities: 
+   - Custom editor for .yt files with YAML frontmatter and Markdown content
+   - Two-way synchronization with YouTrack server
+   - Projects panel integration with sync status indicators
+   - Context actions for fetching, saving, and unlinking content
+   - Configurable temporary file storage
+   - Error handling and user feedback
 5. Implement advanced features and optimizations
 6. Testing and quality assurance
 7. Documentation and release preparation
@@ -194,3 +214,48 @@ vscode-youtrack-plugin/
 
 ### 7.3 API Documentation
 - Reference for plugin API interfaces will be developed alongside the code
+
+## 8. Appendices
+
+### 8.1 Phase 4 Implementation Summary: YouTrack Content Editor
+
+#### 8.1.1 File Format and Structure
+- YouTrack content represented as `.yt` files
+- Filename format: `[idReadable].yt` (e.g., `PROJECT-123.yt`)
+- Content structure:
+  - YAML frontmatter containing metadata
+  - Markdown content section
+
+#### 8.1.2 Editor Infrastructure
+- Custom editor provider for `.yt` files
+- Virtual document handling for YouTrack content
+- Configurable temporary file storage with fallback to extension storage
+- Runtime directory validation and creation
+
+#### 8.1.3 Synchronization Logic
+- Two-way synchronization between local files and YouTrack
+- Three-state tracking: synced, not-synced, conflict
+- Timestamp and content-based sync status determination
+- Explicit user-initiated sync actions:
+  - Fetch from YouTrack (server → local)
+  - Save to YouTrack (local → server)
+  - Unlink (remove local file)
+
+#### 8.1.4 Projects Panel Integration
+- Local `.yt` files displayed under respective projects
+- Sync status indicators for files
+- Context menu actions for each file
+- Settings access button
+
+#### 8.1.5 UI/UX Features
+- Visual indication of sync status in editor and project panel
+- Command palette entries for common actions
+- Status indicators for synchronization operations
+- Error handling with clear user feedback
+
+#### 8.1.6 Lessons Learned
+- Temporary storage management requires robust validation and fallback mechanisms
+- User-facing feedback about configuration issues improves experience
+- Session persistence through workspace state enhances continuity
+- Proper resource cleanup is critical for stability
+- Clear visual indicators help users understand file synchronization state
