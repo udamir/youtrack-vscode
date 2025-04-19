@@ -176,25 +176,10 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
    * Set the active project by short name
    */
   public async setActiveProject(projectShortName?: string): Promise<void> {
-    // Special case: undefined means no active project
-    if (projectShortName === undefined) {
-      logger.info("Setting no active project")
-      this._activeProject = undefined
-
-      // Save active project to cache
-      await this._cacheService.saveActiveProject(undefined)
-
-      // Notify about the change
-      this.refresh()
-
-      // Early return to prevent executing the rest of the method
-      return
-    }
-
     // Find the project from selected projects
-    const project = this._selectedProjects.find((p) => p.shortName === projectShortName)
+    const project = projectShortName ? this._selectedProjects.find((p) => p.shortName === projectShortName) : undefined
 
-    if (!project) {
+    if (!project && projectShortName) {
       logger.warn(`Project with short name ${projectShortName} not found in selected projects`)
       return
     }
@@ -208,7 +193,8 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
     // Notify about the change
     this._viewService.changeActiveProject(project)
 
-    logger.info(`Active project set to: ${this._activeProject.name}`)
+    logger.info(projectShortName ? `Active project set to: ${projectShortName}` : "No active project set")
+    this.refresh()
   }
 
   /**

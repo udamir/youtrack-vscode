@@ -94,71 +94,60 @@
 - **Status**: ✅ Completed (April 13, 2025)
 
 ### Task 2.6 Refactoring of extension file
-### Task 2.6.1 View Management Refactoring
-- **ID**: TASK-2.6.1
-- **Description**: Refactor the extension file to improve code organization and readability.
+- **Description**: Major refactoring of the extension's codebase to improve organization, maintainability, and testability.
 - **Dependencies**: TASK-2.5
 - **Acceptance Criteria**:
-  - Create focused functions for each tree provider registration
-  - Implement a dedicated ViewService to centralize view management operations
-  - Move toggleViewsVisibility to ViewService or a utility file
-  - Extend StatusBarService to include updateConnectionStatus functionality
-  - Move refreshAllViews to the ViewService
-- **Estimated Effort**: Small
+  - Reorganize code into a modular folder structure with proper component isolation
+  - Implement a dedicated ViewService to centralize view-related operations
+  - Introduce consistent file naming conventions across the codebase
+  - Improve test infrastructure with proper VS Code API mocking
+  - Fix issues with file decoration provider handling
+  - Enhance error handling in tree view components
+- **Estimated Effort**: Medium
 - **Priority**: P1
-- **Status**: 🔄 In Progress
+- **Status**: ✅ Completed (April 19, 2025)
 
-### Task 2.6.2 Dependency Management
+### Task 2.6.1 Folder Structure Reorganization
+- **ID**: TASK-2.6.1
+- **Description**: Reorganize the codebase into a modular folder structure with clear component boundaries.
+- **Dependencies**: TASK-2.5
+- **Acceptance Criteria**:
+  - Group related files into logical folders (services, views, utils)
+  - Create specialized sub-folders for each major component (issues, articles, projects)
+  - Implement index.ts files for clean module exports
+  - Separate tree items, tree views, and related utilities
+  - Move constants into their relevant component folders
+- **Estimated Effort**: Medium
+- **Priority**: P1
+- **Status**: ✅ Completed (April 19, 2025)
+
+### Task 2.6.2 View Management Implementation
 - **ID**: TASK-2.6.2
-- **Description**: Implement a dependency injection pattern to improve testability and reduce coupling.
+- **Description**: Implement a dedicated ViewService to centralize view-related state and operations.
 - **Dependencies**: TASK-2.6.1
 - **Acceptance Criteria**:
-  - Create a container/context class for service instances
-  - Pass dependencies through constructors rather than using globals
-  - Eliminate global variables
-  - Improve unit test capabilities
-- **Estimated Effort**: Medium
-- **Priority**: P2
-- **Status**: 📝 Planned
-
-### Task 2.6.3 Activation Flow Improvement
-- **ID**: TASK-2.6.3
-- **Description**: Restructure the extension activation process for better clarity and maintainability.
-- **Dependencies**: TASK-2.6.2
-- **Acceptance Criteria**:
-  - Extract the activation sequence into a dedicated `ExtensionActivator` class
-  - Break down initialization into well-defined steps
-  - Simplify the main extension.ts file
-  - Ensure proper error handling during activation
+  - Create ViewService as the central hub for views communication
+  - Implement event emitters for cross-component notifications
+  - Centralize active project state management
+  - Provide refresh capabilities for all views
+  - Improve error handling for UI components
 - **Estimated Effort**: Small
 - **Priority**: P1
-- **Status**: 📝 Planned
+- **Status**: ✅ Completed (April 19, 2025)
 
-### Task 2.6.4 Error Handling Enhancement
-- **ID**: TASK-2.6.4
-- **Description**: Create a consistent error handling strategy across the extension.
-- **Dependencies**: TASK-2.6.3
+### Task 2.6.3 Test Infrastructure Enhancement
+- **ID**: TASK-2.6.3
+- **Description**: Improve the test infrastructure to support the refactored codebase.
+- **Dependencies**: TASK-2.6.2
 - **Acceptance Criteria**:
-  - Create a consistent error handling service
-  - Standardize error logging and user notifications
-  - Implement structured error types for different failure scenarios
-  - Improve error recovery mechanisms
+  - Update mock implementations for VS Code APIs
+  - Implement proper file decoration provider mocking
+  - Enhance test setup for tree view components
+  - Fix test failures related to component changes
+  - Ensure all tests pass with the new architecture
 - **Estimated Effort**: Small
-- **Priority**: P2
-- **Status**: 📝 Planned
-
-### Task 2.6.5 Configuration Management
-- **ID**: TASK-2.6.5
-- **Description**: Enhance the configuration service for better settings management.
-- **Dependencies**: TASK-2.6.3
-- **Acceptance Criteria**:
-  - Enhance the existing configuration service
-  - Add validation and defaults handling
-  - Implement change detection and automatic updates
-  - Support user-level and workspace-level settings
-- **Estimated Effort**: Small
-- **Priority**: P2
-- **Status**: 📝 Planned
+- **Priority**: P1
+- **Status**: ✅ Completed (April 19, 2025)
 
 ## Task 2.7: Implement Recent Issues Panel
 - **ID**: TASK-2.7
