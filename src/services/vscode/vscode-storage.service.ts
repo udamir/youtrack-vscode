@@ -7,14 +7,16 @@ import { EXTENSION_NAME, SECURE_STORAGE_KEY_BASE_URL, SECURE_STORAGE_KEY_TOKEN }
  * Service for securely storing and retrieving YouTrack credentials
  */
 export class SecureStorageService {
-  private context: vscode.ExtensionContext
+  private secrets: vscode.SecretStorage
+  private globalState: vscode.Memento
 
   /**
    * Create a new instance of the SecureStorageService
    * @param context VS Code extension context
    */
   constructor(context: vscode.ExtensionContext) {
-    this.context = context
+    this.secrets = context.secrets
+    this.globalState = context.globalState
   }
 
   /**
@@ -23,7 +25,7 @@ export class SecureStorageService {
    */
   public async storeToken(token: string): Promise<void> {
     try {
-      await this.context.secrets.store(SECURE_STORAGE_KEY_TOKEN, token)
+      await this.secrets.store(SECURE_STORAGE_KEY_TOKEN, token)
       logger.debug("YouTrack token stored securely")
     } catch (error) {
       logger.error("Failed to store YouTrack token securely", error)
@@ -37,7 +39,7 @@ export class SecureStorageService {
    */
   public async getToken(): Promise<string | undefined> {
     try {
-      return await this.context.secrets.get(SECURE_STORAGE_KEY_TOKEN)
+      return await this.secrets.get(SECURE_STORAGE_KEY_TOKEN)
     } catch (error) {
       logger.error("Failed to retrieve YouTrack token", error)
       return undefined
@@ -50,7 +52,7 @@ export class SecureStorageService {
    */
   public async storeBaseUrl(baseUrl: string): Promise<void> {
     try {
-      await this.context.globalState.update(SECURE_STORAGE_KEY_BASE_URL, baseUrl)
+      await this.secrets.store(SECURE_STORAGE_KEY_BASE_URL, baseUrl)
       logger.debug("YouTrack base URL stored")
     } catch (error) {
       logger.error("Failed to store YouTrack base URL", error)
@@ -63,7 +65,7 @@ export class SecureStorageService {
    * @returns The stored URL or undefined if not found
    */
   public getBaseUrl(): string | undefined {
-    return this.context.globalState.get<string>(SECURE_STORAGE_KEY_BASE_URL)
+    return this.globalState.get<string>(SECURE_STORAGE_KEY_BASE_URL)
   }
 
   /**
@@ -71,8 +73,8 @@ export class SecureStorageService {
    */
   public async clearCredentials(): Promise<void> {
     try {
-      await this.context.secrets.delete(SECURE_STORAGE_KEY_TOKEN)
-      await this.context.globalState.update(SECURE_STORAGE_KEY_BASE_URL, undefined)
+      await this.secrets.delete(SECURE_STORAGE_KEY_TOKEN)
+      await this.globalState.update(SECURE_STORAGE_KEY_BASE_URL, undefined)
       logger.debug("YouTrack credentials cleared")
     } catch (error) {
       logger.error("Failed to clear YouTrack credentials", error)

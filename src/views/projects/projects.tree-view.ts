@@ -1,16 +1,18 @@
 import * as vscode from "vscode"
 import * as logger from "../../utils/logger"
-import { BaseTreeView, YouTrackTreeItem } from "../base"
+import { BaseTreeView, YouTrackTreeItem, createLoadingItem } from "../base"
 
-import type { YouTrackService, ViewService, CacheService } from "../../services"
-import { createLoadingItem } from "../base/base.utils"
 import {
   VIEW_PROJECTS,
   COMMAND_ADD_PROJECT,
   COMMAND_REMOVE_PROJECT,
   COMMAND_SET_ACTIVE_PROJECT,
+  COMMAND_OPEN_SETTINGS,
 } from "./projects.consts"
-import { ProjectTreeItem } from "./projects.tree-item"
+import type { YouTrackService, VSCodeService, CacheService } from "../../services"
+import { YoutrackFilesService, CONFIG_TEMP_FOLDER_PATH } from "../../services"
+import { ProjectTreeItem, YoutrackFileTreeItem } from "./projects.tree-item"
+import { registerEditorCommands } from "./youtrack-file.commands"
 import type { ProjectEntity } from "./projects.types"
 
 /**
@@ -19,35 +21,70 @@ import type { ProjectEntity } from "./projects.types"
 export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTreeItem> {
   private _selectedProjects: ProjectEntity[] = []
   private _activeProject?: ProjectEntity
+  protected readonly subscriptions: vscode.Disposable[] = []
+
+  // File editor service
+  private _fileEditorService: YoutrackFilesService
 
   static register(
     context: vscode.ExtensionContext,
     youtrackService: YouTrackService,
-    viewService: ViewService,
-    cacheService: CacheService,
+    vscodeService: VSCodeService,
   ): ProjectsTreeView {
-    return new ProjectsTreeView(context, youtrackService, viewService, cacheService)
+    return new ProjectsTreeView(context, youtrackService, vscodeService)
   }
 
+  /**
+   * Initialize Projects Tree View
+   * @param context VS Code extension context
+   * @param _youtrackService YouTrack service
+   * @param _vscodeService View service
+   * @param _cacheService Cache service
+   */
   constructor(
-    _context: vscode.ExtensionContext,
+    context: vscode.ExtensionContext,
     private readonly _youtrackService: YouTrackService,
-    private readonly _viewService: ViewService,
-    private readonly _cacheService: CacheService,
+    private readonly _vscodeService: VSCodeService,
   ) {
-    super(VIEW_PROJECTS, _context)
+    super(VIEW_PROJECTS, context)
+
+    // Initialize file editor service
+    this._fileEditorService = new YoutrackFilesService(this._youtrackService, this._vscodeService)
+    this.subscriptions.push(this._fileEditorService)
 
     // Listen for active project changes from ViewService
-    this.subscriptions.push(this._viewService.onDidChangeActiveProject(() => this.refresh()))
-    this.subscriptions.push(this._youtrackService.onServerChanged(() => this.loadFromCache()))
+    this.subscriptions.push(this._vscodeService.onDidChangeActiveProject(() => this.refresh()))
+    this.subscriptions.push(this._vscodeService.onServerChanged(() => this.loadFromCache()))
+
+    // Listen for file changes
+    this.subscriptions.push(
+      this._fileEditorService.onDidChangeEditedFiles(() => {
+        this.refresh()
+      }),
+    )
 
     // Register commands
     this.registerCommand(COMMAND_ADD_PROJECT, this.addProjectHandler.bind(this))
     this.registerCommand(COMMAND_REMOVE_PROJECT, this.removeProject.bind(this))
     this.registerCommand(COMMAND_SET_ACTIVE_PROJECT, this.setActiveProject.bind(this))
+    this.registerCommand(COMMAND_OPEN_SETTINGS, this.openSettings.bind(this))
+
+    // Register editor commands for YouTrack files
+    registerEditorCommands(this.context, this._fileEditorService)
 
     // Load state from cache
     this.loadFromCache()
+  }
+
+  public get cache(): CacheService {
+    return this._youtrackService.cache
+  }
+
+  /**
+   * Open settings for editor configuration
+   */
+  private async openSettings(): Promise<void> {
+    await vscode.commands.executeCommand("workbench.action.openSettings", CONFIG_TEMP_FOLDER_PATH)
   }
 
   /**
@@ -105,7 +142,7 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
     this._selectedProjects.push(project)
 
     // Save selected projects to cache
-    await this._cacheService.saveSelectedProjects(this._selectedProjects)
+    await this._youtrackService.cache.saveSelectedProjects(this._selectedProjects)
 
     // If no active project is set, set this as active project
     if (!this._activeProject) {
@@ -123,13 +160,13 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
   private loadFromCache(): void {
     try {
       // Load selected projects from cache
-      const cachedProjects = this._cacheService.getSelectedProjects()
+      const cachedProjects = this.cache.getSelectedProjects()
       if (cachedProjects && cachedProjects.length > 0) {
         this._selectedProjects = cachedProjects
         logger.info(`Loaded ${cachedProjects.length} projects from cache`)
 
         // Load active project from cache
-        const activeProjectKey = this._cacheService.getActiveProjectKey()
+        const activeProjectKey = this.cache.getActiveProjectKey()
         if (activeProjectKey) {
           const activeProject = cachedProjects.find((p) => p.shortName === activeProjectKey)
           if (activeProject) {
@@ -141,7 +178,7 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
         }
 
         // Fire events
-        this._viewService.changeActiveProject(this._activeProject)
+        this._vscodeService.changeActiveProject(this._activeProject)
         this.refresh()
       }
     } catch (error) {
@@ -159,7 +196,7 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
     this._selectedProjects = this._selectedProjects.filter((p) => p.shortName !== project.shortName)
 
     // Save selected projects to cache
-    await this._cacheService.saveSelectedProjects(this._selectedProjects)
+    await this.cache.saveSelectedProjects(this._selectedProjects)
 
     // If this was the active project, clear active project
     if (this._activeProject && this._activeProject.shortName === project.shortName) {
@@ -188,28 +225,41 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
     this._activeProject = project
 
     // Save active project to cache
-    await this._cacheService.saveActiveProject(projectShortName)
+    await this.cache.saveActiveProject(projectShortName)
 
     // Notify about the change
-    this._viewService.changeActiveProject(project)
+    this._vscodeService.changeActiveProject(project)
 
     logger.info(projectShortName ? `Active project set to: ${projectShortName}` : "No active project set")
     this.refresh()
   }
 
   /**
-   * Get children for the Projects view when configured
+   * Get children for a given element
+   * @param element Parent element
    */
-  public async getChildren(element?: YouTrackTreeItem): Promise<YouTrackTreeItem[]> {
+  async getChildren(element?: YouTrackTreeItem): Promise<YouTrackTreeItem[]> {
+    // Initial loading state
+    if (this.isLoading) {
+      return [createLoadingItem("Loading YouTrack projects...")]
+    }
+
     if (element) {
+      // If this is a project element, return edited files for this project
+      if (element instanceof ProjectTreeItem && this._fileEditorService) {
+        const projectId = element.project.id
+        const editedFiles = this._fileEditorService.getEditedFilesForProject(projectId)
+
+        if (editedFiles.length > 0) {
+          return editedFiles.map((fileInfo) => new YoutrackFileTreeItem(fileInfo))
+        }
+      }
+
+      // Default: no children
       return []
     }
 
-    if (this.isLoading) {
-      return [createLoadingItem("Loading projects...")]
-    }
-
-    // Display an "Add Project" message if no projects are selected
+    // No element means we're at the root level - return all projects
     if (this._selectedProjects.length === 0) {
       const addProjectItem = YouTrackTreeItem.withThemeIcon(
         "Click the + button to add projects",
@@ -220,10 +270,16 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
       return [addProjectItem]
     }
 
-    // Convert projects to tree items, marking the active one
-    return this._selectedProjects.map(
-      (project) => new ProjectTreeItem(project, project.shortName === this._activeProject?.shortName),
-    )
+    // Return project tree items
+    return this._selectedProjects.map((project) => {
+      const isActive = project.id === this._activeProject?.id
+      const hasEditedFiles = this._fileEditorService.getEditedFilesForProject(project.id).length > 0
+
+      const collapsibleState =
+        isActive || hasEditedFiles ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None
+
+      return new ProjectTreeItem(project, collapsibleState, isActive)
+    })
   }
 
   get activeProject(): ProjectEntity | undefined {

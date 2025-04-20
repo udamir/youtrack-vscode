@@ -1,10 +1,13 @@
-import type { NOT_AUTHENTICATED, AUTHENTICATING, AUTHENTICATED, AUTHENTICATION_FAILED } from "./youtrack.consts"
+import type { ArticleEntity, IssueEntity, IssuesViewMode, ProjectEntity } from "../../views"
 
 /**
- * Authentication states for YouTrack connection
+ * Interface representing the cache state for YouTrack extension
  */
-export type AuthState =
-  | typeof NOT_AUTHENTICATED
-  | typeof AUTHENTICATING
-  | typeof AUTHENTICATED
-  | typeof AUTHENTICATION_FAILED
+export interface ServerCache {
+  selectedProjects: ProjectEntity[]
+  activeProjectKey?: string
+  recentIssues?: IssueEntity[]
+  recentArticles?: ArticleEntity[]
+  issuesViewMode?: IssuesViewMode
+  issuesFilter?: string
+}

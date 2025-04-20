@@ -22,7 +22,6 @@ A Visual Studio Code extension that integrates YouTrack issue management and kno
 This extension contributes the following settings:
 
 * `youtrack.instanceUrl`: URL of the YouTrack instance
-* `youtrack.cacheTimeout`: Cache timeout in seconds
 * `youtrack.recentItemsLimit`: Number of recent items to display
 
 ## Getting Started

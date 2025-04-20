@@ -1,48 +1,28 @@
-import type * as vscode from "vscode"
 import { YouTrack } from "youtrack-client"
 import * as logger from "../../utils/logger"
-import { SecureStorageService } from "../vscode/vscode.storage"
-import type { AuthState } from "./youtrack.types"
-import {
-  AUTHENTICATED,
-  AUTHENTICATING,
-  AUTHENTICATION_FAILED,
-  NOT_AUTHENTICATED,
-  USER_PROFILE_FIELDS,
-} from "./youtrack.consts"
+import type { SecureStorageService } from "../vscode/vscode-storage.service"
+import { USER_PROFILE_FIELDS } from "./youtrack.consts"
 
 /**
  * Authentication service for managing YouTrack connection and session.
  */
 export class AuthenticationService {
-  private secureStorage: SecureStorageService
   private baseUrl: string | undefined
   private token: string | undefined
-  private client: YouTrack | null = null
-  private currentState: AuthState = NOT_AUTHENTICATED
-  private onAuthStateChangedHandlers: ((state: AuthState) => void)[] = []
+  private _client: YouTrack | null = null
 
   /**
    * Create a new authentication service
-   * @param context VSCode extension context
+   * @param secureStorage Secure storage service
    */
-  constructor(context: vscode.ExtensionContext) {
-    this.secureStorage = new SecureStorageService(context)
-  }
-
-  /**
-   * Get the current authentication state
-   */
-  public getAuthState(): AuthState {
-    return this.currentState
-  }
+  constructor(private secureStorage: SecureStorageService) {}
 
   /**
    * Get the authenticated YouTrack client instance
    * @returns YouTrack client instance or null if not authenticated
    */
-  public getClient(): YouTrack | null {
-    return this.client
+  public get client(): YouTrack | null {
+    return this._client
   }
 
   /**
@@ -53,20 +33,10 @@ export class AuthenticationService {
   }
 
   /**
-   * Subscribe to authentication state changes
-   * @param handler Function to call when authentication state changes
-   * @returns Function to unsubscribe from events
+   * Check if user is currently authenticated
    */
-  public onAuthStateChanged(handler: (state: AuthState) => void): () => void {
-    this.onAuthStateChangedHandlers.push(handler)
-
-    // Return unsubscribe function
-    return () => {
-      const index = this.onAuthStateChangedHandlers.indexOf(handler)
-      if (index !== -1) {
-        this.onAuthStateChangedHandlers.splice(index, 1)
-      }
-    }
+  public get isAuthenticated(): boolean {
+    return this._client !== null
   }
 
   /**
@@ -74,8 +44,6 @@ export class AuthenticationService {
    */
   public async initialize(): Promise<boolean> {
     try {
-      this.updateAuthState(AUTHENTICATING)
-
       // Try to get credentials from secure storage first
       this.token = await this.secureStorage.getToken()
       this.baseUrl = this.secureStorage.getBaseUrl()
@@ -86,11 +54,9 @@ export class AuthenticationService {
         return await this.verifyAndCreateClient(this.baseUrl, this.token)
       }
 
-      this.updateAuthState(NOT_AUTHENTICATED)
       return false
     } catch (error) {
       logger.error("Failed to initialize authentication:", error)
-      this.updateAuthState(AUTHENTICATION_FAILED)
       return false
     }
   }
@@ -111,11 +77,7 @@ export class AuthenticationService {
         logger.info(`Server URL changing from ${this.baseUrl} to ${baseUrl}`)
       }
 
-      // Set authenticating state first
-      this.updateAuthState(AUTHENTICATING)
-
       if (!baseUrl || !token) {
-        this.updateAuthState(AUTHENTICATION_FAILED)
         return false
       }
 
@@ -133,9 +95,6 @@ export class AuthenticationService {
         this.baseUrl = baseUrl
         this.token = token
 
-        // Update auth state which will trigger event handlers
-        this.updateAuthState(AUTHENTICATED)
-
         // Log successful authentication with potential server change
         if (isServerChange) {
           logger.info(`Successfully authenticated with new server. Changed from ${oldBaseUrl} to ${baseUrl}`)
@@ -146,11 +105,9 @@ export class AuthenticationService {
         return true
       }
 
-      this.updateAuthState(AUTHENTICATION_FAILED)
       return false
     } catch (error) {
       logger.error("Authentication failed:", error)
-      this.updateAuthState(AUTHENTICATION_FAILED)
       return false
     }
   }
@@ -161,20 +118,12 @@ export class AuthenticationService {
   public async logout(): Promise<void> {
     try {
       await this.secureStorage.clearCredentials()
-      this.client = null
+      this._client = null
       this.baseUrl = undefined
       this.token = undefined
-      this.updateAuthState(NOT_AUTHENTICATED)
     } catch (error) {
       logger.error("Logout failed:", error)
     }
-  }
-
-  /**
-   * Check if user is currently authenticated
-   */
-  public isAuthenticated(): boolean {
-    return this.currentState === AUTHENTICATED && this.client !== null
   }
 
   /**
@@ -194,34 +143,12 @@ export class AuthenticationService {
       })
 
       // If no error was thrown, credentials are valid
-      this.client = testClient
-      this.updateAuthState(AUTHENTICATED)
+      this._client = testClient
       return true
     } catch (error) {
       logger.error("Credentials verification failed:", error)
-      this.updateAuthState(AUTHENTICATION_FAILED)
+      this._client = null
       return false
-    }
-  }
-
-  /**
-   * Update authentication state and notify listeners
-   * @param newState New authentication state
-   * @private
-   */
-  private updateAuthState(newState: AuthState): void {
-    if (this.currentState !== newState) {
-      this.currentState = newState
-      logger.info(`Authentication state changed to: ${newState}`)
-
-      // Notify all handlers
-      for (const handler of this.onAuthStateChangedHandlers) {
-        try {
-          handler(newState)
-        } catch (error) {
-          logger.error("Error in auth state change handler:", error)
-        }
-      }
     }
   }
 }

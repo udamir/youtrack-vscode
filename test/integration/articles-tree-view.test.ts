@@ -1,14 +1,9 @@
 import * as assert from "node:assert"
-import * as dotenv from "dotenv"
 
-import { ArticlesTreeView, ArticleTreeItem } from "../../src/views/articles"
-import { VSCodeMock, VSCodeMockHelper } from "../helpers/vscode-mock"
-import { CacheService, ViewService, YouTrackService } from "../../src/services"
-import { type ProjectEntity, ProjectsTreeView } from "../../src/views/projects"
-import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN } from "../../src/services/vscode"
-
-// Load environment variables from .env file if it exists
-dotenv.config()
+import { ArticlesTreeView, ArticleTreeItem, ProjectsTreeView } from "../../src/views"
+import { MockExtensionContext } from "../mock"
+import type { ProjectEntity } from "../../src/views"
+import { createServices } from "../helpers/service-helper"
 
 /**
  * This is an integration test for the Knowledge Base Tree View
@@ -16,31 +11,17 @@ dotenv.config()
  */
 describe("Knowledge Base Tree View - Integration Tests", () => {
   // Services
-  let youtrackService: YouTrackService
-  let cacheService: CacheService
   let projectsTreeView: ProjectsTreeView
   let articlesTreeView: ArticlesTreeView
 
   // Test data
   let testProject: ProjectEntity
 
-  // VS Code mock
-  let vscodeMock: VSCodeMock
-
   beforeAll(async () => {
-    const baseUrl = process.env[ENV_YOUTRACK_BASE_URL]
-    const token = process.env[ENV_YOUTRACK_TOKEN]
-
-    if (!baseUrl || !token) {
-      throw new Error("⚠️ Skipping knowledge base tests - no valid credentials provided")
-    }
-
-    // Initialize VSCodeMock with YouTrack test configuration
-    vscodeMock = new VSCodeMock(VSCodeMockHelper.createYouTrackMockConfig({ baseUrl, token }))
+    const extensionContext = new MockExtensionContext()
 
     // Initialize services
-    youtrackService = new YouTrackService()
-    await youtrackService.initialize(vscodeMock.extensionContext)
+    const { youtrackService, vscodeService } = await createServices(extensionContext)
 
     // Get a test project to use
     const projects = await youtrackService.getProjects()
@@ -50,12 +31,9 @@ describe("Knowledge Base Tree View - Integration Tests", () => {
 
     testProject = projects[0]
 
-    cacheService = new CacheService(youtrackService, vscodeMock.extensionContext.workspaceState)
-    const viewService = new ViewService()
-
     // Set up providers
-    projectsTreeView = new ProjectsTreeView(vscodeMock.extensionContext, youtrackService, viewService, cacheService)
-    articlesTreeView = new ArticlesTreeView(vscodeMock.extensionContext, youtrackService, viewService)
+    projectsTreeView = new ProjectsTreeView(extensionContext, youtrackService, vscodeService)
+    articlesTreeView = new ArticlesTreeView(extensionContext, youtrackService, vscodeService)
 
     await projectsTreeView.addProject(testProject)
     await projectsTreeView.setActiveProject(testProject.shortName)

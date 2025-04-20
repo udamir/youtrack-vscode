@@ -1,6 +1,6 @@
 import * as vscode from "vscode"
 import { BaseTreeView, YouTrackTreeItem, createLoadingItem } from "../base"
-import type { CacheService, YouTrackService } from "../../services"
+import type { CacheService, VSCodeService, YouTrackService } from "../../services"
 import { RecentIssueItem } from "./recent-issues.tree-item"
 import type { IssueEntity } from "../issues"
 import { VIEW_RECENT_ISSUES } from "./recent-issues.consts"
@@ -14,21 +14,25 @@ export class RecentIssuesTreeView extends BaseTreeView<RecentIssueItem | YouTrac
 
   /**
    * Create a new recent issues tree data provider
-   * @param youtrackService The YouTrack service
-   * @param cacheService The cache service to use for storing/retrieving issues
+   * @param youtrackService The YouTrack service to use for storing/retrieving issues
+   * @param vscodeService The VSCode service to use for handle server change events
    */
   constructor(
     _context: vscode.ExtensionContext,
     private readonly _youtrackService: YouTrackService,
-    private readonly _cacheService: CacheService,
+    private readonly _vscodeService: VSCodeService,
   ) {
     super(VIEW_RECENT_ISSUES, _context)
 
     // Register for cache change events
-    this._serverChangeDisposable = this._youtrackService.onServerChanged(this.loadFromCache.bind(this))
+    this._serverChangeDisposable = this._vscodeService.onServerChanged(this.loadFromCache.bind(this))
 
     // Load initial data from cache
     this.loadFromCache()
+  }
+
+  get cache(): CacheService {
+    return this._youtrackService.cache
   }
 
   /**
@@ -58,7 +62,7 @@ export class RecentIssuesTreeView extends BaseTreeView<RecentIssueItem | YouTrac
         new RecentIssueItem(issue, {
           command: "vscode.open",
           title: "Open Issue",
-          arguments: [vscode.Uri.parse(`${this._cacheService.baseUrl}/issue/${issue.idReadable}`)],
+          arguments: [vscode.Uri.parse(`${this.cache.baseUrl}/issue/${issue.idReadable}`)],
         }),
     )
   }
@@ -68,7 +72,7 @@ export class RecentIssuesTreeView extends BaseTreeView<RecentIssueItem | YouTrac
    */
   private loadFromCache(): void {
     this.isLoading = true
-    this._issues = this._cacheService.getRecentIssues()
+    this._issues = this.cache.getRecentIssues()
     this.isLoading = false
   }
 
@@ -89,7 +93,7 @@ export class RecentIssuesTreeView extends BaseTreeView<RecentIssueItem | YouTrac
     this._issues = [issue, ...this._issues]
 
     // Save to cache
-    this._cacheService.saveRecentIssues(this._issues)
+    this.cache.saveRecentIssues(this._issues)
 
     // Refresh the view
     this.refresh()

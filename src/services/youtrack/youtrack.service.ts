@@ -1,62 +1,44 @@
-import * as vscode from "vscode"
 import type { YouTrack } from "youtrack-client"
 import * as logger from "../../utils/logger"
-import { AuthenticationService } from "./youtrack.auth"
+import { AuthenticationService } from "./youtrack-auth.service"
 import type { IssueEntity, ProjectEntity, ArticleEntity, IssueBaseEntity, ArticleBaseEntity } from "../../views"
-import {
-  AUTHENTICATED,
-  AUTHENTICATION_FAILED,
-  NOT_AUTHENTICATED,
-  ISSUE_FIELDS,
-  PROJECT_FIELDS,
-  ARTICLE_FIELDS,
-  ARTICLE_FIELDS_FULL,
-  ISSUE_FIELDS_FULL,
-} from "./youtrack.consts"
+import { ISSUE_FIELDS, PROJECT_FIELDS, ARTICLE_FIELDS, ARTICLE_FIELDS_FULL, ISSUE_FIELDS_FULL } from "./youtrack.consts"
 import { getIssueEntity, getArticleBaseEntity, getIssueBaseEntity, getArticleEntity } from "./youtrack.utils"
-import type { AuthState } from "./youtrack.types"
+import { CacheService } from "./youtrack-cache.service"
+import { Disposable } from "../../utils/disposable"
+import type { VSCodeService } from "../vscode/vscode.service"
+import { STATUS_AUTHENTICATED, STATUS_ERROR } from "../vscode"
 
 /**
  * Service for interacting with YouTrack API
  */
-export class YouTrackService {
-  private _client: YouTrack | null = null
-  private _authService: AuthenticationService | null = null
-  private previousBaseUrl: string | undefined
-  private readonly _onServerChanged = new vscode.EventEmitter<string | undefined>()
-  private readonly _onAuthStateChanged = new vscode.EventEmitter<AuthState>()
+export class YouTrackService extends Disposable {
+  private _authService: AuthenticationService
+  private _cacheService: CacheService
 
-  public readonly onServerChanged = this._onServerChanged.event
-  public readonly onAuthStateChanged = this._onAuthStateChanged.event
+  constructor(private readonly _vscodeService: VSCodeService) {
+    super()
+    this._cacheService = new CacheService(this._vscodeService.workspaceState)
+
+    // Initialize authentication service
+    this._authService = new AuthenticationService(this._vscodeService.secureStorage)
+  }
+
+  public get cache(): CacheService {
+    return this._cacheService
+  }
 
   /**
    * Initialize the YouTrack client with credentials
-   * @param context VSCode extension context
    * @returns True if initialization was successful
    */
-  public async initialize(context: vscode.ExtensionContext): Promise<boolean> {
+  public async initialize(): Promise<boolean> {
     try {
-      // Initialize authentication service
-      this._authService = new AuthenticationService(context)
-
-      // Subscribe to auth state changes
-      this._authService.onAuthStateChanged(this.handleAuthStateChange.bind(this))
-
       // Try to initialize authentication
       const success = await this._authService.initialize()
-
-      // Update client reference if authentication was successful
-      if (success) {
-        this._client = this._authService.getClient()
-
-        // Force a server change event on initialization
-        const currentBaseUrl = this._authService.getBaseUrl()
-        if (currentBaseUrl) {
-          logger.info(`Forcing server change event during initialization for ${currentBaseUrl}`)
-          this._onServerChanged.fire(currentBaseUrl)
-          this.previousBaseUrl = currentBaseUrl
-        }
-      }
+      const baseUrl = this._authService.getBaseUrl()
+      this._cacheService.setBaseUrl(baseUrl)
+      this._vscodeService.changeConnectionStatus(success ? STATUS_AUTHENTICATED : STATUS_ERROR, baseUrl)
 
       return success
     } catch (error) {
@@ -74,86 +56,17 @@ export class YouTrackService {
   }
 
   /**
-   * Handle authentication state changes
-   * @param state New authentication state
-   * @private
-   */
-  private handleAuthStateChange(state: AuthState): void {
-    // Emit the auth state change event for subscribers
-    this._onAuthStateChanged.fire(state)
-
-    if (state === AUTHENTICATED && this._authService) {
-      this._client = this._authService.getClient()
-
-      // Get the current base URL
-      const currentBaseUrl = this._authService.getBaseUrl()
-      logger.info(
-        `Authentication state changed to Authenticated. Current base URL: ${currentBaseUrl}, Previous base URL: ${this.previousBaseUrl || "none"}`,
-      )
-
-      // First time authentication or different server
-      if (!this.previousBaseUrl || currentBaseUrl !== this.previousBaseUrl) {
-        logger.info(
-          `Server URL changed from ${this.previousBaseUrl || "none"} to ${currentBaseUrl}, firing server change event`,
-        )
-
-        // Always fire the server change event
-        this._onServerChanged.fire(currentBaseUrl)
-
-        // Update the previous base URL after firing the event
-        this.previousBaseUrl = currentBaseUrl
-      } else {
-        logger.info("Server URL unchanged, no event fired")
-      }
-
-      logger.info("YouTrack client updated due to authentication state change")
-    } else if (state === NOT_AUTHENTICATED || state === AUTHENTICATION_FAILED) {
-      this._client = null
-
-      // If we were previously authenticated and are now disconnected
-      if (this.previousBaseUrl) {
-        logger.info("Server disconnected, clearing previous URL")
-        this._onServerChanged.fire(undefined)
-        this.previousBaseUrl = undefined
-      }
-
-      logger.info("YouTrack client cleared due to authentication state change")
-    }
-  }
-
-  /**
    * Set the YouTrack credentials
    * @param baseUrl YouTrack instance URL
    * @param token YouTrack permanent token
-   * @param context VSCode extension context for storing credentials
    */
-  public async setCredentials(baseUrl: string, token: string, context: vscode.ExtensionContext): Promise<boolean> {
+  public async setCredentials(baseUrl: string, token: string): Promise<boolean> {
     try {
-      logger.info(`Setting credentials for ${baseUrl}, previous URL: ${this.previousBaseUrl || "none"}`)
-
-      // Check if this is a different server than previously used
-      const isServerChange = baseUrl !== this.previousBaseUrl && this.previousBaseUrl !== undefined
-
-      // Initialize auth service if needed
-      if (!this._authService) {
-        this._authService = new AuthenticationService(context)
-        this._authService.onAuthStateChanged(this.handleAuthStateChange.bind(this))
-      }
-
       // Authenticate with provided credentials
       const success = await this._authService.authenticate(baseUrl, token)
 
-      // Update client reference if authentication was successful
-      if (success) {
-        this._client = this._authService.getClient()
-
-        // If this is a different server than before, explicitly fire a server change event
-        if (isServerChange) {
-          logger.info(`Explicitly firing server change event: ${this.previousBaseUrl} -> ${baseUrl}`)
-          this._onServerChanged.fire(baseUrl)
-          this.previousBaseUrl = baseUrl
-        }
-      }
+      this._cacheService.setBaseUrl(baseUrl)
+      this._vscodeService.changeConnectionStatus(success ? STATUS_AUTHENTICATED : STATUS_ERROR, baseUrl)
 
       return success
     } catch (error) {
@@ -164,16 +77,9 @@ export class YouTrackService {
 
   /**
    * Clear the stored credentials
-   * @param context VSCode extension context
    */
-  public async clearCredentials(context: vscode.ExtensionContext): Promise<void> {
-    // Initialize auth service if needed
-    if (!this._authService) {
-      this._authService = new AuthenticationService(context)
-    }
-
+  public async clearCredentials(): Promise<void> {
     await this._authService.logout()
-    this._client = null
   }
 
   /**
@@ -181,7 +87,7 @@ export class YouTrackService {
    * @returns YouTrack client instance or null if not initialized
    */
   public get client(): YouTrack | null {
-    return this._client
+    return this._authService.client
   }
 
   /**
@@ -189,7 +95,7 @@ export class YouTrackService {
    * @returns True if YouTrack is configured with valid credentials
    */
   public isConnected(): boolean {
-    return this._client !== null && this._authService?.isAuthenticated() === true
+    return this._authService.isAuthenticated
   }
 
   /**
@@ -441,6 +347,78 @@ export class YouTrackService {
     } catch (error) {
       logger.error(`Error fetching child articles for article ${parentArticleId}:`, error)
       return []
+    }
+  }
+
+  /**
+   * Update issue description
+   * @param issueId Issue ID
+   * @param description New description
+   * @param summary Optional summary to update
+   */
+  public async updateIssueDescription(issueId: string, description: string, summary?: string): Promise<boolean> {
+    try {
+      logger.info(`Updating issue ${issueId}`)
+
+      // Validate connection
+      if (!this.isConnected() || !this.client) {
+        throw new Error("Not connected to YouTrack")
+      }
+
+      // Prepare update data
+      const updateData: any = {
+        description,
+      }
+
+      // Add summary if provided
+      if (summary) {
+        updateData.summary = summary
+      }
+
+      // Update the issue
+      await this.client.Issues.updateIssue(issueId, updateData)
+
+      logger.info(`Successfully updated issue ${issueId}`)
+      return true
+    } catch (error) {
+      logger.error(`Error updating issue: ${error}`)
+      throw error
+    }
+  }
+
+  /**
+   * Update article content
+   * @param articleId Article ID
+   * @param content New content
+   * @param summary Optional summary to update
+   */
+  public async updateArticleContent(articleId: string, content: string, summary?: string): Promise<boolean> {
+    try {
+      logger.info(`Updating article ${articleId}`)
+
+      // Validate connection
+      if (!this.isConnected() || !this.client) {
+        throw new Error("Not connected to YouTrack")
+      }
+
+      // Prepare update data
+      const updateData: any = {
+        content,
+      }
+
+      // Add summary if provided
+      if (summary) {
+        updateData.summary = summary
+      }
+
+      // Update the article
+      await this.client.Articles.updateArticle(articleId, updateData)
+
+      logger.info(`Successfully updated article ${articleId}`)
+      return true
+    } catch (error) {
+      logger.error(`Error updating article: ${error}`)
+      throw error
     }
   }
 }

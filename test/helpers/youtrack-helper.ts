@@ -83,8 +83,7 @@ export class YouTrackHelper {
       {
         summary: issue.summary || `Test issue ${Date.now()}`,
         description: issue.description || "Test issue for integration tests",
-        project: { id: projectId } as any,
-        ...issue,
+        project: { id: projectId },
       },
       { fields: ISSUE_FIELDS_FULL },
     )

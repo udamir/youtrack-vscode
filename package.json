@@ -74,6 +74,18 @@
       {
         "command": "youtrack.setActiveProject",
         "title": "YouTrack: Set Active Project"
+      },
+      {
+        "command": "youtrack.editIssue",
+        "title": "Open in Editor",
+        "category": "YouTrack",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "youtrack.editArticle",
+        "title": "Open in Editor",
+        "category": "YouTrack",
+        "icon": "$(edit)"
       }
     ],
     "viewsContainers": {
@@ -158,6 +170,26 @@
           "command": "youtrack.removeProject",
           "when": "view == youtrackProjects && viewItem == youtrack-project || viewItem == youtrack-project-active",
           "group": "inline"
+        },
+        {
+          "command": "youtrack.editIssue",
+          "when": "view == youtrackIssues && viewItem == youtrack-issue || view == youtrackRecentIssues && viewItem == youtrack-issue",
+          "group": "inline@1"
+        },
+        {
+          "command": "youtrack.editIssue",
+          "when": "view == youtrackIssues && viewItem == youtrack-issue || view == youtrackRecentIssues && viewItem == youtrack-issue",
+          "group": "1_youtrackActions@1"
+        },
+        {
+          "command": "youtrack.editArticle",
+          "when": "view == youtrackKnowledgeBase && viewItem == document || view == youtrackRecentArticles && viewItem == document",
+          "group": "inline@1"
+        },
+        {
+          "command": "youtrack.editArticle",
+          "when": "view == youtrackKnowledgeBase && viewItem == document || view == youtrackRecentArticles && viewItem == document",
+          "group": "1_youtrackActions@1"
         }
       ]
     },
@@ -201,52 +233,12 @@
         "youtrack.tempFolderPath": {
           "type": "string",
           "default": "",
-          "description": "Path to folder for temporary files (leave empty for default location)"
-        },
-        "youtrack.cacheTimeout": {
-          "type": "number",
-          "default": 300,
-          "description": "Cache timeout in seconds"
+          "description": "Directory path for storing temporary files used for editing YouTrack content. If not configured, the `${workspaceFolder}/temp` will be used"
         },
         "youtrack.recentItemsLimit": {
           "type": "number",
           "default": 15,
           "description": "Number of recent items to display"
-        },
-        "youtrack.autoLaunchWizard": {
-          "type": "boolean",
-          "default": true,
-          "description": "Automatically launch setup wizard on first activation"
-        },
-        "youtrack.showProjectsView": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show Projects view"
-        },
-        "youtrack.showIssuesView": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show Issues view"
-        },
-        "youtrack.showKnowledgeBaseView": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show Knowledge Base view"
-        },
-        "youtrack.showRecentIssuesView": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show Recent Issues view"
-        },
-        "youtrack.showRecentArticlesView": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show Recent Articles view"
-        },
-        "youtrack.showNotConfiguredView": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show Not Configured view"
         }
       }
     }
@@ -311,7 +303,7 @@
       "/dist/"
     ],
     "setupFilesAfterEnv": [
-      "<rootDir>/test/helpers/mock-setup.ts"
+      "<rootDir>/test/mock/mock-setup.ts"
     ]
   }
 }

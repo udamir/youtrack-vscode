@@ -2,7 +2,7 @@ import type * as vscode from "vscode"
 import * as logger from "../../utils/logger"
 import { VIEW_KNOWLEDGE_BASE, COMMAND_REFRESH_KNOWLEDGE_BASE } from "./articles.consts"
 import { createBasicItem, createLoadingItem, BaseTreeView } from "../base"
-import type { YouTrackService, ViewService } from "../../services"
+import type { YouTrackService, VSCodeService } from "../../services"
 import type { ArticleBaseEntity } from "./articles.types"
 import { ArticleTreeItem } from "./articles.tree-item"
 import type { ProjectEntity } from "../projects"
@@ -18,12 +18,12 @@ export class ArticlesTreeView extends BaseTreeView<ArticleTreeItem | YouTrackTre
   constructor(
     context: vscode.ExtensionContext,
     private readonly _youtrackService: YouTrackService,
-    private readonly _viewService: ViewService,
+    private readonly _vscodeService: VSCodeService,
   ) {
     super(VIEW_KNOWLEDGE_BASE, context)
 
     // Setup event listeners for project changes
-    this.subscriptions.push(this._viewService.onDidChangeActiveProject(this.onActiveProjectChanged.bind(this)))
+    this.subscriptions.push(this._vscodeService.onDidChangeActiveProject(this.onActiveProjectChanged.bind(this)))
 
     // Register commands
     this.registerCommand(COMMAND_REFRESH_KNOWLEDGE_BASE, this.refreshArticlesCommand.bind(this))
