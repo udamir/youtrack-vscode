@@ -1,3 +1,4 @@
+import type { ArticleEntity, IssueEntity } from "../../views"
 import type {
   FILE_STATUS_CONFLICT,
   FILE_STATUS_MODIFIED,
@@ -20,12 +21,10 @@ export type YoutrackFileStatus = typeof FILE_STATUS_SYNC | typeof FILE_STATUS_MO
  * Interface for file metadata tracking
  */
 export interface YoutrackFileData {
-  idReadable: string
   entityType: EditableEntityType
   filePath: string
   lastModified: number
   syncStatus: YoutrackFileStatus
-  projectKey?: string
   metadata: FileMetadata
   content: string
 }
@@ -33,5 +32,12 @@ export interface YoutrackFileData {
 export type FileMetadata = {
   idReadable: string
   summary: string
+  originalHash: string
   [key: string]: string
 }
+
+export type YoutrackFileEntity<T extends EditableEntityType> = T extends typeof FILE_TYPE_ISSUE
+  ? IssueEntity
+  : T extends typeof FILE_TYPE_ARTICLE
+    ? ArticleEntity
+    : never

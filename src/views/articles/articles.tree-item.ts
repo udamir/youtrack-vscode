@@ -34,12 +34,5 @@ export class ArticleTreeItem extends YouTrackTreeItem {
     } else {
       this.description = article.idReadable
     }
-
-    // Set icon based on folder status
-    if (article.childArticles.length > 0) {
-      this.iconPath = new vscode.ThemeIcon("folder")
-    } else {
-      this.iconPath = new vscode.ThemeIcon("book")
-    }
   }
 }

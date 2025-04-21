@@ -307,8 +307,6 @@ export class MarkdownPreview extends BasePreview {
       // Find and convert issue IDs (like PROJECT-123) to clickable links
       const contentWithLinks = this.convertIssueIdsToLinks(processedContent)
 
-      logger.debug(`Content with links: ${contentWithLinks}`)
-
       // Initialize markdown-it with options
       const md = new MarkdownIt({
         html: true, // Enable HTML tags in source

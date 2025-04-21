@@ -16,7 +16,7 @@ export class AuthSidebar extends BaseWebview {
     protected vscodeService: VSCodeService,
   ) {
     super(VIEW_NOT_CONNECTED, context)
-    
+
     // Register the connect command at the time of construction
     this.registerCommand(COMMAND_CONNECT, this.connectCommandHandler.bind(this))
   }

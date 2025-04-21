@@ -61,7 +61,7 @@ export class YoutrackFileTreeItem extends YouTrackTreeItem {
    */
   constructor(public readonly fileInfo: YoutrackFileData) {
     super(
-      fileInfo.idReadable,
+      fileInfo.metadata.summary,
       vscode.TreeItemCollapsibleState.None,
       {
         title: "Open File",
@@ -72,10 +72,10 @@ export class YoutrackFileTreeItem extends YouTrackTreeItem {
     )
 
     // Set description based on entity type
-    this.description = fileInfo.entityType === "issue" ? "Issue" : "Article"
+    this.description = fileInfo.metadata.idReadable
 
     // Set tooltip
-    this.tooltip = `${fileInfo.idReadable} [${fileInfo.syncStatus}]`
+    this.tooltip = `${fileInfo.metadata.idReadable} [${fileInfo.syncStatus}]`
 
     // Set icon based on sync status
     this.setStatusIcon()
@@ -93,7 +93,7 @@ export class YoutrackFileTreeItem extends YouTrackTreeItem {
         this.iconPath = new vscode.ThemeIcon("warning", new vscode.ThemeColor("editorWarning.foreground"))
         break
       default:
-        this.iconPath = new vscode.ThemeIcon("file-text")
+        this.iconPath = undefined
         break
     }
   }

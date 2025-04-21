@@ -31,7 +31,9 @@ export function scanYoutrackFiles(tempDirectory: string): Map<string, YoutrackFi
         try {
           const fileData = parseYoutrackFile(filePath)
           if (fileData) {
-            logger.debug(`Parsed .yt file: ${filename}, entity: ${fileData.entityType}, id: ${fileData.idReadable}`)
+            logger.debug(
+              `Parsed .yt file: ${filename}, entity: ${fileData.entityType}, id: ${fileData.metadata.idReadable}`,
+            )
             result.set(filePath, fileData)
           }
         } catch (error) {
@@ -91,15 +93,14 @@ export function parseYoutrackFile(filePath: string): YoutrackFileData | undefine
     const stats = fs.statSync(filePath)
 
     return {
-      idReadable: metadata.idReadable,
       entityType: entityType as EditableEntityType,
       filePath,
       lastModified: stats.mtimeMs,
       syncStatus: FILE_STATUS_SYNC,
-      projectKey: metadata.projectKey,
       metadata: {
         idReadable: metadata.idReadable,
         summary: metadata.summary || "",
+        originalHash: metadata.originalHash || "",
         ...metadata,
       },
       content: actualContent,

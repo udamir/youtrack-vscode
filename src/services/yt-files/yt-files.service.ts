@@ -9,17 +9,18 @@ import * as yaml from "js-yaml"
 import * as logger from "../../utils/logger"
 import { Disposable } from "../../utils/disposable"
 import type { YouTrackService } from "../youtrack/youtrack.service"
-import type { YoutrackFileData, EditableEntityType } from "./yt-files.types"
+import type { YoutrackFileData, EditableEntityType, YoutrackFileEntity, FileMetadata } from "./yt-files.types"
 import {
   FILE_STATUS_SYNC,
   FILE_STATUS_MODIFIED,
   FILE_STATUS_CONFLICT,
   FILE_TYPE_ISSUE,
-  FILE_TYPE_ARTICLE,
   YT_FILE_EXTENSION,
 } from "./yt-files.consts"
 import { scanYoutrackFiles, parseYoutrackFile } from "./yt-files.utils"
 import type { VSCodeService } from "../vscode/vscode.service"
+import type { ArticleEntity, IssueEntity } from "../../views"
+import { hash } from "node:crypto"
 
 /**
  * Service for managing local .yt files that contain YouTrack content
@@ -90,6 +91,8 @@ export class YoutrackFilesService extends Disposable {
 
         // Scan for existing files
         await this.scanExistingFiles()
+
+        // Fetch issues/articles from YouTrack to check for conflicts
       }
     } catch (error) {
       logger.error(`Error initializing file editor service: ${error}`)
@@ -132,7 +135,7 @@ export class YoutrackFilesService extends Disposable {
         // Add each file entry to tracking
         for (const [filePath, fileData] of files.entries()) {
           try {
-            this._editedFiles.set(fileData.metadata.id, fileData)
+            this._editedFiles.set(fileData.metadata.idReadable, fileData)
           } catch (error) {
             logger.error(`Error processing YouTrack file ${filePath}: ${error}`)
           }
@@ -157,7 +160,7 @@ export class YoutrackFilesService extends Disposable {
 
       if (fileData) {
         // Update tracking with new data
-        this._editedFiles.set(fileData.metadata.id, fileData)
+        this._editedFiles.set(fileData.metadata.idReadable, fileData)
 
         // Notify change
         this._onDidChangeEditedFiles.fire()
@@ -204,27 +207,31 @@ export class YoutrackFilesService extends Disposable {
    * @param projectKey Project key
    */
   public getEditedFilesForProject(projectKey: string): YoutrackFileData[] {
-    return this.getEditedFiles().filter((fileInfo) => fileInfo.projectKey === projectKey)
+    return this.getEditedFiles().filter(({ metadata: { idReadable } }) => idReadable.startsWith(projectKey))
   }
 
   /**
-   * Open an issue for editing
-   * @param issueId Issue ID
+   * Open an entity for editing
+   * @param idReadable Entity ID
+   * @param entityType Entity type
    */
-  public async openIssueEditor(issueId: string): Promise<void> {
+  public async openInEditor(idReadable: string, entityType: EditableEntityType): Promise<void> {
     try {
       // Check if already open
-      const existingFile = this._editedFiles.get(issueId)
+      const existingFile = this._editedFiles.get(idReadable)
       if (existingFile) {
         await vscode.window.showTextDocument(vscode.Uri.file(existingFile.filePath))
         return
       }
 
-      // Get issue details
-      const issue = await this.youtrackService.getIssueById(issueId)
+      // Get entity details
+      const entity =
+        entityType === FILE_TYPE_ISSUE
+          ? await this.youtrackService.getIssueById(idReadable)
+          : await this.youtrackService.getArticleById(idReadable)
 
-      if (!issue) {
-        throw new Error(`Issue not found: ${issueId}`)
+      if (!entity) {
+        throw new Error(`Entity (${entityType}) not found: ${idReadable}`)
       }
 
       // Check if temp directory is configured
@@ -233,57 +240,17 @@ export class YoutrackFilesService extends Disposable {
       }
 
       // Create the file path
-      const fileName = `${issue.idReadable}${YT_FILE_EXTENSION}`
+      const fileName = `${entityType}-${idReadable}${YT_FILE_EXTENSION}`
       const filePath = path.join(this._tempDirectory, fileName)
 
       // Create or update the file
-      await this.createOrUpdateFile(filePath, FILE_TYPE_ISSUE, issue)
+      await this.createOrUpdateFile(filePath, entityType, entity)
 
       // Open the file in editor
       await vscode.window.showTextDocument(vscode.Uri.file(filePath))
     } catch (error) {
-      logger.error(`Error opening issue editor: ${error}`)
-      vscode.window.showErrorMessage(`Failed to open issue: ${error}`)
-    }
-  }
-
-  /**
-   * Open an article for editing
-   * @param articleId Article ID
-   */
-  public async openArticleEditor(articleId: string): Promise<void> {
-    try {
-      // Check if already open
-      const existingFile = this._editedFiles.get(articleId)
-      if (existingFile) {
-        await vscode.window.showTextDocument(vscode.Uri.file(existingFile.filePath))
-        return
-      }
-
-      // Get article details
-      const article = await this.youtrackService.getArticleById(articleId)
-
-      if (!article) {
-        throw new Error(`Article not found: ${articleId}`)
-      }
-
-      // Check if temp directory is configured
-      if (!this._tempDirectory) {
-        throw new Error("Temp directory not configured")
-      }
-
-      // Create the file path
-      const fileName = `KB-${article.id}${YT_FILE_EXTENSION}`
-      const filePath = path.join(this._tempDirectory, fileName)
-
-      // Create or update the file
-      await this.createOrUpdateFile(filePath, FILE_TYPE_ARTICLE, article)
-
-      // Open the file in editor
-      await vscode.window.showTextDocument(vscode.Uri.file(filePath))
-    } catch (error) {
-      logger.error(`Error opening article editor: ${error}`)
-      vscode.window.showErrorMessage(`Failed to open article: ${error}`)
+      logger.error(`Error opening ${entityType} editor: ${error}`)
+      vscode.window.showErrorMessage(`Failed to open ${entityType}: ${error}`)
     }
   }
 
@@ -294,7 +261,7 @@ export class YoutrackFilesService extends Disposable {
   public async fetchFromYouTrack(fileInfo: YoutrackFileData): Promise<void> {
     try {
       // Get updated entity from YouTrack
-      let entity: any
+      let entity: YoutrackFileEntity<typeof fileInfo.entityType> | null
 
       if (fileInfo.entityType === FILE_TYPE_ISSUE) {
         entity = await this.youtrackService.getIssueById(fileInfo.metadata.id)
@@ -312,7 +279,7 @@ export class YoutrackFilesService extends Disposable {
       // Update tracking
       const updatedFileData = parseYoutrackFile(fileInfo.filePath)
       if (updatedFileData) {
-        this._editedFiles.set(updatedFileData.metadata.id, updatedFileData)
+        this._editedFiles.set(updatedFileData.metadata.idReadable, updatedFileData)
         this._onDidChangeEditedFiles.fire()
       }
     } catch (error) {
@@ -356,7 +323,7 @@ export class YoutrackFilesService extends Disposable {
       // Update file status
       const updatedFileData = parseYoutrackFile(fileInfo.filePath)
       if (updatedFileData) {
-        this._editedFiles.set(updatedFileData.metadata.id, updatedFileData)
+        this._editedFiles.set(updatedFileData.metadata.idReadable, updatedFileData)
         this._onDidChangeEditedFiles.fire()
       }
 
@@ -374,28 +341,24 @@ export class YoutrackFilesService extends Disposable {
    * @param entityType Type of entity (issue or article)
    * @param entity The entity data
    */
-  private async createOrUpdateFile(filePath: string, entityType: EditableEntityType, entity: any): Promise<void> {
+  private async createOrUpdateFile<T extends EditableEntityType>(
+    filePath: string,
+    entityType: T,
+    entity: YoutrackFileEntity<T>,
+  ): Promise<void> {
     try {
       // Prepare frontmatter
-      const frontmatter: Record<string, any> = {
-        entityType,
-      }
-
-      if (entityType === FILE_TYPE_ISSUE) {
-        const issue = entity as any
-        frontmatter.id = issue.id
-        frontmatter.idReadable = issue.idReadable
-        frontmatter.summary = issue.summary
-        frontmatter.projectKey = issue.project?.shortName
-      } else {
-        const article = entity as any
-        frontmatter.id = article.id
-        frontmatter.summary = article.summary
-        frontmatter.projectKey = article.projectId
+      const frontmatter: FileMetadata = {
+        idReadable: entity.idReadable,
+        summary: entity.summary,
+        originalHash: hash("sha1", JSON.stringify(entity)).toString(),
       }
 
       // Get content based on entity type
-      const content = entityType === FILE_TYPE_ISSUE ? (entity as any).description || "" : (entity as any).content || ""
+      const content =
+        entityType === FILE_TYPE_ISSUE
+          ? (entity as IssueEntity).description || ""
+          : (entity as ArticleEntity).content || ""
 
       // Create frontmatter string
       const frontmatterYaml = yaml.dump(frontmatter)
@@ -407,7 +370,7 @@ export class YoutrackFilesService extends Disposable {
       // Parse and update tracking
       const fileData = parseYoutrackFile(filePath)
       if (fileData) {
-        this._editedFiles.set(fileData.metadata.id, fileData)
+        this._editedFiles.set(fileData.metadata.idReadable, fileData)
         this._onDidChangeEditedFiles.fire()
       }
     } catch (error) {
@@ -425,20 +388,8 @@ export class YoutrackFilesService extends Disposable {
       // Delete file
       fs.unlinkSync(fileInfo.filePath)
 
-      // Remove from tracking
-      const idsToRemove: string[] = []
-
-      for (const [id, file] of this._editedFiles.entries()) {
-        if (file.filePath === fileInfo.filePath) {
-          idsToRemove.push(id)
-        }
-      }
-
-      // Remove identified files
-      idsToRemove.forEach((id) => this._editedFiles.delete(id))
-
-      // Notify change
-      this._onDidChangeEditedFiles.fire()
+      // Handle file deletion
+      this.handleFileDelete(vscode.Uri.file(fileInfo.filePath))
     } catch (error) {
       logger.error(`Error unlinking file: ${error}`)
       vscode.window.showErrorMessage(`Failed to unlink file: ${error}`)

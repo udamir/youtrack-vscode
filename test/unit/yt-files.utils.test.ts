@@ -31,11 +31,8 @@ describe("File Sync Utils", () => {
       // Create a valid issue file
       const filePath = path.join(tempDir, "TEST-123.yt")
       const metadata = {
-        id: "1234",
         idReadable: "TEST-123",
         summary: "Test issue",
-        entityType: FILE_TYPE_ISSUE,
-        projectKey: "TEST",
       }
       const content = "This is a test issue description"
       writeYtFile(filePath, metadata, content)
@@ -46,12 +43,11 @@ describe("File Sync Utils", () => {
       // Verify result
       expect(result).toBeDefined()
       if (result) {
-        expect(result.idReadable).toBe("TEST-123")
         expect(result.entityType).toBe(FILE_TYPE_ISSUE)
         expect(result.syncStatus).toBe(FILE_STATUS_SYNC)
-        expect(result.projectKey).toBe("TEST")
-        expect(result.content).toBe(content)
+        expect(result.metadata.idReadable).toBe("TEST-123")
         expect(result.metadata.summary).toBe("Test issue")
+        expect(result.content).toBe(content)
       }
     })
 
@@ -74,10 +70,10 @@ describe("File Sync Utils", () => {
       // Verify result
       expect(result).toBeDefined()
       if (result) {
-        expect(result.idReadable).toBe("Article-123")
         expect(result.entityType).toBe(FILE_TYPE_ARTICLE)
-        expect(result.content).toBe(content)
+        expect(result.metadata.idReadable).toBe("Article-123")
         expect(result.metadata.summary).toBe("Test article")
+        expect(result.content).toBe(content)
       }
     })
 
@@ -150,13 +146,13 @@ describe("File Sync Utils", () => {
       expect(result.size).toBe(3)
 
       // Check if all files were found
-      const fileNames = Array.from(result.values()).map((data) => data.idReadable)
+      const fileNames = Array.from(result.values()).map((data) => data.metadata.idReadable)
       expect(fileNames).toContain("TEST-1")
       expect(fileNames).toContain("TEST-2")
       expect(fileNames).toContain("KB-1")
 
       // Verify content of one file
-      const test1 = Array.from(result.values()).find((data) => data.idReadable === "TEST-1")
+      const test1 = Array.from(result.values()).find((data) => data.metadata.idReadable === "TEST-1")
       expect(test1).toBeDefined()
       if (test1) {
         expect(test1.entityType).toBe(FILE_TYPE_ISSUE)
@@ -176,7 +172,7 @@ describe("File Sync Utils", () => {
 
       // Verify that only the valid file was parsed
       expect(result.size).toBe(1)
-      const fileNames = Array.from(result.values()).map((data) => data.idReadable)
+      const fileNames = Array.from(result.values()).map((data) => data.metadata.idReadable)
       expect(fileNames).toContain("TEST-1")
     })
   })

@@ -3,7 +3,7 @@
  */
 import * as vscode from "vscode"
 import * as logger from "../../utils/logger"
-import type { YoutrackFilesService } from "../../services"
+import { FILE_TYPE_ARTICLE, FILE_TYPE_ISSUE, type YoutrackFilesService } from "../../services"
 import type { IssueTreeItem } from "../issues/issues.tree-item"
 import type { ArticleTreeItem } from "../articles/articles.tree-item"
 import type { YoutrackFileTreeItem } from "./projects.tree-item"
@@ -38,9 +38,9 @@ export function registerEditorCommands(
             return
           }
 
-          await fileEditorService.openIssueEditor(issueId)
+          await fileEditorService.openInEditor(issueId, FILE_TYPE_ISSUE)
         } else {
-          await fileEditorService.openIssueEditor(item.issue.id)
+          await fileEditorService.openInEditor(item.issue.id, FILE_TYPE_ISSUE)
         }
       } catch (error) {
         logger.error(`Error opening issue in editor: ${error}`)
@@ -63,9 +63,9 @@ export function registerEditorCommands(
             return
           }
 
-          await fileEditorService.openArticleEditor(articleId)
+          await fileEditorService.openInEditor(articleId, FILE_TYPE_ARTICLE)
         } else {
-          await fileEditorService.openArticleEditor(item.article.id)
+          await fileEditorService.openInEditor(item.article.id, FILE_TYPE_ARTICLE)
         }
       } catch (error) {
         logger.error(`Error opening article in editor: ${error}`)

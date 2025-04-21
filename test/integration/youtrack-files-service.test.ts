@@ -3,7 +3,7 @@ import * as fs from "node:fs"
 import * as yaml from "js-yaml"
 
 import { MockExtensionContext } from "../mock"
-import { FILE_STATUS_MODIFIED, type YoutrackFilesService } from "../../src/services"
+import { FILE_STATUS_MODIFIED, FILE_TYPE_ISSUE, type YoutrackFilesService } from "../../src/services"
 import { createServices, TEST_TEMP_DIR } from "../helpers/service-helper"
 
 /**
@@ -66,7 +66,7 @@ describe("Youtrack Files Service Integration Test", () => {
     if (!testIssueId) return
 
     // Create a file for the test issue by opening the issue editor
-    await youtrackFilesService.openIssueEditor(testIssueId)
+    await youtrackFilesService.openInEditor(testIssueId, FILE_TYPE_ISSUE)
 
     // Check if file was created
     const filePath = path.join(TEMP_DIR, `${testIssueIdReadable}.yt`)
@@ -114,7 +114,7 @@ describe("Youtrack Files Service Integration Test", () => {
     const isFileOpen = editedFiles.some((info) => info.metadata.id === testIssueId)
 
     if (!isFileOpen) {
-      await youtrackFilesService.openIssueEditor(testIssueId)
+      await youtrackFilesService.openInEditor(testIssueId, FILE_TYPE_ISSUE)
     }
 
     // Get edited files again
@@ -133,7 +133,7 @@ describe("Youtrack Files Service Integration Test", () => {
     const fileInfo = editedFiles.find((info) => info.metadata.id === testIssueId)
 
     if (!fileInfo) {
-      await youtrackFilesService.openIssueEditor(testIssueId)
+      await youtrackFilesService.openInEditor(testIssueId, FILE_TYPE_ISSUE)
       const updatedFiles = youtrackFilesService.getEditedFiles()
       const newFileInfo = updatedFiles.find((info) => info.metadata.id === testIssueId)
       expect(newFileInfo).toBeDefined()
@@ -174,7 +174,7 @@ describe("Youtrack Files Service Integration Test", () => {
     const fileInfo = editedFiles.find((info) => info.metadata.id === testIssueId)
 
     if (!fileInfo) {
-      await youtrackFilesService.openIssueEditor(testIssueId)
+      await youtrackFilesService.openInEditor(testIssueId, FILE_TYPE_ISSUE)
       const updatedFiles = youtrackFilesService.getEditedFiles()
       const newFileInfo = updatedFiles.find((info) => info.metadata.id === testIssueId)
       expect(newFileInfo).toBeDefined()
@@ -205,7 +205,7 @@ describe("Youtrack Files Service Integration Test", () => {
     const fileInfo = editedFiles.find((info) => info.metadata.id === testIssueId)
 
     if (!fileInfo) {
-      await youtrackFilesService.openIssueEditor(testIssueId)
+      await youtrackFilesService.openInEditor(testIssueId, FILE_TYPE_ISSUE)
       const updatedFiles = youtrackFilesService.getEditedFiles()
       const fileInfoAfterCreate = updatedFiles.find((info) => info.metadata.id === testIssueId)
       expect(fileInfoAfterCreate).toBeDefined()
