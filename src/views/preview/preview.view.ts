@@ -49,43 +49,36 @@ export class MarkdownPreview extends BasePreview {
     try {
       // Determine the type of entity (issue or article)
       const isIssue = isIssueEntity(entity)
-      const isArticle = isArticleEntity(entity)
 
-      if (!isIssue && !isArticle) {
-        throw new Error("Unsupported entity type for preview")
-      }
+      // Generate a unique ID for this entity
+      const entityId = entity.id
+      const entityType = isIssue ? "issue" : "article"
+      const panelId = `youtrack-${entityType}-${entityId}`
 
-      // Create a unique ID for this entity
-      const id = entity.idReadable
+      // Create or reuse an existing webview panel
+      let panel = this._panels.get(panelId)
 
-      // Generate title - limit summary to MAX_TITLE_LENGTH characters
-      const truncatedSummary = this.truncateText(entity.summary, MAX_TITLE_LENGTH)
-      const title = `${id}: ${truncatedSummary}`
-
-      // Get existing panel or create a new one
-      let panel = this._panels.get(id)
+      // Generate a title for the panel
+      const title = `${entity.idReadable}: ${this.truncateText(entity.summary, MAX_TITLE_LENGTH)}`
 
       if (!panel) {
-        // Create a new panel
-        panel = vscode.window.createWebviewPanel(
-          `youtrack-${isIssue ? "issue" : "article"}-preview`,
-          title,
-          vscode.ViewColumn.One,
-          {
-            enableScripts: true,
-            retainContextWhenHidden: true,
-            enableFindWidget: true,
-            localResourceRoots: [vscode.Uri.file(path.join(this.context.extensionPath, "media"))],
-          },
-        )
+        // Create a new webview panel
+        panel = vscode.window.createWebviewPanel(VIEW_MARKDOWN_PREVIEW, title, vscode.ViewColumn.One, {
+          enableScripts: true, // Enable JavaScript in the webview
+          retainContextWhenHidden: true, // Keep the webview content when hidden
+          localResourceRoots: [
+            // Allow access to media resources
+            vscode.Uri.file(path.join(this.context.extensionPath, "media")),
+          ],
+        })
 
         // Store the panel for later use
-        this._panels.set(id, panel)
+        this._panels.set(panelId, panel)
 
         // Handle panel disposal
         panel.onDidDispose(
           () => {
-            this._panels.delete(id)
+            this._panels.delete(panelId)
           },
           null,
           this._disposables,
@@ -95,17 +88,14 @@ export class MarkdownPreview extends BasePreview {
         panel.webview.onDidReceiveMessage(
           async (message) => {
             try {
-              logger.info(`Received message from webview: ${JSON.stringify(message)}`)
-
+              logger.debug(`Received message from webview: ${JSON.stringify(message)}`)
               switch (message.command) {
                 case "refresh":
                   // biome-ignore lint/style/noNonNullAssertion: <explanation>
                   await this.refreshContent(entity, panel!)
                   break
-                case "openLink":
-                  if (message.link) {
-                    await this.handleInternalLink(message.link)
-                  }
+                case COMMAND_OPEN_INTERNAL_LINK:
+                  await this.handleInternalLink(message.args)
                   break
                 default:
                   logger.warn(`Unknown command received from webview: ${message.command}`)
@@ -193,6 +183,15 @@ export class MarkdownPreview extends BasePreview {
       // Check if it's an issue or article by the ID format
       const [_, issueId, articleId] = linkData.split("-")
 
+      // Get existing panel map for issue or article
+      const existingPanel = this._panels.get(`youtrack-${issueId === "A" ? "article" : "issue"}-${linkData}`)
+
+      if (existingPanel) {
+        // If we already have a panel for this entity, reveal it instead of creating a new one
+        existingPanel.reveal(vscode.ViewColumn.One)
+        return
+      }
+
       if (issueId === "A" && articleId) {
         // This looks like an article ID
         const article = await this.youtrackService.getArticleById(linkData)
@@ -238,7 +237,7 @@ export class MarkdownPreview extends BasePreview {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: http: data:; script-src ${webview.cspSource} https:; style-src ${webview.cspSource} 'unsafe-inline' https:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: http: data:; script-src ${webview.cspSource} 'unsafe-inline' https:; style-src ${webview.cspSource} 'unsafe-inline' https:;">
     <title>${
       isIssueEntity(entity)
         ? `${entity.idReadable}: ${this.truncateText(entity.summary, MAX_TITLE_LENGTH)}`
@@ -261,28 +260,34 @@ export class MarkdownPreview extends BasePreview {
             ${renderedContent}
         </div>
     </div>
-    
     <script>
-        // Initialize VS Code API
-        const vscode = acquireVsCodeApi();
+    // Initialize VS Code API - important to do this only once and store the reference
+    const vscode = acquireVsCodeApi();
+    
+    // Initialize Mermaid diagrams if present
+    window.onload = function() {
+        if (window.mermaid) {
+            mermaid.initialize({ theme: 'forest', securityLevel: 'loose' });
+        }
         
-        // Set up the refresh button
-        document.getElementById('refresh-button').addEventListener('click', function() {
-            vscode.postMessage({
-                command: 'refresh'
-            });
-        });
-        
-        // Initialize Mermaid diagrams
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof mermaid !== 'undefined') {
-                mermaid.initialize({
-                    startOnLoad: true,
-                    theme: document.body.classList.contains('vscode-dark') || 
-                           document.body.classList.contains('vscode-high-contrast') ? 'dark' : 'default'
-                });
-            }
-        });
+        // Then add the handler back
+        document.addEventListener('click', handleLinkClick);
+    };
+    
+    // Separate function to handle link clicks for better maintenance
+    function handleLinkClick(event) {
+        const element = event.target.closest('a');
+        if (element && element.href && element.href.startsWith('command:')) {
+            event.preventDefault();
+            // Extract the command and argument
+            const hrefParts = element.href.substring('command:'.length).trim()
+            const [ command, args ] = hrefParts.split('?')
+
+            // Send message to extension
+            vscode.postMessage({ command, args })
+        }
+    }
+    
     </script>
 </body>
 </html>`
@@ -301,6 +306,8 @@ export class MarkdownPreview extends BasePreview {
 
       // Find and convert issue IDs (like PROJECT-123) to clickable links
       const contentWithLinks = this.convertIssueIdsToLinks(processedContent)
+
+      logger.debug(`Content with links: ${contentWithLinks}`)
 
       // Initialize markdown-it with options
       const md = new MarkdownIt({
@@ -419,7 +426,7 @@ export class MarkdownPreview extends BasePreview {
 
       // Replace issue IDs with clickable links
       return content.replace(issueRegex, (match) => {
-        return `[${match}](command:youtrack.openInternalLink?${match})`
+        return `[${match}](command:${COMMAND_OPEN_INTERNAL_LINK}?${match})`
       })
     } catch (error) {
       logger.error("Error converting issue IDs to links:", error)
