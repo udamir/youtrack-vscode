@@ -16,6 +16,9 @@ export class AuthSidebar extends BaseWebview {
     protected vscodeService: VSCodeService,
   ) {
     super(VIEW_NOT_CONNECTED, context)
+    
+    // Register the connect command at the time of construction
+    this.registerCommand(COMMAND_CONNECT, this.connectCommandHandler.bind(this))
   }
 
   public resolveWebviewView(
@@ -45,8 +48,6 @@ export class AuthSidebar extends BaseWebview {
       undefined,
       [],
     )
-
-    this.registerCommand(COMMAND_CONNECT, this.connectCommandHandler.bind(this))
   }
 
   async connectCommandHandler(): Promise<void> {

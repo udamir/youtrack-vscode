@@ -30,7 +30,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   try {
     // Create ViewService first (before other services)
     const vscodeService = new VSCodeService(context)
-    // Register services for proper disposal
     context.subscriptions.push(vscodeService)
 
     // Get VS Code configuration
@@ -38,6 +37,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     logger.info(`YouTrack instance URL from configuration: ${connectionUrl || "not set"}`)
 
     const youtrackService = new YouTrackService(vscodeService)
+    context.subscriptions.push(youtrackService)
 
     // Register tree data providers (creates project and issue tree views)
     new ProjectsTreeView(context, youtrackService, vscodeService)

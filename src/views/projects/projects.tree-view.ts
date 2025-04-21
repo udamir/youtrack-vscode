@@ -247,8 +247,7 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
     if (element) {
       // If this is a project element, return edited files for this project
       if (element instanceof ProjectTreeItem && this._fileEditorService) {
-        const projectId = element.project.id
-        const editedFiles = this._fileEditorService.getEditedFilesForProject(projectId)
+        const editedFiles = this._fileEditorService.getEditedFilesForProject(element.project.shortName)
 
         if (editedFiles.length > 0) {
           return editedFiles.map((fileInfo) => new YoutrackFileTreeItem(fileInfo))
@@ -272,8 +271,8 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
 
     // Return project tree items
     return this._selectedProjects.map((project) => {
-      const isActive = project.id === this._activeProject?.id
-      const hasEditedFiles = this._fileEditorService.getEditedFilesForProject(project.id).length > 0
+      const isActive = project.shortName === this._activeProject?.shortName
+      const hasEditedFiles = this._fileEditorService.getEditedFilesForProject(project.shortName).length > 0
 
       const collapsibleState =
         isActive || hasEditedFiles ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None

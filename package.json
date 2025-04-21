@@ -102,7 +102,7 @@
         {
           "id": "youtrackNotConnected",
           "type": "webview",
-          "name": "Not Connected",
+          "name": "Setup Connection",
           "when": "!youtrack.status.connected"
         },
         {
@@ -254,7 +254,8 @@
     "test:integration": "jest --testMatch=\"**/*.integration.test.ts\"",
     "test:unit": "jest --testMatch=\"**/test/**/*.test.ts\" --testPathIgnorePatterns=\"integration\"",
     "test:coverage": "jest --coverage",
-    "dev": "bun run compile && code --extensionDevelopmentPath=\"$(pwd)\""
+    "dev": "bun run compile && code --extensionDevelopmentPath=\"$(pwd)\"",
+    "debug": "bun run compile && code --extensionDevelopmentPath=\"$(pwd)\" --disable-extensions --inspect-extensions=9229"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

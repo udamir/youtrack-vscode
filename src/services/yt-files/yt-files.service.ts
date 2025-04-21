@@ -201,10 +201,10 @@ export class YoutrackFilesService extends Disposable {
 
   /**
    * Get edited files for a specific project
-   * @param projectId Project ID
+   * @param projectKey Project key
    */
-  public getEditedFilesForProject(projectId: string): YoutrackFileData[] {
-    return this.getEditedFiles().filter((fileInfo) => fileInfo.projectKey === projectId)
+  public getEditedFilesForProject(projectKey: string): YoutrackFileData[] {
+    return this.getEditedFiles().filter((fileInfo) => fileInfo.projectKey === projectKey)
   }
 
   /**
