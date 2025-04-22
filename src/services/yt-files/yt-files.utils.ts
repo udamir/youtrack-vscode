@@ -3,8 +3,18 @@ import * as path from "node:path"
 import * as yaml from "js-yaml"
 import * as logger from "../../utils/logger"
 
-import type { YoutrackFileData, EditableEntityType } from "./yt-files.types"
-import { FILE_STATUS_SYNC, FILE_TYPE_ISSUE, FILE_TYPE_ARTICLE, YT_FILE_EXTENSION } from "./yt-files.consts"
+import type { YoutrackFileData, YoutrackFileStatus } from "./yt-files.types"
+import type { ArticleEntity, IssueEntity } from "../../views"
+import {
+  FILE_STATUS_SYNCED,
+  FILE_TYPE_ISSUE,
+  FILE_TYPE_ARTICLE,
+  YT_FILE_EXTENSION,
+  FILE_STATUS_OUTDATED,
+  FILE_STATUS_CONFLICT,
+  FILE_STATUS_MODIFIED,
+} from "./yt-files.consts"
+import { hash } from "node:crypto"
 
 /**
  * Scan existing .yt files in temp directory
@@ -48,6 +58,43 @@ export function scanYoutrackFiles(tempDirectory: string): Map<string, YoutrackFi
   return result
 }
 
+export const isArticle = (entity: IssueEntity | ArticleEntity): entity is ArticleEntity => {
+  const [_, __, articleIndex] = entity.idReadable.split("-")
+  return !!articleIndex
+}
+
+export const entityHash = (entity: IssueEntity | ArticleEntity): string => {
+  const entityData = {
+    summary: entity.summary,
+    content: isArticle(entity) ? entity.content : entity.description,
+  }
+
+  return hash("sha1", JSON.stringify(entityData)).toString()
+}
+
+export const youtrackFileHash = (fileData: YoutrackFileData): string => {
+  const fileDataData = {
+    summary: fileData.metadata.summary,
+    content: fileData.content,
+  }
+
+  return hash("sha1", JSON.stringify(fileDataData)).toString()
+}
+
+export const syncStatus = (fileData: YoutrackFileData, entity: IssueEntity | ArticleEntity): YoutrackFileStatus => {
+  const sourceEntityHash = entityHash(entity)
+  const ytFileHash = youtrackFileHash(fileData)
+  const originalHash = fileData.metadata.originalHash
+
+  return originalHash !== sourceEntityHash
+    ? originalHash !== ytFileHash
+      ? FILE_STATUS_CONFLICT
+      : FILE_STATUS_OUTDATED
+    : originalHash !== ytFileHash
+      ? FILE_STATUS_MODIFIED
+      : FILE_STATUS_SYNCED
+}
+
 /**
  * Parse file metadata and content from .yt file
  * @param filePath Path to .yt file
@@ -77,26 +124,22 @@ export function parseYoutrackFile(filePath: string): YoutrackFileData | undefine
     const metadata = yaml.load(frontmatter) as Record<string, any>
 
     // Validate required fields
-    if (!metadata?.idReadable || !metadata?.entityType) {
+    if (!metadata?.idReadable || !metadata?.summary) {
       logger.error(`Missing required metadata in file: ${filePath}`)
-      return undefined
-    }
-
-    // Validate entityType
-    const entityType = metadata.entityType as string
-    if (entityType !== FILE_TYPE_ISSUE && entityType !== FILE_TYPE_ARTICLE) {
-      logger.error(`Invalid entityType in file: ${filePath}, entityType: ${entityType}`)
       return undefined
     }
 
     // Create file data object
     const stats = fs.statSync(filePath)
 
+    const [projectKey, _, articleIndex] = metadata.idReadable.split("-")
+
     return {
-      entityType: entityType as EditableEntityType,
+      projectKey,
+      entityType: articleIndex ? FILE_TYPE_ARTICLE : FILE_TYPE_ISSUE,
       filePath,
       lastModified: stats.mtimeMs,
-      syncStatus: FILE_STATUS_SYNC,
+      syncStatus: FILE_STATUS_SYNCED,
       metadata: {
         idReadable: metadata.idReadable,
         summary: metadata.summary || "",

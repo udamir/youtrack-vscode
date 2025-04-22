@@ -10,17 +10,10 @@ import * as logger from "../../utils/logger"
 import { Disposable } from "../../utils/disposable"
 import type { YouTrackService } from "../youtrack/youtrack.service"
 import type { YoutrackFileData, EditableEntityType, YoutrackFileEntity, FileMetadata } from "./yt-files.types"
-import {
-  FILE_STATUS_SYNC,
-  FILE_STATUS_MODIFIED,
-  FILE_STATUS_CONFLICT,
-  FILE_TYPE_ISSUE,
-  YT_FILE_EXTENSION,
-} from "./yt-files.consts"
-import { scanYoutrackFiles, parseYoutrackFile } from "./yt-files.utils"
+import { FILE_TYPE_ISSUE, YT_FILE_EXTENSION } from "./yt-files.consts"
+import { scanYoutrackFiles, parseYoutrackFile, entityHash, syncStatus } from "./yt-files.utils"
 import type { VSCodeService } from "../vscode/vscode.service"
 import type { ArticleEntity, IssueEntity } from "../../views"
-import { hash } from "node:crypto"
 
 /**
  * Service for managing local .yt files that contain YouTrack content
@@ -141,6 +134,22 @@ export class YoutrackFilesService extends Disposable {
           }
         }
 
+        // Check for conflicts in YouTrack based on hash
+        for (const [id, fileData] of this._editedFiles.entries()) {
+          try {
+            const serverEntity =
+              fileData.entityType === FILE_TYPE_ISSUE
+                ? await this.youtrackService.getIssueById(id)
+                : await this.youtrackService.getArticleById(id)
+            if (serverEntity) {
+              fileData.syncStatus = syncStatus(fileData, serverEntity)
+              this._editedFiles.set(id, fileData)
+            }
+          } catch (error) {
+            logger.error(`Error checking conflict for ${id}: ${error}`)
+          }
+        }
+
         // Notify change
         this._onDidChangeEditedFiles.fire()
       }
@@ -245,6 +254,13 @@ export class YoutrackFilesService extends Disposable {
 
       // Create or update the file
       await this.createOrUpdateFile(filePath, entityType, entity)
+
+      // Track newly created file and notify views
+      const newFileData = parseYoutrackFile(filePath)
+      if (newFileData) {
+        this._editedFiles.set(newFileData.metadata.idReadable, newFileData)
+        this._onDidChangeEditedFiles.fire()
+      }
 
       // Open the file in editor
       await vscode.window.showTextDocument(vscode.Uri.file(filePath))
@@ -351,7 +367,7 @@ export class YoutrackFilesService extends Disposable {
       const frontmatter: FileMetadata = {
         idReadable: entity.idReadable,
         summary: entity.summary,
-        originalHash: hash("sha1", JSON.stringify(entity)).toString(),
+        originalHash: entityHash(entity),
       }
 
       // Get content based on entity type
@@ -396,6 +412,3 @@ export class YoutrackFilesService extends Disposable {
     }
   }
 }
-
-// Export status constants for backward compatibility and tests
-export { FILE_STATUS_SYNC, FILE_STATUS_MODIFIED, FILE_STATUS_CONFLICT }

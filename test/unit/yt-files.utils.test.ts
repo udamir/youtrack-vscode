@@ -2,6 +2,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import * as os from "node:os"
 import * as yaml from "js-yaml"
+import { hash } from "node:crypto"
 
 import {
   scanYoutrackFiles,
@@ -33,6 +34,7 @@ describe("File Sync Utils", () => {
       const metadata = {
         idReadable: "TEST-123",
         summary: "Test issue",
+        originalHash: hash("sha1", JSON.stringify({ idReadable: "TEST-123", summary: "Test issue" })).toString(),
       }
       const content = "This is a test issue description"
       writeYtFile(filePath, metadata, content)
@@ -55,11 +57,9 @@ describe("File Sync Utils", () => {
       // Create a valid article file
       const filePath = path.join(tempDir, "Article-123.yt")
       const metadata = {
-        id: "5678",
         idReadable: "Article-123",
         summary: "Test article",
-        entityType: FILE_TYPE_ARTICLE,
-        projectKey: "KB",
+        originalHash: hash("sha1", JSON.stringify({ idReadable: "Article-123", summary: "Test article" })).toString(),
       }
       const content = "# Article Title\n\nThis is a test article content"
       writeYtFile(filePath, metadata, content)
@@ -109,7 +109,6 @@ describe("File Sync Utils", () => {
       const filePath = path.join(tempDir, "invalid-type.yt")
       const metadata = {
         idReadable: "INVALID-123",
-        entityType: "invalid-type", // Not issue or article
         summary: "Invalid entity type",
       }
       writeYtFile(filePath, metadata, "Some content")

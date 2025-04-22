@@ -19,6 +19,18 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "languages": [
+      {
+        "id": "markdown",
+        "extensions": [".yt"],
+        "aliases": ["Markdown"]
+      }
+    ],
+    "configurationDefaults": {
+      "files.associations": {
+        "*.yt": "markdown"
+      }
+    },
     "commands": [
       {
         "command": "youtrack.connect",

@@ -3,8 +3,9 @@
  */
 
 // File sync status
-export const FILE_STATUS_SYNC = "Synced"
+export const FILE_STATUS_SYNCED = "Synced"
 export const FILE_STATUS_MODIFIED = "Modified"
+export const FILE_STATUS_OUTDATED = "Outdated"
 export const FILE_STATUS_CONFLICT = "Conflict"
 
 // File type
