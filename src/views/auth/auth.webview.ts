@@ -1,6 +1,6 @@
 import * as vscode from "vscode"
 
-import type { ViewService, YouTrackService, ConfigurationService } from "../../services"
+import type { VSCodeService, YouTrackService } from "../../services"
 import { COMMAND_CONNECT, VIEW_NOT_CONNECTED } from "./auth.consts"
 import { BaseWebview } from "../base/base.webview"
 import * as logger from "../../utils/logger"
@@ -13,10 +13,12 @@ export class AuthSidebar extends BaseWebview {
   constructor(
     context: vscode.ExtensionContext,
     protected youtrackService: YouTrackService,
-    protected viewService: ViewService,
-    protected configService: ConfigurationService,
+    protected vscodeService: VSCodeService,
   ) {
     super(VIEW_NOT_CONNECTED, context)
+
+    // Register the connect command at the time of construction
+    this.registerCommand(COMMAND_CONNECT, this.connectCommandHandler.bind(this))
   }
 
   public resolveWebviewView(
@@ -46,8 +48,6 @@ export class AuthSidebar extends BaseWebview {
       undefined,
       [],
     )
-
-    this.registerCommand(COMMAND_CONNECT, this.connectCommandHandler.bind(this))
   }
 
   async connectCommandHandler(): Promise<void> {
@@ -55,7 +55,7 @@ export class AuthSidebar extends BaseWebview {
       const baseUrl = await vscode.window.showInputBox({
         prompt: "Enter YouTrack instance URL",
         placeHolder: "https://youtrack.example.com",
-        value: this.configService.getInstanceUrl(),
+        value: this.vscodeService.getInstanceUrl(),
       })
 
       if (baseUrl === undefined || baseUrl === "") {
@@ -72,28 +72,28 @@ export class AuthSidebar extends BaseWebview {
       }
 
       // Connect to YouTrack and update the state
-      const success = await this.youtrackService.setCredentials(baseUrl, token, this.context)
+      const success = await this.youtrackService.setCredentials(baseUrl, token)
 
       if (success) {
-        await this.configService.setInstanceUrl(baseUrl)
+        await this.vscodeService.setInstanceUrl(baseUrl)
         vscode.window.showInformationMessage("Successfully connected to YouTrack!")
         logger.info(`Connected to YouTrack instance at ${baseUrl}`)
 
         // Refresh views
-        this.viewService.refreshViews()
+        this.vscodeService.refreshViews()
 
         // Show all views after successful connection
-        await this.viewService.toggleViewsVisibility(true)
+        await this.vscodeService.toggleViewsVisibility(true)
       } else {
         vscode.window.showErrorMessage("Failed to connect to YouTrack. Please check credentials and try again.")
         logger.error("Failed to connect to YouTrack")
 
         // Show limited views when disconnected
-        await this.viewService.toggleViewsVisibility(false)
+        await this.vscodeService.toggleViewsVisibility(false)
       }
     } catch (error) {
       logger.error("Error connecting to YouTrack", error)
-      await this.viewService.toggleViewsVisibility(false)
+      await this.vscodeService.toggleViewsVisibility(false)
     }
   }
 

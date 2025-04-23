@@ -1,19 +1,16 @@
 import * as assert from "node:assert"
-import * as dotenv from "dotenv"
 
-import { VSCodeMock, VSCodeMockHelper, MockEventEmitter } from "../helpers/vscode-mock"
+import { MockExtensionContext, MockEventEmitter } from "../mock"
+import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN } from "../../src/services"
 import {
-  YouTrackService,
-  CacheService,
-  ViewService,
-  ENV_YOUTRACK_BASE_URL,
-  ENV_YOUTRACK_TOKEN,
-} from "../../src/services"
-import { ISSUE_VIEW_MODE_LIST, ISSUE_VIEW_MODE_TREE, IssuesTreeView, IssueTreeItem } from "../../src/views/issues"
-import { type ProjectEntity, ProjectsTreeView } from "../../src/views/projects"
-
-// Load environment variables from .env file
-dotenv.config()
+  ISSUE_VIEW_MODE_LIST,
+  ISSUE_VIEW_MODE_TREE,
+  IssuesTreeView,
+  ProjectsTreeView,
+  IssueTreeItem,
+} from "../../src/views"
+import type { ProjectEntity } from "../../src/views"
+import { createServices } from "../helpers/service-helper"
 
 /**
  * This is an integration test for the issues tree view
@@ -21,8 +18,6 @@ dotenv.config()
  */
 describe("Issues Tree View Integration Test", () => {
   // Services
-  let youtrackService: YouTrackService
-  let cacheService: CacheService
   let issuesTreeView: IssuesTreeView
   let projectsTreeView: ProjectsTreeView
 
@@ -30,7 +25,7 @@ describe("Issues Tree View Integration Test", () => {
   let testProject: ProjectEntity
 
   // VS Code mock
-  let vscodeMock: VSCodeMock
+  const extensionContext = new MockExtensionContext()
   let projectChangeEmitter: MockEventEmitter<ProjectEntity | undefined>
 
   beforeAll(async () => {
@@ -45,14 +40,8 @@ describe("Issues Tree View Integration Test", () => {
       // Create event emitters for mocked events
       projectChangeEmitter = new MockEventEmitter<ProjectEntity | undefined>()
 
-      // Initialize VSCodeMock with YouTrack test configuration
-      vscodeMock = new VSCodeMock(
-        VSCodeMockHelper.createYouTrackMockConfig({ baseUrl, token, issuesViewMode: ISSUE_VIEW_MODE_LIST }),
-      )
-
-      // Then initialize YouTrack service with the extension context
-      youtrackService = new YouTrackService()
-      await youtrackService.initialize(vscodeMock.extensionContext)
+      // Initialize YouTrack service with the extension context
+      const { youtrackService, vscodeService } = await createServices(extensionContext)
 
       // Get a test project to use
       const projects = await youtrackService.getProjects()
@@ -63,10 +52,8 @@ describe("Issues Tree View Integration Test", () => {
       testProject = projects[0]
 
       // Create the cache service
-      cacheService = new CacheService(youtrackService, vscodeMock.extensionContext.workspaceState)
-      const viewService = new ViewService()
-      projectsTreeView = new ProjectsTreeView(vscodeMock.extensionContext, youtrackService, viewService, cacheService)
-      issuesTreeView = new IssuesTreeView(vscodeMock.extensionContext, youtrackService, viewService, cacheService)
+      projectsTreeView = new ProjectsTreeView(extensionContext, youtrackService, vscodeService)
+      issuesTreeView = new IssuesTreeView(extensionContext, youtrackService, vscodeService)
 
       await projectsTreeView.addProject(testProject)
       await projectsTreeView.setActiveProject(testProject.shortName)

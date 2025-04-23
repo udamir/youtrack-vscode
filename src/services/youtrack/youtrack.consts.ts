@@ -1,11 +1,5 @@
 import type { Article, Issue, Schema, User, Project } from "youtrack-client"
 
-// Authentication states
-export const NOT_AUTHENTICATED = "notAuthenticated"
-export const AUTHENTICATING = "authenticating"
-export const AUTHENTICATED = "authenticated"
-export const AUTHENTICATION_FAILED = "authenticationFailed"
-
 /**
  * Constants used for YouTrack integration
  */

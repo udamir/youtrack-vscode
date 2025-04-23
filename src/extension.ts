@@ -1,27 +1,21 @@
 import * as vscode from "vscode"
-import { CacheService, ViewService, YouTrackService, ConfigurationService } from "./services"
+import { YouTrackService } from "./services"
 import {
-  ProjectsTreeView,
+  IssuesTreeView,
+  RecentIssuesTreeView,
   ArticlesTreeView,
   RecentArticlesTreeView,
-  RecentIssuesTreeView,
+  ProjectsTreeView,
   AuthSidebar,
-  MarkdownPreview,
-  IssuesTreeView,
   StatusBarView,
+  MarkdownPreview,
 } from "./views"
 import * as logger from "./utils/logger"
-
-// Service instances
-const youtrackService = new YouTrackService()
-const configService = new ConfigurationService()
-let viewService: ViewService
+import { VSCodeService } from "./services/vscode/vscode.service"
 
 /**
  * This method is called when the extension is activated
- * Activation happens when:
- * - One of the YouTrack views is opened
- * - A YouTrack command is executed
+ * @param context VS Code extension context
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   // Initialize logger first to ensure all log messages are captured
@@ -34,37 +28,35 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   logger.info("Activating YouTrack extension")
 
   try {
+    // Create ViewService first (before other services)
+    const vscodeService = new VSCodeService(context)
+    context.subscriptions.push(vscodeService)
+
     // Get VS Code configuration
-    const connectionUrl = configService.getInstanceUrl()
+    const connectionUrl = vscodeService.getInstanceUrl()
     logger.info(`YouTrack instance URL from configuration: ${connectionUrl || "not set"}`)
 
-    // Create cache service
-    const cacheService = new CacheService(youtrackService, context.workspaceState)
-
-    // Create ViewService first (before other services)
-    viewService = new ViewService()
-
-    // Register services for proper disposal
-    context.subscriptions.push(viewService)
+    const youtrackService = new YouTrackService(vscodeService)
+    context.subscriptions.push(youtrackService)
 
     // Register tree data providers (creates project and issue tree views)
-    new ProjectsTreeView(context, youtrackService, viewService, cacheService)
-    new IssuesTreeView(context, youtrackService, viewService, cacheService)
-    new ArticlesTreeView(context, youtrackService, viewService)
-    new RecentArticlesTreeView(context, youtrackService, cacheService)
-    new RecentIssuesTreeView(context, youtrackService, cacheService)
+    new ProjectsTreeView(context, youtrackService, vscodeService)
+    new IssuesTreeView(context, youtrackService, vscodeService)
+    new ArticlesTreeView(context, youtrackService, vscodeService)
+    new RecentArticlesTreeView(context, youtrackService, vscodeService)
+    new RecentIssuesTreeView(context, youtrackService, vscodeService)
     new MarkdownPreview(context, youtrackService)
-    new AuthSidebar(context, youtrackService, viewService, configService)
-    new StatusBarView(context, youtrackService)
+    new AuthSidebar(context, youtrackService, vscodeService)
+    new StatusBarView(context, youtrackService, vscodeService)
 
     // Try to restore connection if configured
     if (!connectionUrl) {
       logger.info("No YouTrack instance URL configured. Showing not-connected view.")
-      return viewService.toggleViewsVisibility(false)
+      return vscodeService.toggleViewsVisibility(false)
     }
 
-    const connected = await youtrackService.initialize(context)
-    await viewService.toggleViewsVisibility(connected)
+    const connected = await youtrackService.initialize()
+    await vscodeService.toggleViewsVisibility(connected)
 
     if (connected) {
       logger.info("Successfully authenticated using stored credentials")
@@ -73,10 +65,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       vscode.window.showErrorMessage("Failed to connect to YouTrack. Please check your connection or re-authenticate.")
     }
   } catch (error) {
-    logger.error("Error activating extension:", error)
-    vscode.window.showErrorMessage(
-      `Error activating YouTrack extension: ${error instanceof Error ? error.message : String(error)}`,
-    )
+    logger.error(`Extension activation failed: ${error}`)
   }
 }
 

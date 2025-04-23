@@ -29,7 +29,7 @@ export abstract class BaseWebview implements vscode.WebviewViewProvider, vscode.
     _token: vscode.CancellationToken,
   ): void | Thenable<void>
 
-  protected registerCommand(command: string, handler: (issueId: string) => Promise<void>): void {
+  protected registerCommand(command: string, handler: (...args: any[]) => Promise<void>): void {
     this.context.subscriptions.push(vscode.commands.registerCommand(command, handler))
   }
 }

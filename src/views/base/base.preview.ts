@@ -33,7 +33,7 @@ export abstract class BasePreview<T extends vscode.CustomDocument = vscode.Custo
    * @param command Command to register
    * @param handler Command handler
    */
-  protected registerCommand(command: string, handler: (issueId: string) => Promise<void>): void {
+  protected registerCommand(command: string, handler: (...args: any[]) => Promise<void>): void {
     this.context.subscriptions.push(vscode.commands.registerCommand(command, handler))
   }
 

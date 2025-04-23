@@ -26,6 +26,7 @@ YouTrack content will be represented as `.yt` files with the following structure
   - Add settings action button to Projects panel to open extension settings
 - **Estimated Effort**: Medium
 - **Priority**: P0
+- **Status**: ✅ Completed (April 21, 2025)
 
 ## Task 4.2: Implement "Open in Editor" Context Actions
 - **ID**: TASK-4.2

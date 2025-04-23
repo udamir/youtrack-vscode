@@ -1,41 +1,27 @@
 import * as vscode from "vscode"
 import * as logger from "../../utils/logger"
-import { StatusBarState } from "./statusbar.types"
-import type { YouTrackService, AuthState } from "../../services/youtrack"
-import { AUTHENTICATED, AUTHENTICATION_FAILED, NOT_AUTHENTICATED } from "../../services/youtrack"
+
+import { STATUS_AUTHENTICATED, STATUS_ERROR, STATUS_NOT_AUTHENTICATED } from "../../services"
+import type { VSCodeService, ConnectionStatus } from "../../services"
+import type { YouTrackService } from "../../services/youtrack"
 import { COMMAND_CONNECT } from "../auth/auth.consts"
-
-/**
- * Factory for creating VS Code status bar items (allows for easier testing)
- */
-export interface StatusBarItemFactory {
-  createStatusBarItem(alignment?: vscode.StatusBarAlignment, priority?: number): vscode.StatusBarItem
-}
-
-/**
- * Default implementation of StatusBarItemFactory using VS Code API
- */
-export class VSCodeStatusBarItemFactory implements StatusBarItemFactory {
-  createStatusBarItem(alignment = vscode.StatusBarAlignment.Left, priority = 100): vscode.StatusBarItem {
-    return vscode.window.createStatusBarItem(alignment, priority)
-  }
-}
+import { Disposable } from "../../utils/disposable"
 
 /**
  * Service for managing the YouTrack status bar item
  */
-export class StatusBarView {
-  protected subscriptions: vscode.Disposable[] = []
+export class StatusBarView extends Disposable {
   private readonly statusBarItem: vscode.StatusBarItem
 
   constructor(
     protected readonly context: vscode.ExtensionContext,
-    private readonly youtrackService?: YouTrackService,
-    private readonly factory: StatusBarItemFactory = new VSCodeStatusBarItemFactory(),
+    private readonly youtrackService: YouTrackService,
+    private readonly vscodeService: VSCodeService,
   ) {
+    super()
     // Create status bar item with medium priority (higher number = further to the left)
-    this.statusBarItem = this.factory.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
-    this.subscriptions.push(this.statusBarItem)
+    this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
+    this._subscriptions.push(this.statusBarItem)
 
     // Set the command to run when clicked
     this.statusBarItem.command = COMMAND_CONNECT
@@ -44,16 +30,13 @@ export class StatusBarView {
     this.statusBarItem.show()
 
     // Initialize with disconnected state
-    this.updateState(StatusBarState.NotAuthenticated)
+    this.updateState(STATUS_NOT_AUTHENTICATED)
 
-    // Subscribe to auth state changes if YouTrack service is provided
-    if (this.youtrackService) {
-      this.subscriptions.push(this.youtrackService.onAuthStateChanged(this.handleAuthStateChange.bind(this)))
+    this._subscriptions.push(this.vscodeService.onConnectionStatusChanged(this.handleAuthStateChange.bind(this)))
 
-      // Set initial state based on current connection
-      if (this.youtrackService.isConnected()) {
-        this.updateState(StatusBarState.Authenticated, this.youtrackService.baseUrl)
-      }
+    // Set initial state based on current connection
+    if (this.youtrackService.isConnected()) {
+      this.updateState(STATUS_AUTHENTICATED, this.youtrackService.baseUrl)
     }
 
     this.context.subscriptions.push(this)
@@ -62,18 +45,16 @@ export class StatusBarView {
   /**
    * Handle authentication state changes from YouTrack service
    */
-  private handleAuthStateChange(state: AuthState): void {
+  private handleAuthStateChange(state: ConnectionStatus): void {
     logger.debug(`Status bar received auth state change: ${state}`)
 
     switch (state) {
-      case AUTHENTICATED:
-        this.updateState(StatusBarState.Authenticated, this.youtrackService?.baseUrl)
+      case STATUS_AUTHENTICATED:
+        this.updateState(STATUS_AUTHENTICATED, this.youtrackService?.baseUrl)
         break
-      case NOT_AUTHENTICATED:
-        this.updateState(StatusBarState.NotAuthenticated)
-        break
-      case AUTHENTICATION_FAILED:
-        this.updateState(StatusBarState.Error)
+      case STATUS_NOT_AUTHENTICATED:
+      case STATUS_ERROR:
+        this.updateState(state)
         break
     }
   }
@@ -81,20 +62,20 @@ export class StatusBarView {
   /**
    * Update the status bar state and appearance
    */
-  public updateState(state: StatusBarState, instanceUrl?: string): void {
+  public updateState(state: ConnectionStatus, instanceUrl?: string): void {
     // Update status bar item appearance based on state
     switch (state) {
-      case StatusBarState.Authenticated:
+      case STATUS_AUTHENTICATED:
         this.statusBarItem.text = "$(check) YouTrack"
         this.statusBarItem.tooltip = `Connected to YouTrack: ${instanceUrl}`
         this.statusBarItem.backgroundColor = undefined
         break
-      case StatusBarState.NotAuthenticated:
+      case STATUS_NOT_AUTHENTICATED:
         this.statusBarItem.text = "$(x) YouTrack"
         this.statusBarItem.tooltip = "Not connected to YouTrack - Click to connect"
         this.statusBarItem.backgroundColor = undefined
         break
-      case StatusBarState.Error:
+      case STATUS_ERROR:
         this.statusBarItem.text = "$(alert) YouTrack"
         this.statusBarItem.tooltip = "Error connecting to YouTrack - Click to reconnect"
         this.statusBarItem.backgroundColor = new vscode.ThemeColor("statusBarItem.errorBackground")
@@ -102,13 +83,5 @@ export class StatusBarView {
     }
 
     logger.info(`Status bar updated: ${state}${instanceUrl ? ` (${instanceUrl})` : ""}`)
-  }
-
-  /**
-   * Dispose the status bar item
-   */
-  public dispose(): void {
-    this.subscriptions.forEach((d) => d.dispose())
-    this.subscriptions = []
   }
 }

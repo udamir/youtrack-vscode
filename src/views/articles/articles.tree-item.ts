@@ -19,7 +19,7 @@ export class ArticleTreeItem extends YouTrackTreeItem {
         title: "Preview Article",
         arguments: [article.idReadable],
       },
-      article.childArticles.length > 0 ? "folder" : "document",
+      "document",
     )
 
     // Set the id property to match the article id for tracking
@@ -33,13 +33,6 @@ export class ArticleTreeItem extends YouTrackTreeItem {
       this.description = `${article.idReadable} (${article.childArticles.length})`
     } else {
       this.description = article.idReadable
-    }
-
-    // Set icon based on folder status
-    if (article.childArticles.length > 0) {
-      this.iconPath = new vscode.ThemeIcon("folder")
-    } else {
-      this.iconPath = new vscode.ThemeIcon("book")
     }
   }
 }

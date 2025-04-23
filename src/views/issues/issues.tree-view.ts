@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import * as logger from "../../utils/logger"
 
-import type { YouTrackService, ViewService, CacheService } from "../../services"
+import type { YouTrackService, VSCodeService, CacheService } from "../../services"
 import {
   VIEW_ISSUES,
   COMMAND_FILTER_ISSUES,
@@ -30,18 +30,17 @@ export class IssuesTreeView extends BaseTreeView<IssueTreeItem | YouTrackTreeIte
   }
 
   get activeProjectKey(): string | undefined {
-    return this._viewService.activeProject?.shortName
+    return this._vscodeService.activeProject?.shortName
   }
 
   constructor(
     _context: vscode.ExtensionContext,
     private _youtrackService: YouTrackService,
-    private _viewService: ViewService,
-    private _cacheService: CacheService,
+    private _vscodeService: VSCodeService,
   ) {
     super(VIEW_ISSUES, _context)
-    this._filter = this._cacheService.getIssuesFilter() || ""
-    this._viewMode = this._cacheService.getIssuesViewMode() || ISSUE_VIEW_MODE_LIST
+    this._filter = this.cache.getIssuesFilter() || ""
+    this._viewMode = this.cache.getIssuesViewMode() || ISSUE_VIEW_MODE_LIST
 
     // Set initial view mode context
     void vscode.commands.executeCommand("setContext", "youtrack.viewMode", this._viewMode)
@@ -49,13 +48,17 @@ export class IssuesTreeView extends BaseTreeView<IssueTreeItem | YouTrackTreeIte
     this.subscriptions.push(
       vscode.window.registerFileDecorationProvider({ provideFileDecoration: this.fileDecorationProvider.bind(this) }),
     )
-    this.subscriptions.push(this._viewService.onDidChangeActiveProject(this.onActiveProjectChanged.bind(this)))
-    this.subscriptions.push(this._viewService.onDidRefreshViews(() => this.refresh()))
+    this.subscriptions.push(this._vscodeService.onDidChangeActiveProject(this.onActiveProjectChanged.bind(this)))
+    this.subscriptions.push(this._vscodeService.onDidRefreshViews(() => this.refresh()))
 
     this.registerCommand(COMMAND_FILTER_ISSUES, this.filterIssuesCommand.bind(this))
     this.registerCommand(COMMAND_REFRESH_ISSUES, this.refreshIssuesCommand.bind(this))
     this.registerCommand(COMMAND_TOGGLE_ISSUES_VIEW_MODE_TREE, this.setTreeViewMode.bind(this))
     this.registerCommand(COMMAND_TOGGLE_ISSUES_VIEW_MODE_LIST, this.setListViewMode.bind(this))
+  }
+
+  get cache(): CacheService {
+    return this._youtrackService.cache
   }
 
   private onActiveProjectChanged(project: ProjectEntity | undefined): void {
@@ -83,7 +86,7 @@ export class IssuesTreeView extends BaseTreeView<IssueTreeItem | YouTrackTreeIte
         logger.info(`Setting issues filter to: ${filterText}`)
 
         this._filter = filterText
-        await this._cacheService.saveIssuesFilter(filterText)
+        await this.cache.saveIssuesFilter(filterText)
 
         this.refresh()
       }
@@ -99,7 +102,7 @@ export class IssuesTreeView extends BaseTreeView<IssueTreeItem | YouTrackTreeIte
   async setListViewMode(): Promise<void> {
     logger.info(`Setting issues view mode to: ${ISSUE_VIEW_MODE_LIST}`)
     this._viewMode = ISSUE_VIEW_MODE_LIST
-    await this._cacheService.saveIssuesViewMode(ISSUE_VIEW_MODE_LIST)
+    await this.cache.saveIssuesViewMode(ISSUE_VIEW_MODE_LIST)
     // Update VS Code context for menu visibility
     await vscode.commands.executeCommand("setContext", "youtrack.viewMode", ISSUE_VIEW_MODE_LIST)
     this.refresh()
@@ -108,7 +111,7 @@ export class IssuesTreeView extends BaseTreeView<IssueTreeItem | YouTrackTreeIte
   async setTreeViewMode(): Promise<void> {
     logger.info(`Setting issues view mode to: ${ISSUE_VIEW_MODE_TREE}`)
     this._viewMode = ISSUE_VIEW_MODE_TREE
-    await this._cacheService.saveIssuesViewMode(ISSUE_VIEW_MODE_TREE)
+    await this.cache.saveIssuesViewMode(ISSUE_VIEW_MODE_TREE)
     // Update VS Code context for menu visibility
     await vscode.commands.executeCommand("setContext", "youtrack.viewMode", ISSUE_VIEW_MODE_TREE)
     this.refresh()

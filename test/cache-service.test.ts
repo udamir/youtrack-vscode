@@ -1,27 +1,23 @@
 import * as assert from "node:assert"
 
-import { mockBaseUrl, mockProjects, mockIssues, mockArticles } from "./mock-data/youtrack-data"
-import { createMockYouTrackService } from "./helpers/youtrack-service-mock"
-import { VSCodeMock, VSCodeMockHelper } from "./helpers/vscode-mock"
-import { CacheService, type YouTrackService } from "../src/services"
-import { ISSUE_VIEW_MODE_LIST } from "../src/views/issues"
+import { mockBaseUrl, mockProjects, mockIssues, mockArticles } from "./mock/youtrack-data"
+import { CacheService } from "../src/services"
+import { ISSUE_VIEW_MODE_LIST } from "../src/views"
+import { MockExtensionContext } from "./mock"
 
 describe("CacheService", () => {
   // Test subjects
   let cacheService: CacheService
 
-  // Mock dependencies
-  let mockYouTrackService: YouTrackService
-
   beforeEach(() => {
-    // Set up mock YouTrack service
-    mockYouTrackService = createMockYouTrackService(mockBaseUrl) as YouTrackService
-
     // Initialize VSCodeMock with test configuration and our custom storage
-    const vscodeMock = new VSCodeMock(VSCodeMockHelper.createMockExtensionContext())
+    const vscodeMock = new MockExtensionContext()
 
     // Initialize the cache service with mocked dependencies
-    cacheService = new CacheService(mockYouTrackService, vscodeMock.extensionContext.workspaceState)
+    cacheService = new CacheService(vscodeMock.workspaceState)
+    
+    // Set the base URL - This was missing and causing the tests to fail
+    cacheService.setBaseUrl(mockBaseUrl)
   })
 
   afterEach(() => {
@@ -108,12 +104,10 @@ describe("CacheService", () => {
       assert.deepStrictEqual(originalProjects, mockProjects, "Original server should have all projects")
 
       // Get the server change callback that was registered during initialization
-      const onServerChangedMock = mockYouTrackService.onServerChanged as jest.Mock
-      const serverChangeCallback = onServerChangedMock.mock.calls[0][0]
 
       // Change base URL by simulating a server change
       const newServerUrl = "https://new-server.youtrack.com"
-      serverChangeCallback(newServerUrl)
+      cacheService.setBaseUrl(newServerUrl)
 
       // After server change, we should have no projects for the new server
       const newServerInitialProjects = cacheService.getSelectedProjects()
@@ -128,7 +122,7 @@ describe("CacheService", () => {
       assert.deepStrictEqual(newServerRetrievedProjects, newServerProjects, "New server should have only one project")
 
       // Change back to original server
-      serverChangeCallback(mockBaseUrl)
+      cacheService.setBaseUrl(mockBaseUrl)
 
       // Original server should still have its original data
       const originalServerProjects = cacheService.getSelectedProjects()
@@ -136,12 +130,8 @@ describe("CacheService", () => {
     })
 
     it("should handle server disconnection", () => {
-      // Get the server change callback that was registered during initialization
-      const onServerChangedMock = mockYouTrackService.onServerChanged as jest.Mock
-      const serverChangeCallback = onServerChangedMock.mock.calls[0][0]
-
       // Simulate server disconnect
-      serverChangeCallback(undefined)
+      cacheService.setBaseUrl(undefined)
 
       // Base URL should be undefined
       assert.strictEqual(cacheService.baseUrl, undefined, "Base URL should be undefined after disconnection")

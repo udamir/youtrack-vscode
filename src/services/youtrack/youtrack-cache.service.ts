@@ -1,9 +1,8 @@
 import type * as vscode from "vscode"
 import * as logger from "../../utils/logger"
 
-import type { YouTrackService } from "../youtrack/youtrack.service"
 import type { ArticleEntity, IssueEntity, IssuesViewMode, ProjectEntity } from "../../views"
-import type { ServerCache } from "./cache.types"
+import type { ServerCache } from "./youtrack.types"
 
 /**
  * Cache service for YouTrack data
@@ -11,7 +10,6 @@ import type { ServerCache } from "./cache.types"
  */
 export class CacheService {
   private _baseUrl: string | undefined
-  private _serverChangeDisposable: vscode.Disposable | undefined
   private readonly _workspaceState: vscode.Memento
 
   /**
@@ -21,48 +19,18 @@ export class CacheService {
     return this._baseUrl
   }
 
+  public setBaseUrl(value: string | undefined) {
+    this._baseUrl = value
+  }
+
   /**
    * Create a new cache service instance
-   * @param youtrackService The YouTrack service to get server change events from
    * @param workspaceState The workspace state to store data in
    */
-  constructor(
-    private readonly youtrackService: YouTrackService,
-    workspaceState: vscode.Memento,
-  ) {
+  constructor(workspaceState: vscode.Memento) {
     this._workspaceState = workspaceState
 
-    // Initialize base URL from the YouTrack service
-    this._baseUrl = this.youtrackService.baseUrl
-
-    // Subscribe to server change events
-    this._serverChangeDisposable = this.youtrackService.onServerChanged(this.handleServerChange.bind(this))
-
-    logger.info(`Cache service initialized with base URL: ${this._baseUrl || "none"}`)
-  }
-
-  /**
-   * Clean up resources when this service is no longer needed
-   */
-  public dispose(): void {
-    if (this._serverChangeDisposable) {
-      this._serverChangeDisposable.dispose()
-    }
-  }
-
-  /**
-   * Handle server change events
-   * @param baseUrl The new server URL or undefined if disconnected
-   */
-  private handleServerChange(baseUrl: string | undefined): void {
-    if (baseUrl === this._baseUrl) {
-      return
-    }
-
-    logger.info(`Server changed to ${baseUrl || "none"}, updating cache service`)
-
-    // Update our base URL
-    this._baseUrl = baseUrl
+    logger.info(`Cache service initialized with base URL: ${this.baseUrl || "none"}`)
   }
 
   /**

@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { BaseTreeView, YouTrackTreeItem, createLoadingItem } from "../base"
 import { RecentArticleTreeItem } from "./recent-articles.tree-item"
-import type { CacheService, YouTrackService } from "../../services"
+import type { CacheService, VSCodeService, YouTrackService } from "../../services"
 
 import { VIEW_RECENT_ARTICLES } from "./recent-articles.consts"
 import type { ArticleEntity } from "../articles"
@@ -15,21 +15,25 @@ export class RecentArticlesTreeView extends BaseTreeView<RecentArticleTreeItem |
 
   /**
    * Create a new recent articles tree data provider
-   * @param youtrackService The YouTrack service
-   * @param cacheService The cache service to use for storing/retrieving articles
+   * @param youtrackService The YouTrack service to use for storing/retrieving articles
+   * @param vscodeService The VSCode service to use for handle server change events
    */
   constructor(
     _context: vscode.ExtensionContext,
     private readonly _youtrackService: YouTrackService,
-    private readonly _cacheService: CacheService,
+    private readonly _vscodeService: VSCodeService,
   ) {
     super(VIEW_RECENT_ARTICLES, _context)
 
     // Register for server change events
-    this._serverChangeDisposable = this._youtrackService.onServerChanged(this.loadFromCache.bind(this))
+    this._serverChangeDisposable = this._vscodeService.onServerChanged(this.loadFromCache.bind(this))
 
     // Load initial data from cache
     this.loadFromCache()
+  }
+
+  get cache(): CacheService {
+    return this._youtrackService.cache
   }
 
   /**
@@ -59,7 +63,7 @@ export class RecentArticlesTreeView extends BaseTreeView<RecentArticleTreeItem |
         new RecentArticleTreeItem(article, {
           command: "vscode.open",
           title: "Open Article",
-          arguments: [vscode.Uri.parse(`${this._cacheService.baseUrl}/articles/${article.id}`)],
+          arguments: [vscode.Uri.parse(`${this.cache.baseUrl}/articles/${article.id}`)],
         }),
     )
   }
@@ -69,7 +73,7 @@ export class RecentArticlesTreeView extends BaseTreeView<RecentArticleTreeItem |
    */
   private loadFromCache(): void {
     this.isLoading = true
-    this._articles = this._cacheService.getRecentArticles()
+    this._articles = this.cache.getRecentArticles()
     this.isLoading = false
   }
 
@@ -90,7 +94,7 @@ export class RecentArticlesTreeView extends BaseTreeView<RecentArticleTreeItem |
     this._articles = [article, ...this._articles]
 
     // Save to cache
-    this._cacheService.saveRecentArticles(this._articles)
+    this.cache.saveRecentArticles(this._articles)
 
     // Refresh the view
     this.refresh()
