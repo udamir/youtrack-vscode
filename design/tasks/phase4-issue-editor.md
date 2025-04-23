@@ -29,21 +29,10 @@ YouTrack content will be represented as `.yt` files with the following structure
 
 ## Task 4.2: Implement "Open in Editor" Context Actions
 - **ID**: TASK-4.2
-- **Description**: Add context menu actions to open issues and articles in the standard file editor from various views.
-- **Dependencies**: TASK-4.1
-- **Acceptance Criteria**:
-  - Add "Open in Editor" action to issue context menu in Issues and Recent Issues views
-  - Add "Open in Editor" action to article context menu in Knowledge Base and Recent Articles views
-  - Ensure proper error handling when file creation fails
-  - Add visual indicators to show that content is being edited locally
-- **Estimated Effort**: Medium
-- **Priority**: P0
-
-## Task 4.3: Implement Sync Status Management
-- **ID**: TASK-4.3
 - **Description**: Create mechanisms to track and visualize synchronization status between local files and YouTrack.
 - **Dependencies**: TASK-4.1
 - **Acceptance Criteria**:
+  - Add "Open in Editor" action to issue/article preview
   - Show sync status indicator for files in the Projects panel:
     - "Synced" when file content matches server content
     - "Modified" when local changes exist
@@ -52,34 +41,33 @@ YouTrack content will be represented as `.yt` files with the following structure
     - "Fetch from YouTrack" (refresh local content from server)
     - "Save to YouTrack" (upload local changes to server)
     - "Unlink" (remove file from temp directory and project panel)
-  - Implement two-way synchronization logic (local ↔ remote)
-  - Handle conflict scenarios appropriately
+  - Implement "Save to YouTrack" functionality that updates only content
+  - Implement "Unlink" functionality to clean up temporary files
+  - Implement "Fetch from YouTrack" functionality to update local content from server
 - **Estimated Effort**: Large
 - **Priority**: P1
 
-## Task 4.4: Implement File Format and Parsing
-- **ID**: TASK-4.4
-- **Description**: Implement YAML frontmatter handling and content synchronization.
-- **Dependencies**: TASK-4.1
+## Task 4.3: Implement Metadata sync
+- **ID**: TASK-4.3
+- **Description**: Support custom fields in metadata and autosync.
+- **Dependencies**: TASK-4.1, TASK-4.2
 - **Acceptance Criteria**:
+  - Support issues links in metadata (depends on, relates to, etc)
+  - Add sync interval configuration option for sync status update and autosync
+  - Implement interval-based autosync for content and metadata from YouTrack to `.yt` files (if no conflicts)
   - Implement YAML frontmatter parsing and generation for entity metadata
-  - Parse updated files to extract changes to both metadata and content
-  - Handle entity-specific metadata fields appropriately (different for issues vs articles)
   - Support updating both content and key metadata fields when saving to YouTrack
 - **Estimated Effort**: Medium
 - **Priority**: P1
 
-## Task 4.5: Implement Content Synchronization
-- **ID**: TASK-4.5
-- **Description**: Implement synchronization between local files and YouTrack entities.
-- **Dependencies**: TASK-4.3, TASK-4.4
+## Task 4.4: Implement Conflict Resolution
+- **ID**: TASK-4.4
+- **Description**: Implement conflict resolution between local files and YouTrack entities.
+- **Dependencies**: TASK-4.2, TASK-4.3
 - **Acceptance Criteria**:
-  - Implement "Save to YouTrack" functionality that updates both attributes and content
-  - Implement "Fetch from YouTrack" to update local file with remote changes
-  - Provide visual feedback during sync operations
-  - Handle and report synchronization errors appropriately
-  - Detect conflicts between local and remote changes
-  - Clean up temporary files when they are unlinked or when editor is closed
-  - Track open files to restore editing session across IDE restarts
-- **Estimated Effort**: Large
+  - Add "Resolve conflicts" action to files with conflicts to resolve conflicts
+  - Git like resolve conflicts view (with selection of local, remote, or both)
+  - Add "Compare with original" action to see side by side comparison of local and remote files.
+  - Implement "Compare with original" to open side by side comparison of local and remote files.
+- **Estimated Effort**: Medium
 - **Priority**: P1
