@@ -33,10 +33,11 @@ YouTrack content will be represented as `.yt` files with the following structure
 - **Dependencies**: TASK-4.1
 - **Acceptance Criteria**:
   - Add "Open in Editor" action to issue/article preview
-  - Show sync status indicator for files in the Projects panel:
-    - "Synced" when file content matches server content
-    - "Modified" when local changes exist
-    - "Conflict" when both local and remote content changed
+  - Show sync status indicator text coloring for files in the Projects panel:
+    - "Synced" when file content matches server content (green circle icon and white text)
+    - "Modified" when local changes exist (filled circle icon and yellow text)
+    - "Outdated" when remote content is newer (short arrow icon and gray text)
+    - "Conflict" when both local and remote content changed (warning icon and red text)
   - Add context menu actions for each file:
     - "Fetch from YouTrack" (refresh local content from server)
     - "Save to YouTrack" (upload local changes to server)
