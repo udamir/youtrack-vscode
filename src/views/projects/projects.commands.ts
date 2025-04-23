@@ -3,13 +3,11 @@
  */
 import * as vscode from "vscode"
 import * as logger from "../../utils/logger"
-import { FILE_TYPE_ARTICLE, FILE_TYPE_ISSUE, type YoutrackFilesService } from "../../services"
+import type { YoutrackFilesService } from "../../services"
 import type { IssueTreeItem } from "../issues/issues.tree-item"
-import type { ArticleTreeItem } from "../articles/articles.tree-item"
 import type { YoutrackFileTreeItem } from "./projects.tree-item"
 import {
-  COMMAND_EDIT_ISSUE,
-  COMMAND_EDIT_ARTICLE,
+  COMMAND_EDIT_ENTITY,
   COMMAND_FETCH_FROM_YOUTRACK,
   COMMAND_SAVE_TO_YOUTRACK,
   COMMAND_UNLINK_FILE,
@@ -26,11 +24,11 @@ export function registerEditorCommands(
 ): void {
   // Register issue editor command
   context.subscriptions.push(
-    vscode.commands.registerCommand(COMMAND_EDIT_ISSUE, async (item: IssueTreeItem) => {
+    vscode.commands.registerCommand(COMMAND_EDIT_ENTITY, async (item: IssueTreeItem) => {
       try {
         if (!item) {
           const issueIdReadable = await vscode.window.showInputBox({
-            prompt: "Enter YouTrack issue ID (e.g. PROJECT-123)",
+            prompt: "Enter YouTrack issue or article ID (e.g. PROJECT-123)",
             placeHolder: "PROJECT-123",
           })
 
@@ -38,38 +36,13 @@ export function registerEditorCommands(
             return
           }
 
-          await fileEditorService.openInEditor(issueIdReadable, FILE_TYPE_ISSUE)
+          await fileEditorService.openInEditor(issueIdReadable)
         } else {
-          await fileEditorService.openInEditor(item.issue.idReadable, FILE_TYPE_ISSUE)
+          await fileEditorService.openInEditor(item.issue.idReadable)
         }
       } catch (error) {
         logger.error(`Error opening issue in editor: ${error}`)
         vscode.window.showErrorMessage(`Failed to open issue in editor: ${error}`)
-      }
-    }),
-  )
-
-  // Register article editor command
-  context.subscriptions.push(
-    vscode.commands.registerCommand(COMMAND_EDIT_ARTICLE, async (item: ArticleTreeItem) => {
-      try {
-        if (!item) {
-          const articleIdReadable = await vscode.window.showInputBox({
-            prompt: "Enter YouTrack article ID",
-            placeHolder: "Enter article ID",
-          })
-
-          if (!articleIdReadable) {
-            return
-          }
-
-          await fileEditorService.openInEditor(articleIdReadable, FILE_TYPE_ARTICLE)
-        } else {
-          await fileEditorService.openInEditor(item.article.idReadable, FILE_TYPE_ARTICLE)
-        }
-      } catch (error) {
-        logger.error(`Error opening article in editor: ${error}`)
-        vscode.window.showErrorMessage(`Failed to open article in editor: ${error}`)
       }
     }),
   )

@@ -12,7 +12,7 @@ import {
 import type { YouTrackService, VSCodeService, CacheService } from "../../services"
 import { YoutrackFilesService, CONFIG_TEMP_FOLDER_PATH } from "../../services"
 import { ProjectTreeItem, YoutrackFileTreeItem } from "./projects.tree-item"
-import { registerEditorCommands } from "./youtrack-file.commands"
+import { registerEditorCommands } from "./projects.commands"
 import type { ProjectEntity } from "./projects.types"
 
 /**

@@ -3,8 +3,8 @@ import * as path from "node:path"
 import * as yaml from "js-yaml"
 import * as logger from "../../utils/logger"
 
-import type { YoutrackFileData, YoutrackFileStatus } from "./yt-files.types"
-import type { ArticleEntity, IssueEntity } from "../../views"
+import type { EditableEntityType, YoutrackFileData, YoutrackFileStatus } from "./yt-files.types"
+import type { ArticleBaseEntity, ArticleEntity, IssueBaseEntity, IssueEntity } from "../../views"
 import {
   FILE_STATUS_SYNCED,
   FILE_TYPE_ISSUE,
@@ -58,9 +58,17 @@ export function scanYoutrackFiles(tempDirectory: string): Map<string, YoutrackFi
   return result
 }
 
-export const isArticle = (entity: IssueEntity | ArticleEntity): entity is ArticleEntity => {
-  const [_, __, articleIndex] = entity.idReadable.split("-")
-  return !!articleIndex
+export const generateFileName = (entity: IssueBaseEntity | ArticleBaseEntity): string => {
+  return `${entity.idReadable} ${entity.summary}${YT_FILE_EXTENSION}`
+}
+
+export const entityTypeById = (idReadable: string): EditableEntityType => {
+  const [_, __, articleIndex] = idReadable.split("-")
+  return articleIndex ? FILE_TYPE_ARTICLE : FILE_TYPE_ISSUE
+}
+
+export const isArticle = (entity: IssueBaseEntity | ArticleBaseEntity): entity is ArticleEntity => {
+  return entityTypeById(entity.idReadable) === FILE_TYPE_ARTICLE
 }
 
 export const entityHash = (entity: IssueEntity | ArticleEntity): string => {

@@ -11,7 +11,14 @@ import { Disposable } from "../../utils/disposable"
 import type { YouTrackService } from "../youtrack/youtrack.service"
 import type { YoutrackFileData, EditableEntityType, YoutrackFileEntity, FileMetadata } from "./yt-files.types"
 import { FILE_TYPE_ISSUE, YT_FILE_EXTENSION } from "./yt-files.consts"
-import { scanYoutrackFiles, parseYoutrackFile, entityHash, syncStatus } from "./yt-files.utils"
+import {
+  scanYoutrackFiles,
+  parseYoutrackFile,
+  entityHash,
+  syncStatus,
+  entityTypeById,
+  generateFileName,
+} from "./yt-files.utils"
 import type { VSCodeService } from "../vscode/vscode.service"
 import type { ArticleEntity, IssueEntity } from "../../views"
 
@@ -222,17 +229,18 @@ export class YoutrackFilesService extends Disposable {
   /**
    * Open an entity for editing
    * @param idReadable Entity ID
-   * @param entityType Entity type
    */
-  public async openInEditor(idReadable: string, entityType: EditableEntityType): Promise<void> {
-    try {
-      // Check if already open
-      const existingFile = this._editedFiles.get(idReadable)
-      if (existingFile) {
-        await vscode.window.showTextDocument(vscode.Uri.file(existingFile.filePath))
-        return
-      }
+  public async openInEditor(idReadable: string): Promise<void> {
+    // Check if already open
+    const existingFile = this._editedFiles.get(idReadable)
+    if (existingFile) {
+      await vscode.window.showTextDocument(vscode.Uri.file(existingFile.filePath))
+      return
+    }
 
+    const entityType = entityTypeById(idReadable)
+
+    try {
       // Get entity details
       const entity =
         entityType === FILE_TYPE_ISSUE
@@ -249,8 +257,7 @@ export class YoutrackFilesService extends Disposable {
       }
 
       // Create the file path
-      const fileName = `${entityType}-${idReadable}${YT_FILE_EXTENSION}`
-      const filePath = path.join(this._tempDirectory, fileName)
+      const filePath = path.join(this._tempDirectory, generateFileName(entity))
 
       // Create or update the file
       await this.createOrUpdateFile(filePath, entityType, entity)

@@ -88,13 +88,7 @@
         "title": "YouTrack: Set Active Project"
       },
       {
-        "command": "youtrack.editIssue",
-        "title": "Open in Editor",
-        "category": "YouTrack",
-        "icon": "$(edit)"
-      },
-      {
-        "command": "youtrack.editArticle",
+        "command": "youtrack.editEntity",
         "title": "Open in Editor",
         "category": "YouTrack",
         "icon": "$(edit)"
@@ -184,23 +178,23 @@
           "group": "inline"
         },
         {
-          "command": "youtrack.editIssue",
+          "command": "youtrack.editEntity",
           "when": "view == youtrackIssues && viewItem == youtrack-issue || view == youtrackRecentIssues && viewItem == youtrack-issue",
           "group": "inline@1"
         },
         {
-          "command": "youtrack.editIssue",
+          "command": "youtrack.editEntity",
           "when": "view == youtrackIssues && viewItem == youtrack-issue || view == youtrackRecentIssues && viewItem == youtrack-issue",
           "group": "1_youtrackActions@1"
         },
         {
-          "command": "youtrack.editArticle",
-          "when": "view == youtrackKnowledgeBase && viewItem == document || view == youtrackRecentArticles && viewItem == document",
+          "command": "youtrack.editEntity",
+          "when": "view == youtrackKnowledgeBase && viewItem == youtrack-article || view == youtrackRecentArticles && viewItem == youtrack-article",
           "group": "inline@1"
         },
         {
-          "command": "youtrack.editArticle",
-          "when": "view == youtrackKnowledgeBase && viewItem == document || view == youtrackRecentArticles && viewItem == document",
+          "command": "youtrack.editEntity",
+          "when": "view == youtrackKnowledgeBase && viewItem == youtrack-article || view == youtrackRecentArticles && viewItem == youtrack-article",
           "group": "1_youtrackActions@1"
         }
       ]

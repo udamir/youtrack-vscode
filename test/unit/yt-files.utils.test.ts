@@ -7,7 +7,7 @@ import { hash } from "node:crypto"
 import {
   scanYoutrackFiles,
   parseYoutrackFile,
-  FILE_STATUS_SYNC,
+  FILE_STATUS_SYNCED,
   FILE_TYPE_ISSUE,
   FILE_TYPE_ARTICLE,
 } from "../../src/services"
@@ -46,7 +46,7 @@ describe("File Sync Utils", () => {
       expect(result).toBeDefined()
       if (result) {
         expect(result.entityType).toBe(FILE_TYPE_ISSUE)
-        expect(result.syncStatus).toBe(FILE_STATUS_SYNC)
+        expect(result.syncStatus).toBe(FILE_STATUS_SYNCED)
         expect(result.metadata.idReadable).toBe("TEST-123")
         expect(result.metadata.summary).toBe("Test issue")
         expect(result.content).toBe(content)
@@ -55,11 +55,11 @@ describe("File Sync Utils", () => {
 
     it("should parse a valid article .yt file", () => {
       // Create a valid article file
-      const filePath = path.join(tempDir, "Article-123.yt")
+      const filePath = path.join(tempDir, "KB-A-123.yt")
       const metadata = {
-        idReadable: "Article-123",
+        idReadable: "KB-A-123",
         summary: "Test article",
-        originalHash: hash("sha1", JSON.stringify({ idReadable: "Article-123", summary: "Test article" })).toString(),
+        originalHash: hash("sha1", JSON.stringify({ idReadable: "KB-A-123", summary: "Test article" })).toString(),
       }
       const content = "# Article Title\n\nThis is a test article content"
       writeYtFile(filePath, metadata, content)
@@ -71,7 +71,8 @@ describe("File Sync Utils", () => {
       expect(result).toBeDefined()
       if (result) {
         expect(result.entityType).toBe(FILE_TYPE_ARTICLE)
-        expect(result.metadata.idReadable).toBe("Article-123")
+        expect(result.syncStatus).toBe(FILE_STATUS_SYNCED)
+        expect(result.metadata.idReadable).toBe("KB-A-123")
         expect(result.metadata.summary).toBe("Test article")
         expect(result.content).toBe(content)
       }
@@ -97,19 +98,6 @@ describe("File Sync Utils", () => {
       const metadata = {
         summary: "Missing required fields",
         // Missing idReadable and entityType
-      }
-      writeYtFile(filePath, metadata, "Some content")
-
-      const result = parseYoutrackFile(filePath)
-      expect(result).toBeUndefined()
-    })
-
-    it("should return undefined for a file with invalid entityType", () => {
-      // Create a file with invalid entityType
-      const filePath = path.join(tempDir, "invalid-type.yt")
-      const metadata = {
-        idReadable: "INVALID-123",
-        summary: "Invalid entity type",
       }
       writeYtFile(filePath, metadata, "Some content")
 

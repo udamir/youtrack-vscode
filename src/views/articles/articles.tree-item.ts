@@ -19,7 +19,7 @@ export class ArticleTreeItem extends YouTrackTreeItem {
         title: "Preview Article",
         arguments: [article.idReadable],
       },
-      "document",
+      "youtrack-article",
     )
 
     // Set the id property to match the article id for tracking
