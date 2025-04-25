@@ -5,19 +5,18 @@
 import * as vscode from "vscode"
 import * as path from "node:path"
 import * as fs from "node:fs"
-import * as yaml from "js-yaml"
 import * as logger from "../../utils/logger"
 import { Disposable } from "../../utils/disposable"
 import type { YouTrackService } from "../youtrack/youtrack.service"
-import type { YoutrackFileData, EditableEntityType, YoutrackFileEntity, FileMetadata } from "./yt-files.types"
+import type { YoutrackFileData } from "./yt-files.types"
 import { FILE_TYPE_ISSUE, YT_FILE_EXTENSION } from "./yt-files.consts"
 import {
   scanYoutrackFiles,
   parseYoutrackFile,
-  entityHash,
   syncStatus,
   entityTypeById,
   generateFileName,
+  writeYtFile,
 } from "./yt-files.utils"
 import type { VSCodeService } from "../vscode/vscode.service"
 import type { ArticleEntity, IssueEntity } from "../../views"
@@ -32,6 +31,7 @@ export class YoutrackFilesService extends Disposable {
 
   // Map of edited files, keyed by entity ID
   private _editedFiles = new Map<string, YoutrackFileData>()
+  private _ignoreFileChanges = new Set<string>()
 
   /**
    * Event that fires when the list of edited files changes
@@ -56,9 +56,17 @@ export class YoutrackFilesService extends Disposable {
       this.initialize()
     }
 
+    this._subscriptions.push(
+      this.vsCodeService.onConnectionStatusChanged(() => {
+        logger.debug("yt-files.service: Connection status changed")
+        this.updateFilesStatus()
+      }),
+    )
+
     // Listen for configuration changes
     this._subscriptions.push(
       this.vsCodeService.onDidChangeTempFolderPath(() => {
+        logger.debug("yt-files.service: Temp directory changed")
         // Update temp directory
         this._tempDirectory = this.vsCodeService.getTempFolderPath()
 
@@ -120,42 +128,38 @@ export class YoutrackFilesService extends Disposable {
     }
   }
 
+  private async updateFilesStatus(): Promise<void> {
+    if (!this.youtrackService.isConnected()) {
+      return
+    }
+    for (const fileData of this._editedFiles.values()) {
+      await this.updateFileStatus(fileData)
+    }
+  }
+
   /**
    * Scan for existing .yt files in the temp directory
    */
   private async scanExistingFiles(): Promise<void> {
+    logger.debug("yt-files.service: Scanning existing files")
     try {
       if (this._tempDirectory) {
         // Get all .yt files in the temp directory
         const files = scanYoutrackFiles(this._tempDirectory)
 
+        logger.debug(`Found ${files.length} .yt files in temp directory`)
+
         // Clear current tracking
         this._editedFiles.clear()
 
         // Add each file entry to tracking
-        for (const [filePath, fileData] of files.entries()) {
-          try {
-            this._editedFiles.set(fileData.metadata.idReadable, fileData)
-          } catch (error) {
-            logger.error(`Error processing YouTrack file ${filePath}: ${error}`)
-          }
+        for (const fileData of files) {
+          const idReadable = fileData.metadata.idReadable
+          this._editedFiles.set(idReadable, fileData)
         }
 
-        // Check for conflicts in YouTrack based on hash
-        for (const [id, fileData] of this._editedFiles.entries()) {
-          try {
-            const serverEntity =
-              fileData.entityType === FILE_TYPE_ISSUE
-                ? await this.youtrackService.getIssueById(id)
-                : await this.youtrackService.getArticleById(id)
-            if (serverEntity) {
-              fileData.syncStatus = syncStatus(fileData, serverEntity)
-              this._editedFiles.set(id, fileData)
-            }
-          } catch (error) {
-            logger.error(`Error checking conflict for ${id}: ${error}`)
-          }
-        }
+        // Update sync status for all files
+        await this.updateFilesStatus()
 
         // Notify change
         this._onDidChangeEditedFiles.fire()
@@ -165,20 +169,40 @@ export class YoutrackFilesService extends Disposable {
     }
   }
 
+  private async updateFileStatus(fileData: YoutrackFileData): Promise<IssueEntity | ArticleEntity | null> {
+    const idReadable = fileData.metadata.idReadable
+    logger.debug(`yt-files.service: Updating file status: ${idReadable}`)
+    if (!this.youtrackService.isConnected()) {
+      return null
+    }
+    const serverEntity: IssueEntity | ArticleEntity | null =
+      entityTypeById(idReadable) === FILE_TYPE_ISSUE
+        ? await this.youtrackService.getIssueById(idReadable)
+        : await this.youtrackService.getArticleById(idReadable)
+    if (serverEntity) {
+      fileData.syncStatus = syncStatus(fileData, serverEntity)
+    }
+    return serverEntity
+  }
+
   /**
    * Handle file change event
    * @param uri URI of the changed file
    */
   private async handleFileChange(uri: vscode.Uri): Promise<void> {
+    // Ignore changes while saving
+    if (this._ignoreFileChanges.has(uri.fsPath)) {
+      this._ignoreFileChanges.delete(uri.fsPath)
+      return
+    }
+
+    logger.debug(`yt-files.service: Handling file change: ${uri.fsPath}`)
     try {
-      // Parse the changed file
       const fileData = parseYoutrackFile(uri.fsPath)
 
       if (fileData) {
-        // Update tracking with new data
+        await this.updateFileStatus(fileData)
         this._editedFiles.set(fileData.metadata.idReadable, fileData)
-
-        // Notify change
         this._onDidChangeEditedFiles.fire()
       }
     } catch (error) {
@@ -191,6 +215,7 @@ export class YoutrackFilesService extends Disposable {
    * @param uri URI of the deleted file
    */
   private handleFileDelete(uri: vscode.Uri): void {
+    logger.debug(`yt-files.service: Deleting file: ${uri.fsPath}`)
     try {
       // Find all file infos that match this path
       const idsToRemove: string[] = []
@@ -226,11 +251,16 @@ export class YoutrackFilesService extends Disposable {
     return this.getEditedFiles().filter(({ metadata: { idReadable } }) => idReadable.startsWith(projectKey))
   }
 
+  public getEditedFilesProjects(): string[] {
+    return Array.from(new Set(this.getEditedFiles().map(({ metadata: { idReadable } }) => idReadable.split("-")[0])))
+  }
+
   /**
    * Open an entity for editing
    * @param idReadable Entity ID
    */
   public async openInEditor(idReadable: string): Promise<void> {
+    logger.debug(`yt-files.service: Opening in editor: ${idReadable}`)
     // Check if already open
     const existingFile = this._editedFiles.get(idReadable)
     if (existingFile) {
@@ -260,7 +290,7 @@ export class YoutrackFilesService extends Disposable {
       const filePath = path.join(this._tempDirectory, generateFileName(entity))
 
       // Create or update the file
-      await this.createOrUpdateFile(filePath, entityType, entity)
+      await this.createOrUpdateFile(filePath, entity)
 
       // Track newly created file and notify views
       const newFileData = parseYoutrackFile(filePath)
@@ -282,29 +312,20 @@ export class YoutrackFilesService extends Disposable {
    * @param fileInfo Information about the file to update
    */
   public async fetchFromYouTrack(fileInfo: YoutrackFileData): Promise<void> {
+    logger.debug(`yt-files.service: Fetching from YouTrack: ${fileInfo.filePath}`)
     try {
       // Get updated entity from YouTrack
-      let entity: YoutrackFileEntity<typeof fileInfo.entityType> | null
-
-      if (fileInfo.entityType === FILE_TYPE_ISSUE) {
-        entity = await this.youtrackService.getIssueById(fileInfo.metadata.id)
-      } else {
-        entity = await this.youtrackService.getArticleById(fileInfo.metadata.id)
-      }
+      const entity =
+        fileInfo.entityType === FILE_TYPE_ISSUE
+          ? await this.youtrackService.getIssueById(fileInfo.metadata.idReadable)
+          : await this.youtrackService.getArticleById(fileInfo.metadata.idReadable)
 
       if (!entity) {
-        throw new Error(`Entity not found: ${fileInfo.metadata.id}`)
+        throw new Error(`Entity not found: ${fileInfo.metadata.idReadable}`)
       }
 
       // Update the file
-      await this.createOrUpdateFile(fileInfo.filePath, fileInfo.entityType, entity)
-
-      // Update tracking
-      const updatedFileData = parseYoutrackFile(fileInfo.filePath)
-      if (updatedFileData) {
-        this._editedFiles.set(updatedFileData.metadata.idReadable, updatedFileData)
-        this._onDidChangeEditedFiles.fire()
-      }
+      await this.createOrUpdateFile(fileInfo.filePath, entity)
     } catch (error) {
       logger.error(`Error fetching from YouTrack: ${error}`)
       vscode.window.showErrorMessage(`Failed to fetch from YouTrack: ${error}`)
@@ -316,6 +337,7 @@ export class YoutrackFilesService extends Disposable {
    * @param fileInfo Information about the file to save
    */
   public async saveToYouTrack(fileInfo: YoutrackFileData): Promise<boolean> {
+    logger.debug(`yt-files.service: Saving to YouTrack: ${fileInfo.filePath}`)
     try {
       // Read file content
       const content = fs.readFileSync(fileInfo.filePath, "utf8")
@@ -325,30 +347,17 @@ export class YoutrackFilesService extends Disposable {
         throw new Error("Invalid file format")
       }
 
+      const { summary, idReadable } = fileInfo.metadata
       const [, , bodyContent] = match
 
-      if (fileInfo.entityType === FILE_TYPE_ISSUE) {
-        // Update issue
-        await this.youtrackService.updateIssueDescription(
-          fileInfo.metadata.id,
-          bodyContent.trim(),
-          fileInfo.metadata.summary,
-        )
-      } else {
-        // Update article
-        await this.youtrackService.updateArticleContent(
-          fileInfo.metadata.id,
-          bodyContent.trim(),
-          fileInfo.metadata.summary,
-        )
-      }
+      const updatedEntity =
+        fileInfo.entityType === FILE_TYPE_ISSUE
+          ? await this.youtrackService.updateIssueDescription(idReadable, bodyContent, summary)
+          : await this.youtrackService.updateArticleContent(idReadable, bodyContent, summary)
 
-      // Update file status
-      const updatedFileData = parseYoutrackFile(fileInfo.filePath)
-      if (updatedFileData) {
-        this._editedFiles.set(updatedFileData.metadata.idReadable, updatedFileData)
-        this._onDidChangeEditedFiles.fire()
-      }
+      this._ignoreFileChanges.add(fileInfo.filePath)
+      // Update file
+      await this.createOrUpdateFile(fileInfo.filePath, updatedEntity)
 
       return true
     } catch (error) {
@@ -361,41 +370,16 @@ export class YoutrackFilesService extends Disposable {
   /**
    * Create or update a file with entity content
    * @param filePath Path to the file
-   * @param entityType Type of entity (issue or article)
    * @param entity The entity data
    */
-  private async createOrUpdateFile<T extends EditableEntityType>(
-    filePath: string,
-    entityType: T,
-    entity: YoutrackFileEntity<T>,
-  ): Promise<void> {
+  private async createOrUpdateFile(filePath: string, entity: IssueEntity | ArticleEntity): Promise<void> {
+    logger.debug(`yt-files.service: Creating or updating file: ${filePath}`)
     try {
-      // Prepare frontmatter
-      const frontmatter: FileMetadata = {
-        idReadable: entity.idReadable,
-        summary: entity.summary,
-        originalHash: entityHash(entity),
-      }
+      const fileData = writeYtFile(filePath, entity)
 
-      // Get content based on entity type
-      const content =
-        entityType === FILE_TYPE_ISSUE
-          ? (entity as IssueEntity).description || ""
-          : (entity as ArticleEntity).content || ""
-
-      // Create frontmatter string
-      const frontmatterYaml = yaml.dump(frontmatter)
-
-      // Write file
-      const fileContent = `---\n${frontmatterYaml}---\n\n${content}`
-      fs.writeFileSync(filePath, fileContent, "utf8")
-
-      // Parse and update tracking
-      const fileData = parseYoutrackFile(filePath)
-      if (fileData) {
-        this._editedFiles.set(fileData.metadata.idReadable, fileData)
-        this._onDidChangeEditedFiles.fire()
-      }
+      // Update tracking
+      this._editedFiles.set(entity.idReadable, fileData)
+      this._onDidChangeEditedFiles.fire()
     } catch (error) {
       logger.error(`Error creating/updating file: ${error}`)
       throw error
@@ -407,6 +391,7 @@ export class YoutrackFilesService extends Disposable {
    * @param fileInfo Information about the file to unlink
    */
   public async unlinkFile(fileInfo: YoutrackFileData): Promise<void> {
+    logger.debug(`yt-files.service: Unlinking file: ${fileInfo.filePath}`)
     try {
       // Delete file
       fs.unlinkSync(fileInfo.filePath)

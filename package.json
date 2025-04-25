@@ -92,6 +92,21 @@
         "title": "Open in Editor",
         "category": "YouTrack",
         "icon": "$(edit)"
+      },
+      {
+        "command": "youtrack.fetchFromYouTrack",
+        "title": "YouTrack: Fetch from YouTrack",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "youtrack.saveToYouTrack",
+        "title": "YouTrack: Save to YouTrack",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "youtrack.unlinkFile",
+        "title": "YouTrack: Unlink File",
+        "icon": "$(trash)"
       }
     ],
     "viewsContainers": {
@@ -184,18 +199,23 @@
         },
         {
           "command": "youtrack.editEntity",
-          "when": "view == youtrackIssues && viewItem == youtrack-issue || view == youtrackRecentIssues && viewItem == youtrack-issue",
-          "group": "1_youtrackActions@1"
-        },
-        {
-          "command": "youtrack.editEntity",
           "when": "view == youtrackKnowledgeBase && viewItem == youtrack-article || view == youtrackRecentArticles && viewItem == youtrack-article",
           "group": "inline@1"
         },
         {
-          "command": "youtrack.editEntity",
-          "when": "view == youtrackKnowledgeBase && viewItem == youtrack-article || view == youtrackRecentArticles && viewItem == youtrack-article",
-          "group": "1_youtrackActions@1"
+          "command": "youtrack.fetchFromYouTrack",
+          "when": "view == youtrackProjects && (viewItem == 'youtrack-edited-file-Outdated' || viewItem == 'youtrack-edited-file-Modified' || viewItem == 'youtrack-edited-file-Conflict')",
+          "group": "inline@4"
+        },
+        {
+          "command": "youtrack.saveToYouTrack",
+          "when": "view == youtrackProjects && (viewItem == 'youtrack-edited-file-Modified' || viewItem == 'youtrack-edited-file-Conflict')",
+          "group": "inline@4"
+        },
+        {
+          "command": "youtrack.unlinkFile",
+          "when": "view == youtrackProjects && (viewItem != 'youtrack-project' && viewItem != 'youtrack-project-active')",
+          "group": "inline@4"
         }
       ]
     },

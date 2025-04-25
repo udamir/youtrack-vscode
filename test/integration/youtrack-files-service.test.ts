@@ -5,6 +5,7 @@ import * as yaml from "js-yaml"
 import { MockExtensionContext } from "../mock"
 import {
   FILE_STATUS_MODIFIED,
+  FILE_STATUS_SYNCED,
   generateFileName,
   parseYoutrackFile,
   type YoutrackFilesService,
@@ -161,6 +162,22 @@ describe("Youtrack Files Service Integration Test", () => {
 
     // Either the file was updated or it was already in sync
     expect(newMtime >= originalMtime).toBe(true)
+  }, 10000)
+
+  it("should save file to YouTrack without errors", async () => {
+    if (!testIssue.idReadable) return
+
+    let fileInfo = youtrackFilesService.getEditedFiles().find((info) => info.metadata.idReadable === testIssue.idReadable)
+    if (!fileInfo) {
+      await youtrackFilesService.openInEditor(testIssue.idReadable)
+      fileInfo = youtrackFilesService.getEditedFiles().find((info) => info.metadata.idReadable === testIssue.idReadable)
+      expect(fileInfo).toBeDefined()
+      if (!fileInfo) return
+    }
+    const result = await youtrackFilesService.saveToYouTrack(fileInfo)
+    expect(result).toBe(true)
+    const updatedFileInfo = youtrackFilesService.getEditedFiles().find((info) => info.metadata.idReadable === testIssue.idReadable)
+    expect(updatedFileInfo?.syncStatus).toBe(FILE_STATUS_SYNCED)
   }, 10000)
 
   it("should unlink files", async () => {

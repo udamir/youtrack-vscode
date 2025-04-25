@@ -356,7 +356,7 @@ export class YouTrackService extends Disposable {
    * @param description New description
    * @param summary Optional summary to update
    */
-  public async updateIssueDescription(issueId: string, description: string, summary?: string): Promise<boolean> {
+  public async updateIssueDescription(issueId: string, description: string, summary?: string): Promise<IssueEntity> {
     try {
       logger.info(`Updating issue ${issueId}`)
 
@@ -376,10 +376,10 @@ export class YouTrackService extends Disposable {
       }
 
       // Update the issue
-      await this.client.Issues.updateIssue(issueId, updateData)
+      const issue = await this.client.Issues.updateIssue(issueId, updateData, { fields: ISSUE_FIELDS_FULL })
 
       logger.info(`Successfully updated issue ${issueId}`)
-      return true
+      return getIssueEntity(issue)
     } catch (error) {
       logger.error(`Error updating issue: ${error}`)
       throw error
@@ -392,7 +392,7 @@ export class YouTrackService extends Disposable {
    * @param content New content
    * @param summary Optional summary to update
    */
-  public async updateArticleContent(articleId: string, content: string, summary?: string): Promise<boolean> {
+  public async updateArticleContent(articleId: string, content: string, summary?: string): Promise<ArticleEntity> {
     try {
       logger.info(`Updating article ${articleId}`)
 
@@ -412,10 +412,10 @@ export class YouTrackService extends Disposable {
       }
 
       // Update the article
-      await this.client.Articles.updateArticle(articleId, updateData)
+      const article = await this.client.Articles.updateArticle(articleId, updateData, { fields: ARTICLE_FIELDS_FULL })
 
       logger.info(`Successfully updated article ${articleId}`)
-      return true
+      return getArticleEntity(article)
     } catch (error) {
       logger.error(`Error updating article: ${error}`)
       throw error

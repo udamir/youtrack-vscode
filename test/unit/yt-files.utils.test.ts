@@ -1,7 +1,6 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 import * as os from "node:os"
-import * as yaml from "js-yaml"
 import { hash } from "node:crypto"
 
 import {
@@ -10,7 +9,10 @@ import {
   FILE_STATUS_SYNCED,
   FILE_TYPE_ISSUE,
   FILE_TYPE_ARTICLE,
+  writeYtFile,
 } from "../../src/services"
+import type { ArticleEntity, IssueEntity } from "../../src/views"
+import { mockArticles, mockIssues } from "../mock"
 
 describe("File Sync Utils", () => {
   let tempDir: string
@@ -31,13 +33,13 @@ describe("File Sync Utils", () => {
     it("should parse a valid issue .yt file", () => {
       // Create a valid issue file
       const filePath = path.join(tempDir, "TEST-123.yt")
-      const metadata = {
-        idReadable: "TEST-123",
-        summary: "Test issue",
-        originalHash: hash("sha1", JSON.stringify({ idReadable: "TEST-123", summary: "Test issue" })).toString(),
+
+      const issue: IssueEntity = {
+        ...mockIssues[0],
+        description: "This is a test issue description",
       }
-      const content = "This is a test issue description"
-      writeYtFile(filePath, metadata, content)
+
+      writeYtFile(filePath, issue)
 
       // Test parsing
       const result = parseYoutrackFile(filePath)
@@ -47,22 +49,20 @@ describe("File Sync Utils", () => {
       if (result) {
         expect(result.entityType).toBe(FILE_TYPE_ISSUE)
         expect(result.syncStatus).toBe(FILE_STATUS_SYNCED)
-        expect(result.metadata.idReadable).toBe("TEST-123")
-        expect(result.metadata.summary).toBe("Test issue")
-        expect(result.content).toBe(content)
+        expect(result.metadata.idReadable).toBe(issue.idReadable)
+        expect(result.metadata.summary).toBe(issue.summary)
+        expect(result.content).toBe(issue.description)
       }
     })
 
     it("should parse a valid article .yt file", () => {
       // Create a valid article file
       const filePath = path.join(tempDir, "KB-A-123.yt")
-      const metadata = {
-        idReadable: "KB-A-123",
-        summary: "Test article",
-        originalHash: hash("sha1", JSON.stringify({ idReadable: "KB-A-123", summary: "Test article" })).toString(),
+      const article: ArticleEntity = {
+        ...mockArticles[0],
+        content: "# Article Title\n\nThis is a test article content",
       }
-      const content = "# Article Title\n\nThis is a test article content"
-      writeYtFile(filePath, metadata, content)
+      writeYtFile(filePath, article)
 
       // Test parsing
       const result = parseYoutrackFile(filePath)
@@ -72,9 +72,9 @@ describe("File Sync Utils", () => {
       if (result) {
         expect(result.entityType).toBe(FILE_TYPE_ARTICLE)
         expect(result.syncStatus).toBe(FILE_STATUS_SYNCED)
-        expect(result.metadata.idReadable).toBe("KB-A-123")
-        expect(result.metadata.summary).toBe("Test article")
-        expect(result.content).toBe(content)
+        expect(result.metadata.idReadable).toBe(article.idReadable)
+        expect(result.metadata.summary).toBe(article.summary)
+        expect(result.content).toBe(article.content)
       }
     })
 
@@ -95,11 +95,11 @@ describe("File Sync Utils", () => {
     it("should return undefined for a file with missing required fields", () => {
       // Create a file with missing required fields
       const filePath = path.join(tempDir, "missing-fields.yt")
-      const metadata = {
-        summary: "Missing required fields",
-        // Missing idReadable and entityType
+      const entity: Partial<IssueEntity> = {
+        idReadable: "TEST-123",
+        description: "This is a test issue description",
       }
-      writeYtFile(filePath, metadata, "Some content")
+      writeYtFile(filePath, entity as IssueEntity)
 
       const result = parseYoutrackFile(filePath)
       expect(result).toBeUndefined()
@@ -109,12 +109,12 @@ describe("File Sync Utils", () => {
   describe("scanYoutrackFiles", () => {
     it("should return an empty map for an empty directory", () => {
       const result = scanYoutrackFiles(tempDir)
-      expect(result.size).toBe(0)
+      expect(result.length).toBe(0)
     })
 
     it("should return an empty map for a non-existent directory", () => {
       const result = scanYoutrackFiles("/path/does/not/exist")
-      expect(result.size).toBe(0)
+      expect(result.length).toBe(0)
     })
 
     it("should scan and parse multiple .yt files", () => {
@@ -130,16 +130,16 @@ describe("File Sync Utils", () => {
       const result = scanYoutrackFiles(tempDir)
 
       // Verify result
-      expect(result.size).toBe(3)
+      expect(result.length).toBe(3)
 
       // Check if all files were found
-      const fileNames = Array.from(result.values()).map((data) => data.metadata.idReadable)
+      const fileNames = result.map((data) => data.metadata.idReadable)
       expect(fileNames).toContain("TEST-1")
       expect(fileNames).toContain("TEST-2")
       expect(fileNames).toContain("KB-1")
 
       // Verify content of one file
-      const test1 = Array.from(result.values()).find((data) => data.metadata.idReadable === "TEST-1")
+      const test1 = result.find((data) => data.metadata.idReadable === "TEST-1")
       expect(test1).toBeDefined()
       if (test1) {
         expect(test1.entityType).toBe(FILE_TYPE_ISSUE)
@@ -158,8 +158,8 @@ describe("File Sync Utils", () => {
       const result = scanYoutrackFiles(tempDir)
 
       // Verify that only the valid file was parsed
-      expect(result.size).toBe(1)
-      const fileNames = Array.from(result.values()).map((data) => data.metadata.idReadable)
+      expect(result.length).toBe(1)
+      const fileNames = result.map((data) => data.metadata.idReadable)
       expect(fileNames).toContain("TEST-1")
     })
   })
@@ -167,21 +167,13 @@ describe("File Sync Utils", () => {
   // Helper function to create a test .yt file
   function createTestFile(fileName: string, entityType: string, idReadable: string, summary: string): string {
     const filePath = path.join(tempDir, fileName)
-    const metadata = {
+    const entity: IssueEntity | ArticleEntity = {
+      ...(entityType === FILE_TYPE_ISSUE ? mockIssues[0] : mockArticles[0]),
       idReadable,
-      entityType,
       summary,
-      projectKey: entityType === FILE_TYPE_ISSUE ? "TEST" : "KB",
+      content: `Content for ${idReadable}`,
     }
-    const content = `Content for ${idReadable}`
-    writeYtFile(filePath, metadata, content)
+    writeYtFile(filePath, entity)
     return filePath
-  }
-
-  // Helper function to write a .yt file with frontmatter and content
-  function writeYtFile(filePath: string, metadata: Record<string, any>, content: string): void {
-    const yamlFrontmatter = yaml.dump(metadata)
-    const fileContent = `---\n${yamlFrontmatter}---\n\n${content}`
-    fs.writeFileSync(filePath, fileContent, "utf8")
   }
 })

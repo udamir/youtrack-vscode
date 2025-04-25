@@ -8,11 +8,14 @@ import {
   COMMAND_REMOVE_PROJECT,
   COMMAND_SET_ACTIVE_PROJECT,
   COMMAND_OPEN_SETTINGS,
+  COMMAND_FETCH_FROM_YOUTRACK,
+  COMMAND_SAVE_TO_YOUTRACK,
+  COMMAND_UNLINK_FILE,
+  COMMAND_EDIT_ENTITY,
 } from "./projects.consts"
 import type { YouTrackService, VSCodeService, CacheService } from "../../services"
-import { YoutrackFilesService, CONFIG_TEMP_FOLDER_PATH } from "../../services"
+import { YoutrackFilesService, CONFIG_TEMP_FOLDER_PATH, FILE_STATUS_SYNCED } from "../../services"
 import { ProjectTreeItem, YoutrackFileTreeItem } from "./projects.tree-item"
-import { registerEditorCommands } from "./projects.commands"
 import type { ProjectEntity } from "./projects.types"
 
 /**
@@ -57,20 +60,17 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
     this.subscriptions.push(this._vscodeService.onServerChanged(() => this.loadFromCache()))
 
     // Listen for file changes
-    this.subscriptions.push(
-      this._fileEditorService.onDidChangeEditedFiles(() => {
-        this.refresh()
-      }),
-    )
+    this.subscriptions.push(this._fileEditorService.onDidChangeEditedFiles(() => this.refresh()))
 
     // Register commands
-    this.registerCommand(COMMAND_ADD_PROJECT, this.addProjectHandler.bind(this))
-    this.registerCommand(COMMAND_REMOVE_PROJECT, this.removeProject.bind(this))
-    this.registerCommand(COMMAND_SET_ACTIVE_PROJECT, this.setActiveProject.bind(this))
-    this.registerCommand(COMMAND_OPEN_SETTINGS, this.openSettings.bind(this))
-
-    // Register editor commands for YouTrack files
-    registerEditorCommands(this.context, this._fileEditorService)
+    this.registerCommand(COMMAND_ADD_PROJECT, this.addProjectCommand.bind(this))
+    this.registerCommand(COMMAND_REMOVE_PROJECT, this.removeProjectCommand.bind(this))
+    this.registerCommand(COMMAND_SET_ACTIVE_PROJECT, this.setActiveProjectCommand.bind(this))
+    this.registerCommand(COMMAND_OPEN_SETTINGS, this.openSettingsCommand.bind(this))
+    this.registerCommand(COMMAND_FETCH_FROM_YOUTRACK, this.fetchFromYoutrackCommand.bind(this))
+    this.registerCommand(COMMAND_SAVE_TO_YOUTRACK, this.saveToYoutrackCommand.bind(this))
+    this.registerCommand(COMMAND_UNLINK_FILE, this.unlinkFileCommand.bind(this))
+    this.registerCommand(COMMAND_EDIT_ENTITY, this.editorEntityCommand.bind(this))
 
     // Load state from cache
     this.loadFromCache()
@@ -83,14 +83,74 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
   /**
    * Open settings for editor configuration
    */
-  private async openSettings(): Promise<void> {
+  private async openSettingsCommand(): Promise<void> {
     await vscode.commands.executeCommand("workbench.action.openSettings", CONFIG_TEMP_FOLDER_PATH)
+  }
+
+  // Register fetch from YouTrack command
+  private async fetchFromYoutrackCommand(fileItem: YoutrackFileTreeItem) {
+    logger.debug(`ProjectsTreeView: Fetching from YouTrack Command: ${fileItem.fileInfo.metadata.idReadable}`)
+    try {
+      await this._fileEditorService.fetchFromYouTrack(fileItem.fileInfo)
+      fileItem.fileInfo.syncStatus = FILE_STATUS_SYNCED
+      this.refresh()
+    } catch (error) {
+      logger.error(`Error fetching from YouTrack: ${error}`)
+      vscode.window.showErrorMessage(`Failed to fetch from YouTrack: ${error}`)
+    }
+  }
+
+  private async saveToYoutrackCommand(fileItem: YoutrackFileTreeItem) {
+    logger.debug(`ProjectsTreeView: Saving to YouTrack Command: ${fileItem.fileInfo.metadata.idReadable}`)
+    try {
+      await this._fileEditorService.saveToYouTrack(fileItem.fileInfo)
+      fileItem.fileInfo.syncStatus = FILE_STATUS_SYNCED
+      this.refresh()
+    } catch (error) {
+      logger.error(`Error saving to YouTrack: ${error}`)
+      vscode.window.showErrorMessage(`Failed to save to YouTrack: ${error}`)
+    }
+  }
+
+  private async unlinkFileCommand(fileItem: YoutrackFileTreeItem) {
+    logger.debug(`ProjectsTreeView: Unlinking file Command: ${fileItem.fileInfo.metadata.idReadable}`)
+    try {
+      await this._fileEditorService.unlinkFile(fileItem.fileInfo)
+      this.refresh()
+    } catch (error) {
+      logger.error(`Error unlinking file: ${error}`)
+      vscode.window.showErrorMessage(`Failed to unlink file: ${error}`)
+    }
+  }
+
+  private async editorEntityCommand(item?: YouTrackTreeItem) {
+    logger.debug(`ProjectsTreeView: Editor entity Command: ${item?.id}`)
+    try {
+      if (!item?.id) {
+        const issueIdReadable = await vscode.window.showInputBox({
+          prompt: "Enter YouTrack issue or article ID (e.g. PROJECT-123)",
+          placeHolder: "PROJECT-123",
+        })
+
+        if (!issueIdReadable) {
+          return
+        }
+
+        await this._fileEditorService.openInEditor(issueIdReadable)
+      } else {
+        await this._fileEditorService.openInEditor(item.id)
+      }
+    } catch (error) {
+      logger.error(`Error opening issue in editor: ${error}`)
+      vscode.window.showErrorMessage(`Failed to open issue in editor: ${error}`)
+    }
   }
 
   /**
    * Execute the add project command
    */
-  async addProjectHandler(): Promise<void> {
+  async addProjectCommand(): Promise<void> {
+    logger.debug("ProjectsTreeView: Add project Command")
     try {
       // Get all available projects from YouTrack
       const availableProjects = await this._youtrackService.getProjects()
@@ -146,7 +206,7 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
 
     // If no active project is set, set this as active project
     if (!this._activeProject) {
-      await this.setActiveProject(project.shortName)
+      await this.setActiveProjectCommand(project.shortName)
     }
     logger.info(`Project added successfully: ${project.name}`)
 
@@ -158,6 +218,7 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
    * Load state from cache
    */
   private loadFromCache(): void {
+    logger.info("ProjectsTreeView: Loading state from cache")
     try {
       // Load selected projects from cache
       const cachedProjects = this.cache.getSelectedProjects()
@@ -189,8 +250,8 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
   /**
    * Remove a project from selected projects
    */
-  public async removeProject({ project }: ProjectTreeItem): Promise<void> {
-    logger.info(`Removing project: ${project.shortName}`)
+  public async removeProjectCommand({ project }: ProjectTreeItem): Promise<void> {
+    logger.info(`ProjectsTreeView: Removing project: ${project.shortName}`)
 
     // Remove project from selected projects
     this._selectedProjects = this._selectedProjects.filter((p) => p.shortName !== project.shortName)
@@ -202,7 +263,7 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
     if (this._activeProject && this._activeProject.shortName === project.shortName) {
       // Set active project to first project in list or undefined if empty
       const nextProject = this._selectedProjects.length > 0 ? this._selectedProjects[0] : undefined
-      await this.setActiveProject(nextProject?.shortName)
+      await this.setActiveProjectCommand(nextProject?.shortName)
     }
 
     // Refresh the UI to show the updated project list
@@ -212,7 +273,8 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
   /**
    * Set the active project by short name
    */
-  public async setActiveProject(projectShortName?: string): Promise<void> {
+  public async setActiveProjectCommand(projectShortName?: string): Promise<void> {
+    logger.info(`ProjectsTreeView: Setting active project: ${projectShortName}`)
     // Find the project from selected projects
     const project = projectShortName ? this._selectedProjects.find((p) => p.shortName === projectShortName) : undefined
 

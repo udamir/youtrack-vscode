@@ -3,7 +3,13 @@ import * as vscode from "vscode"
 import { COMMAND_SET_ACTIVE_PROJECT } from "./projects.consts"
 import { YouTrackTreeItem } from "../base"
 import type { ProjectEntity } from "./projects.types"
-import { FILE_STATUS_CONFLICT, FILE_STATUS_MODIFIED, type YoutrackFileData } from "../../services/yt-files"
+import {
+  FILE_STATUS_CONFLICT,
+  FILE_STATUS_MODIFIED,
+  FILE_STATUS_OUTDATED,
+  FILE_STATUS_SYNCED,
+  type YoutrackFileData,
+} from "../../services/yt-files"
 
 /**
  * TreeItem for YouTrack projects in the tree view
@@ -68,7 +74,7 @@ export class YoutrackFileTreeItem extends YouTrackTreeItem {
         command: "vscode.open",
         arguments: [vscode.Uri.file(fileInfo.filePath)],
       },
-      `youtrack-edited-file-${fileInfo.entityType}`,
+      `youtrack-edited-file-${fileInfo.syncStatus}`,
     )
 
     // Set description based on entity type
@@ -86,11 +92,21 @@ export class YoutrackFileTreeItem extends YouTrackTreeItem {
    */
   private setStatusIcon(): void {
     switch (this.fileInfo.syncStatus) {
+      case FILE_STATUS_SYNCED:
+        // Synced: green circle icon
+        this.iconPath = new vscode.ThemeIcon("circle-outline", new vscode.ThemeColor("charts.green"))
+        break
       case FILE_STATUS_MODIFIED:
-        this.iconPath = new vscode.ThemeIcon("circle-filled", new vscode.ThemeColor("editorInfo.foreground"))
+        // Modified: filled circle icon, yellow
+        this.iconPath = new vscode.ThemeIcon("circle-filled", new vscode.ThemeColor("charts.yellow"))
+        break
+      case FILE_STATUS_OUTDATED:
+        // Outdated: arrow icon, gray
+        this.iconPath = new vscode.ThemeIcon("arrow-small-right", new vscode.ThemeColor("charts.gray"))
         break
       case FILE_STATUS_CONFLICT:
-        this.iconPath = new vscode.ThemeIcon("warning", new vscode.ThemeColor("editorWarning.foreground"))
+        // Conflict: warning icon, red
+        this.iconPath = new vscode.ThemeIcon("warning", new vscode.ThemeColor("charts.red"))
         break
       default:
         this.iconPath = undefined

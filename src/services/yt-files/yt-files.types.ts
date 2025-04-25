@@ -29,7 +29,6 @@ export interface YoutrackFileData {
   projectKey: string
   entityType: EditableEntityType
   filePath: string
-  lastModified: number
   syncStatus: YoutrackFileStatus
   metadata: FileMetadata
   content: string

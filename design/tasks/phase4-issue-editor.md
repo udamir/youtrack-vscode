@@ -33,7 +33,7 @@ YouTrack content will be represented as `.yt` files with the following structure
 - **Description**: Create mechanisms to track and visualize synchronization status between local files and YouTrack.
 - **Dependencies**: TASK-4.1
 - **Acceptance Criteria**:
-  - Add "Open in Editor" action to issue/article preview
+  - Add "Open in Editor" button to issue/article preview
   - Show sync status indicator text coloring for files in the Projects panel:
     - "Synced" when file content matches server content (green circle icon and white text)
     - "Modified" when local changes exist (filled circle icon and yellow text)
@@ -49,6 +49,7 @@ YouTrack content will be represented as `.yt` files with the following structure
   - Add integration tests for all actions
 - **Estimated Effort**: Large
 - **Priority**: P1
+- **Status**: ✅ Completed (April 25, 2025)
 
 ## Task 4.3: Implement Metadata sync
 - **ID**: TASK-4.3

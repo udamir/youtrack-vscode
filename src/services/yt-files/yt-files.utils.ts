@@ -3,7 +3,7 @@ import * as path from "node:path"
 import * as yaml from "js-yaml"
 import * as logger from "../../utils/logger"
 
-import type { EditableEntityType, YoutrackFileData, YoutrackFileStatus } from "./yt-files.types"
+import type { EditableEntityType, FileMetadata, YoutrackFileData, YoutrackFileStatus } from "./yt-files.types"
 import type { ArticleBaseEntity, ArticleEntity, IssueBaseEntity, IssueEntity } from "../../views"
 import {
   FILE_STATUS_SYNCED,
@@ -19,10 +19,11 @@ import { hash } from "node:crypto"
 /**
  * Scan existing .yt files in temp directory
  * @param tempDirectory Path to temp directory
- * @returns Map of file paths to file data
+ * @returns Array of file data
  */
-export function scanYoutrackFiles(tempDirectory: string): Map<string, YoutrackFileData> {
-  const result = new Map<string, YoutrackFileData>()
+export function scanYoutrackFiles(tempDirectory: string): YoutrackFileData[] {
+  logger.debug("yt-files.utils: Scanning existing files")
+  const result: YoutrackFileData[] = []
 
   if (!tempDirectory || !fs.existsSync(tempDirectory)) {
     logger.debug(`Temp directory does not exist: ${tempDirectory}`)
@@ -44,7 +45,7 @@ export function scanYoutrackFiles(tempDirectory: string): Map<string, YoutrackFi
             logger.debug(
               `Parsed .yt file: ${filename}, entity: ${fileData.entityType}, id: ${fileData.metadata.idReadable}`,
             )
-            result.set(filePath, fileData)
+            result.push(fileData)
           }
         } catch (error) {
           logger.error(`Failed to parse .yt file "${filename}": ${error}`)
@@ -89,6 +90,25 @@ export const youtrackFileHash = (fileData: YoutrackFileData): string => {
   return hash("sha1", JSON.stringify(fileDataData)).toString()
 }
 
+// Helper function to write a .yt file with frontmatter and content
+export const writeYtFile = (filePath: string, entity: IssueEntity | ArticleEntity): YoutrackFileData => {
+  // Prepare frontmatter
+  const metadata: FileMetadata = {
+    idReadable: entity.idReadable,
+    summary: entity.summary,
+    originalHash: entityHash(entity),
+  }
+
+  // Get content based on entity type
+  const content = isArticle(entity) ? entity.content : entity.description || ""
+
+  // Write file
+  const fileContent = `---\n${yaml.dump(metadata)}---\n${content}`
+  fs.writeFileSync(filePath, fileContent, "utf8")
+
+  return youtrackFileData(filePath, metadata, content)
+}
+
 export const syncStatus = (fileData: YoutrackFileData, entity: IssueEntity | ArticleEntity): YoutrackFileStatus => {
   const sourceEntityHash = entityHash(entity)
   const ytFileHash = youtrackFileHash(fileData)
@@ -109,6 +129,7 @@ export const syncStatus = (fileData: YoutrackFileData, entity: IssueEntity | Art
  * @returns Parsed file data or undefined if invalid
  */
 export function parseYoutrackFile(filePath: string): YoutrackFileData | undefined {
+  logger.debug(`yt-files.utils: Parsing file: ${filePath}`)
   try {
     // Read and check file content
     if (!fs.existsSync(filePath)) {
@@ -126,10 +147,10 @@ export function parseYoutrackFile(filePath: string): YoutrackFileData | undefine
 
     // Extract frontmatter and content
     const frontmatter = frontmatterMatch[1]
-    const actualContent = frontmatterMatch[2].trim()
+    const actualContent = frontmatterMatch[2]
 
     // Parse YAML frontmatter
-    const metadata = yaml.load(frontmatter) as Record<string, any>
+    const metadata = yaml.load(frontmatter) as FileMetadata
 
     // Validate required fields
     if (!metadata?.idReadable || !metadata?.summary) {
@@ -137,27 +158,26 @@ export function parseYoutrackFile(filePath: string): YoutrackFileData | undefine
       return undefined
     }
 
-    // Create file data object
-    const stats = fs.statSync(filePath)
-
-    const [projectKey, _, articleIndex] = metadata.idReadable.split("-")
-
-    return {
-      projectKey,
-      entityType: articleIndex ? FILE_TYPE_ARTICLE : FILE_TYPE_ISSUE,
-      filePath,
-      lastModified: stats.mtimeMs,
-      syncStatus: FILE_STATUS_SYNCED,
-      metadata: {
-        idReadable: metadata.idReadable,
-        summary: metadata.summary || "",
-        originalHash: metadata.originalHash || "",
-        ...metadata,
-      },
-      content: actualContent,
-    }
+    return youtrackFileData(filePath, metadata, actualContent)
   } catch (error) {
     logger.error(`Error parsing file "${filePath}": ${error}`)
     return undefined
+  }
+}
+
+export const youtrackFileData = (filePath: string, metadata: FileMetadata, content: string): YoutrackFileData => {
+  const [projectKey, _, articleIndex] = metadata.idReadable.split("-")
+
+  return {
+    projectKey,
+    entityType: articleIndex ? FILE_TYPE_ARTICLE : FILE_TYPE_ISSUE,
+    filePath,
+    syncStatus: FILE_STATUS_SYNCED,
+    metadata: {
+      idReadable: metadata.idReadable,
+      summary: metadata.summary,
+      originalHash: metadata.originalHash,
+    },
+    content,
   }
 }

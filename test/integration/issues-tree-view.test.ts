@@ -56,7 +56,7 @@ describe("Issues Tree View Integration Test", () => {
       issuesTreeView = new IssuesTreeView(extensionContext, youtrackService, vscodeService)
 
       await projectsTreeView.addProject(testProject)
-      await projectsTreeView.setActiveProject(testProject.shortName)
+      await projectsTreeView.setActiveProjectCommand(testProject.shortName)
     } catch (error) {
       console.error("Error setting up issues tree view test:", error)
       throw error

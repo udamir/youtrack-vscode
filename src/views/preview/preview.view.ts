@@ -14,6 +14,7 @@ import {
 } from "./preview.consts"
 import { isArticleEntity, isIssueEntity } from "./preview.utils"
 import type { PreviewableEntity } from "./preview.types"
+import { COMMAND_EDIT_ENTITY } from "../projects"
 
 /**
  * Provides Markdown preview functionality for YouTrack content
@@ -96,6 +97,9 @@ export class MarkdownPreview extends BasePreview {
                   break
                 case COMMAND_OPEN_INTERNAL_LINK:
                   await this.handleInternalLink(message.args)
+                  break
+                case "openEditor":
+                  await vscode.commands.executeCommand(COMMAND_EDIT_ENTITY, { id: entity.idReadable })
                   break
                 default:
                   logger.warn(`Unknown command received from webview: ${message.command}`)
@@ -254,6 +258,7 @@ export class MarkdownPreview extends BasePreview {
             </div>
             <div class="actions">
                 <button class="refresh-button" id="refresh-button">Refresh</button>
+                <button class="open-editor-button" id="open-editor-button">Open in Editor</button>
             </div>
         </div>
         <div class="markdown-body">
@@ -272,6 +277,13 @@ export class MarkdownPreview extends BasePreview {
         
         // Then add the handler back
         document.addEventListener('click', handleLinkClick);
+        
+        const editorBtn = document.getElementById('open-editor-button');
+        if (editorBtn) {
+            editorBtn.addEventListener('click', () => {
+                vscode.postMessage({ command: 'openEditor' });
+            });
+        }
     };
     
     // Separate function to handle link clicks for better maintenance

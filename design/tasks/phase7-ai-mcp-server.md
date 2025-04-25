@@ -5,12 +5,11 @@
 - **Description**: Create the infrastructure for the MCP (Message Control Program) server that will allow AI assistants to interact with the extension.
 - **Dependencies**: TASK-1.6
 - **Acceptance Criteria**:
-  - MCP server implementation
+  - MCP server implementation on localhost (port should be configurable)
   - Server activation/deactivation with extension lifecycle
-  - Basic request/response protocol definition
+  - Basic resource implementation (get entities by idReadable)
   - Error handling and logging
   - Configuration settings for MCP server (port, enabled/disabled)
-  - Security measures for local connections
 - **Estimated Effort**: Medium
 - **Priority**: P1
 

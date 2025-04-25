@@ -36,12 +36,12 @@ describe("Knowledge Base Tree View - Integration Tests", () => {
     articlesTreeView = new ArticlesTreeView(extensionContext, youtrackService, vscodeService)
 
     await projectsTreeView.addProject(testProject)
-    await projectsTreeView.setActiveProject(testProject.shortName)
+    await projectsTreeView.setActiveProjectCommand(testProject.shortName)
   }, 30000) // Increase timeout for API calls
 
   it("should return a message when no active project is selected", async () => {
     const activeProject = projectsTreeView.activeProject?.shortName
-    await projectsTreeView.setActiveProject(undefined)
+    await projectsTreeView.setActiveProjectCommand(undefined)
 
     // Get top-level items
     const articles = await articlesTreeView.getChildren()
@@ -51,7 +51,7 @@ describe("Knowledge Base Tree View - Integration Tests", () => {
     assert.strictEqual(articles[0].label, "No active project", "Should show 'No active project' message")
 
     // Restore original active project
-    await projectsTreeView.setActiveProject(activeProject)
+    await projectsTreeView.setActiveProjectCommand(activeProject)
   })
 
   it("should fetch articles for a selected project", async () => {

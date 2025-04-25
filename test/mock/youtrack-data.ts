@@ -60,7 +60,7 @@ export const mockIssues: IssueEntity[] = [
 export const mockArticles: ArticleEntity[] = [
   {
     id: "article-1",
-    idReadable: "KB-1",
+    idReadable: "KB-A-1",
     summary: "Test article 1",
     content: "This is a test article",
     projectId: "project-1",
@@ -71,7 +71,7 @@ export const mockArticles: ArticleEntity[] = [
   },
   {
     id: "article-2",
-    idReadable: "KB-2",
+    idReadable: "KB-A-2",
     summary: "Test article 2",
     content: "",
     projectId: "project-1",
