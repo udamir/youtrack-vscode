@@ -22,8 +22,12 @@
     "languages": [
       {
         "id": "markdown",
-        "extensions": [".yt"],
-        "aliases": ["Markdown"]
+        "extensions": [
+          ".yt"
+        ],
+        "aliases": [
+          "Markdown"
+        ]
       }
     ],
     "configurationDefaults": {
@@ -265,6 +269,16 @@
           "type": "number",
           "default": 15,
           "description": "Number of recent items to display"
+        },
+        "youtrack.mcpServer.port": {
+          "type": "number",
+          "default": 4777,
+          "description": "Port for the AI MCP server (requires reload)"
+        },
+        "youtrack.mcpServer.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable the AI MCP server (requires reload)"
         }
       }
     }
@@ -287,7 +301,9 @@
     "@biomejs/biome": "^1.9.4",
     "@eslint/eslintrc": "^3.3.1",
     "@types/bun": "latest",
+    "@types/express": "^5.0.1",
     "@types/jest": "^29.5.14",
+    "@types/js-yaml": "^4.0.9",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^22.14.0",
     "@types/sinon": "^17.0.4",
@@ -304,6 +320,8 @@
     "typescript-eslint": "^8.29.0"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.10.2",
+    "express": "^5.1.0",
     "markdown-it": "^14.1.0",
     "markdown-it-mermaid": "^0.2.5",
     "markdown-it-task-lists": "^2.1.1",

@@ -10,8 +10,10 @@
   - Basic resource implementation (get entities by idReadable)
   - Error handling and logging
   - Configuration settings for MCP server (port, enabled/disabled)
+  - Integration test of MCP server
 - **Estimated Effort**: Medium
 - **Priority**: P1
+- **Status**: Completed (25th April 2025)
 
 ## Task 7.2: Define Resource Schemas for YouTrack Entities
 - **ID**: TASK-7.2

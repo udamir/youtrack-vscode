@@ -12,6 +12,7 @@ import {
 } from "./views"
 import * as logger from "./utils/logger"
 import { VSCodeService } from "./services/vscode/vscode.service"
+import { McpService } from "./services/mcp"
 
 /**
  * This method is called when the extension is activated
@@ -38,6 +39,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     const youtrackService = new YouTrackService(vscodeService)
     context.subscriptions.push(youtrackService)
+
+    // MCP Server activation
+    const mcpService = new McpService(youtrackService, vscodeService)
+    context.subscriptions.push(mcpService)
+    await mcpService.start()
 
     // Register tree data providers (creates project and issue tree views)
     new ProjectsTreeView(context, youtrackService, vscodeService)
