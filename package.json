@@ -290,7 +290,7 @@
     "@types/js-yaml": "^4.0.9",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^22.14.0",
-    "@types/vscode": "^1.99.0",
+    "@types/vscode": "^1.99.1",
     "dotenv": "^16.4.7",
     "jest": "^29.7.0",
     "prettier": "^3.5.3",
@@ -302,6 +302,7 @@
     "markdown-it": "^14.1.0",
     "markdown-it-mermaid": "^0.2.5",
     "markdown-it-task-lists": "^2.1.1",
+    "vscode": "^1.1.37",
     "youtrack-client": "^0.5.2"
   },
   "jest": {
