@@ -302,7 +302,6 @@
     "markdown-it": "^14.1.0",
     "markdown-it-mermaid": "^0.2.5",
     "markdown-it-task-lists": "^2.1.1",
-    "vscode": "^1.1.37",
     "youtrack-client": "^0.5.2"
   },
   "jest": {
