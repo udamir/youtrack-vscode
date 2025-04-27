@@ -309,7 +309,7 @@
     "preset": "ts-jest",
     "testEnvironment": "node",
     "moduleNameMapper": {
-      "^vscode$": "<rootDir>/test/mock/vscode-mock.ts"
+      "^vscode$": "<rootDir>/test/mock/mock-vscode.ts"
     },
     "moduleFileExtensions": [
       "ts",
