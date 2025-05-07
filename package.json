@@ -289,7 +289,7 @@
     "@types/jest": "^29.5.14",
     "@types/js-yaml": "^4.0.9",
     "@types/markdown-it": "^14.1.2",
-    "@types/node": "^22.15.12",
+    "@types/node": "^22.15.14",
     "@types/vscode": "^1.99.1",
     "biome": "^0.3.3",
     "dotenv": "^16.4.7",
