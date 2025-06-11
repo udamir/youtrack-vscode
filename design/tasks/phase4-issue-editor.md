@@ -56,7 +56,7 @@ YouTrack content will be represented as `.yt` files with the following structure
 - **Description**: Support custom fields in metadata and autosync.
 - **Dependencies**: TASK-4.1, TASK-4.2
 - **Acceptance Criteria**:
-  - Add configuration for list of custom fields in metadata
+  - Add configuration for list of custom fields in metadata (for issues and articles)
   - Support issues links (depends on, relates to, etc) and all custom fields (based on configuration) in metadata
   - Add sync interval configuration option for sync status update and autosync
   - Implement interval-based autosync for content and metadata from YouTrack to `.yt` files (if no conflicts)
