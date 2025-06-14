@@ -1,14 +1,14 @@
 {
   "name": "youtrack-vscode",
-  "displayName": "YouTrack extension for VSCode",
-  "description": "YouTrack integration for VSCode to manage issues and knowledge base articles",
-  "version": "0.1.0",
+  "displayName": "YouTrack extension with MCP Server",
+  "description": "YouTrack integration for VSCode to manage issues and knowledge base articles with MCP Server",
+  "version": "0.1.2",
   "publisher": "udamir",
   "license": "MIT",
   "icon": "media/youtrack-icon.png",
   "keywords": ["youtrack", "editor", "jetbrains", "mcp"],
   "engines": {
-    "vscode": "^1.100.0"
+    "vscode": "^1.74.0"
   },
   "repository": {
     "type": "git",
@@ -296,13 +296,12 @@
     "watch": "tsc -watch -p ./",
     "lint": "biome check src",
     "lint:fix": "biome check src --write",
-    "prepublish": "bun run compile && bun run lint",
     "test": "jest",
     "test:integration": "jest --testMatch=\"**/*.integration.test.ts\"",
     "test:unit": "jest --testMatch=\"**/test/**/*.test.ts\" --testPathIgnorePatterns=\"integration\"",
     "test:coverage": "jest --coverage",
-    "build": "bun run prepublish && vsce package --no-yarn --no-dependencies -o bin/youtrack-vscode-$npm_package_version.vsix",
-    "publish": "bun run build && npx ovsx publish bin/youtrack-vscode-$npm_package_version.vsix -p $(grep OVSX_TOKEN .env | cut -d= -f2)",
+    "prepublish": "bun run compile && bun run lint && vsce package --no-yarn --no-dependencies -o bin/youtrack-vscode-$npm_package_version.vsix",
+    "publish": "npx ovsx publish bin/youtrack-vscode-$npm_package_version.vsix -p $(grep OVSX_TOKEN .env | cut -d= -f2)",
     "dev": "bun run compile && code --extensionDevelopmentPath=\"$(pwd)\"",
     "debug": "bun run compile && code --extensionDevelopmentPath=\"$(pwd)\" --disable-extensions --inspect-extensions=9229"
   },
@@ -314,7 +313,7 @@
     "@types/js-yaml": "^4.0.9",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^24.0.1",
-    "@types/vscode": "^1.100.0",
+    "@types/vscode": "^1.74.0",
     "biome": "^0.3.3",
     "dotenv": "^16.4.7",
     "jest": "^29.7.0",

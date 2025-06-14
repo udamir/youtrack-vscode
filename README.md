@@ -1,5 +1,8 @@
-# YouTrack extension for VSCode 
-<img alt="Open VSX Version" src="https://img.shields.io/open-vsx/v/udamir/youtrack-vscode"> <img alt="Open VSX Downloads (version)" src="https://img.shields.io/open-vsx/dt/udamir/youtrack-vscode/0.1.0"> <img alt="Open VSX Rating" src="https://img.shields.io/open-vsx/stars/udamir/youtrack-vscode"> <img alt="GitHub" src="https://img.shields.io/github/license/udamir/youtrack-vscode">
+# YouTrack extension with MCP Server
+![Open VSX Version](https://img.shields.io/open-vsx/v/udamir/youtrack-vscode)
+![Open VSX Downloads](https://img.shields.io/open-vsx/dt/udamir/youtrack-vscode?label=downloads:+OpenVSX)
+![Open VSX Rating](https://img.shields.io/open-vsx/stars/udamir/youtrack-vscode)
+![GitHub](https://img.shields.io/github/license/udamir/youtrack-vscode)
 
 A Visual Studio Code extension that integrates YouTrack issue management and knowledge base capabilities directly into your development environment.
 
@@ -20,7 +23,7 @@ A Visual Studio Code extension that integrates YouTrack issue management and kno
 
 ## Requirements
 
-- Visual Studio Code 1.80.0 or higher
+- Visual Studio Code 1.74.0 or higher
 - YouTrack instance with REST API access
 - Permanent authentication token for YouTrack
 
