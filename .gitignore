@@ -10,4 +10,4 @@ coverage
 *.log
 .env
 .windsurf
-docs
+design
