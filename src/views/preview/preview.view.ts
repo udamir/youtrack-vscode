@@ -1,6 +1,6 @@
 import * as vscode from "vscode"
 import * as path from "node:path"
-import type { YouTrackService } from "../../services"
+import { getEntityTypeById, type YouTrackService } from "../../services"
 import * as logger from "../../utils/logger"
 import MarkdownIt from "markdown-it"
 import markdownitTaskLists from "markdown-it-task-lists"
@@ -185,10 +185,11 @@ export class MarkdownPreview extends BasePreview {
     try {
       logger.info(`Handling internal link: ${linkData}`)
       // Check if it's an issue or article by the ID format
-      const [_, issueId, articleId] = linkData.split("-")
+      const entityType = getEntityTypeById(linkData)
+      const [_, id] = linkData.split("-")
 
       // Get existing panel map for issue or article
-      const existingPanel = this._panels.get(`youtrack-${issueId === "A" ? "article" : "issue"}-${linkData}`)
+      const existingPanel = this._panels.get(`youtrack-${entityType}-${id}`)
 
       if (existingPanel) {
         // If we already have a panel for this entity, reveal it instead of creating a new one
@@ -196,7 +197,7 @@ export class MarkdownPreview extends BasePreview {
         return
       }
 
-      if (issueId === "A" && articleId) {
+      if (entityType === "article") {
         // This looks like an article ID
         const article = await this.youtrackService.getArticleById(linkData)
         if (article) {

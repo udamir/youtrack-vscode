@@ -13,7 +13,7 @@ export const ISSUE_FIELDS = [
   "resolved",
   { project: ["id"] },
   { customFields: ["name", { value: ["name", { color: ["id", "background"] }] }] },
-  { links: [{ linkType: ["name"] }, "direction", { issues: ["id"] }, "id"] },
+  { links: [{ linkType: ["name"] }, "direction", { issues: ["id", "idReadable"] }, "id"] },
 ] as const satisfies Schema<Issue>
 
 export const ISSUE_FIELDS_FULL = [
@@ -27,7 +27,7 @@ export const ISSUE_FIELDS_FULL = [
   { attachments: ["id", "url", "name"] },
   { project: ["id"] },
   { customFields: ["name", { value: ["name", { color: ["id", "background"] }] }] },
-  { links: [{ linkType: ["name"] }, "direction", { issues: ["id"] }, "id"] },
+  { links: [{ linkType: ["name"] }, "direction", { issues: ["id", "idReadable"] }, "id"] },
 ] as const satisfies Schema<Issue>
 
 /**

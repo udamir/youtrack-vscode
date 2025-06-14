@@ -1,6 +1,32 @@
 import type { Article, Entity, Issue, SingleEnumIssueCustomField } from "youtrack-client"
 import type { ARTICLE_FIELDS, ARTICLE_FIELDS_FULL, ISSUE_FIELDS, ISSUE_FIELDS_FULL } from "./youtrack.consts"
-import type { ArticleBaseEntity, ArticleEntity, IssueBaseEntity, IssueEntity } from "../../views"
+import type { ArticleBaseEntity, ArticleEntity, IssueBaseEntity, IssueEntity, LinkType } from "../../views"
+
+export const getEntityTypeById = (id: string): "issue" | "article" => {
+  const [_, __, articleId] = id.split("-")
+  return articleId ? "article" : "issue"
+}
+
+export const getIssueLinks = (
+  issue: Entity<Issue, typeof ISSUE_FIELDS>,
+): Record<Exclude<LinkType, "parent">, string[]> & { parent?: string } => {
+  const links = {} as Record<Exclude<LinkType, "parent">, string[]> & { parent?: string }
+  issue.links.forEach(({ linkType, direction, issues }) => {
+    if (!issues.length) {
+      return
+    }
+    const linkTypeStr = getIssueLinkType(linkType?.name || "", direction)
+    if (linkTypeStr) {
+      if (linkTypeStr === "parent") {
+        links.parent = issues[0].idReadable
+      } else {
+        links[linkTypeStr] = issues.map(({ idReadable }) => idReadable)
+      }
+    }
+  })
+
+  return links
+}
 
 export const getIssueType = (issue: Entity<Issue, typeof ISSUE_FIELDS>): string => {
   const typeField = issue.customFields.find(
@@ -9,16 +35,32 @@ export const getIssueType = (issue: Entity<Issue, typeof ISSUE_FIELDS>): string 
   return typeField?.value.name || ""
 }
 
+export const getIssueLinkType = (linkType: string, direction: string): LinkType | "" => {
+  switch (true) {
+    case linkType === "Subtask" && direction === "OUTWARD":
+      return "subtasks"
+    case linkType === "Subtask" && direction === "INWARD":
+      return "parent"
+    case linkType === "Depend" && direction === "INWARD":
+      return "dependencies"
+    case linkType === "Depend" && direction === "OUTWARD":
+      return "dependant"
+    case linkType === "Duplicate" && direction === "INWARD":
+      return "duplicates"
+    case linkType === "Relates" && direction === "BOTH":
+      return "related"
+    default:
+      return ""
+  }
+}
+
 export const getIssueBaseEntity = (issue: Entity<Issue, typeof ISSUE_FIELDS>): IssueBaseEntity => ({
   id: issue.id,
   idReadable: issue.idReadable,
   summary: issue.summary || "Untitled Issue",
   resolved: issue.resolved || 0,
   projectId: issue.project?.id || "",
-  subtasks:
-    issue.links
-      .find(({ linkType, direction }) => linkType?.name === "Subtask" && direction === "OUTWARD")
-      ?.issues.map((issue) => ({ id: issue.id })) || [],
+  ...getIssueLinks(issue),
   type: getIssueType(issue),
 })
 

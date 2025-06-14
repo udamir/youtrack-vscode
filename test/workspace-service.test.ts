@@ -1,21 +1,21 @@
 import * as assert from "node:assert"
 
 import { mockBaseUrl, mockProjects, mockIssues, mockArticles } from "./mock/youtrack-data"
-import { CacheService } from "../src/services"
+import { WorkspaceService } from "../src/services"
 import { ISSUE_VIEW_MODE_LIST } from "../src/views"
 import { MockExtensionContext } from "./mock"
 
-describe("CacheService", () => {
+describe("WorkspaceService", () => {
   // Test subjects
-  let cacheService: CacheService
+  let cacheService: WorkspaceService
 
   beforeEach(() => {
     // Initialize VSCodeMock with test configuration and our custom storage
     const vscodeMock = new MockExtensionContext()
 
     // Initialize the cache service with mocked dependencies
-    cacheService = new CacheService(vscodeMock.workspaceState)
-    
+    cacheService = new WorkspaceService(vscodeMock.workspaceState)
+
     // Set the base URL - This was missing and causing the tests to fail
     cacheService.setBaseUrl(mockBaseUrl)
   })

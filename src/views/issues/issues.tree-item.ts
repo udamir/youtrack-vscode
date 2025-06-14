@@ -34,7 +34,7 @@ export class IssueTreeItem extends YouTrackTreeItem {
     // In list view, all items should be non-collapsible regardless of subtasks
     // In tree view, items with subtasks should be collapsible
     const collapsibleState =
-      viewMode === ISSUE_VIEW_MODE_TREE && issue.subtasks.length
+      viewMode === ISSUE_VIEW_MODE_TREE && issue.subtasks?.length
         ? vscode.TreeItemCollapsibleState.Collapsed
         : vscode.TreeItemCollapsibleState.None
 
