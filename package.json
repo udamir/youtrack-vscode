@@ -3,8 +3,16 @@
   "displayName": "YouTrack extension for VSCode",
   "description": "YouTrack integration for VSCode to manage issues and knowledge base articles",
   "version": "0.1.0",
+  "publisher": "udamir",
+  "license": "MIT",
+  "icon": "media/youtrack-icon.png",
+  "keywords": ["youtrack", "editor", "jetbrains", "mcp"],
   "engines": {
-    "vscode": "^1.80.0"
+    "vscode": "^1.100.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/udamir/youtrack-vscode.git"
   },
   "categories": [
     "Other"
@@ -284,16 +292,17 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "bun run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "lint": "biome check src",
     "lint:fix": "biome check src --write",
-    "pretest": "bun run compile && bun run lint",
+    "prepublish": "bun run compile && bun run lint",
     "test": "jest",
     "test:integration": "jest --testMatch=\"**/*.integration.test.ts\"",
     "test:unit": "jest --testMatch=\"**/test/**/*.test.ts\" --testPathIgnorePatterns=\"integration\"",
     "test:coverage": "jest --coverage",
+    "build": "bun run prepublish && vsce package --no-yarn --no-dependencies -o bin/youtrack-vscode-$npm_package_version.vsix",
+    "publish": "bun run build && npx ovsx publish bin/youtrack-vscode-$npm_package_version.vsix -p $(grep OVSX_TOKEN .env | cut -d= -f2)",
     "dev": "bun run compile && code --extensionDevelopmentPath=\"$(pwd)\"",
     "debug": "bun run compile && code --extensionDevelopmentPath=\"$(pwd)\" --disable-extensions --inspect-extensions=9229"
   },

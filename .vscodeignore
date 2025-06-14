@@ -1,0 +1,15 @@
+.env
+.env.*
+.vscode/**
+.gitignore
+tsconfig.json
+bun.lockb
+package-lock.json
+node_modules/**
+test/**
+design/**
+.github/**
+.windsurf/**
+bun.lock
+biome.json
+*.log
