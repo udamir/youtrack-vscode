@@ -1,6 +1,6 @@
 import { YouTrack } from "youtrack-client"
 import * as logger from "../../utils/logger"
-import type { SecureStorageService } from "../vscode/vscode-storage.service"
+import type { SecureStorageService } from "../vscode"
 import { USER_PROFILE_FIELDS } from "./youtrack.consts"
 
 /**

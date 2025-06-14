@@ -13,7 +13,7 @@ import {
   COMMAND_UNLINK_FILE,
   COMMAND_EDIT_ENTITY,
 } from "./projects.consts"
-import type { YouTrackService, VSCodeService, CacheService } from "../../services"
+import type { YouTrackService, VSCodeService, WorkspaceService } from "../../services"
 import { YoutrackFilesService, CONFIG_TEMP_FOLDER_PATH, FILE_STATUS_SYNCED } from "../../services"
 import { ProjectTreeItem, YoutrackFileTreeItem } from "./projects.tree-item"
 import type { ProjectEntity } from "./projects.types"
@@ -76,7 +76,7 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
     this.loadFromCache()
   }
 
-  public get cache(): CacheService {
+  public get cache(): WorkspaceService {
     return this._youtrackService.cache
   }
 

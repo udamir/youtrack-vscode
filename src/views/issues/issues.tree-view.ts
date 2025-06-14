@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import * as logger from "../../utils/logger"
 
-import type { YouTrackService, VSCodeService, CacheService } from "../../services"
+import type { YouTrackService, VSCodeService, WorkspaceService } from "../../services"
 import {
   VIEW_ISSUES,
   COMMAND_FILTER_ISSUES,
@@ -57,7 +57,7 @@ export class IssuesTreeView extends BaseTreeView<IssueTreeItem | YouTrackTreeIte
     this.registerCommand(COMMAND_TOGGLE_ISSUES_VIEW_MODE_LIST, this.setListViewMode.bind(this))
   }
 
-  get cache(): CacheService {
+  get cache(): WorkspaceService {
     return this._youtrackService.cache
   }
 

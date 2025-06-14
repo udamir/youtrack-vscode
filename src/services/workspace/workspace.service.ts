@@ -2,13 +2,13 @@ import type * as vscode from "vscode"
 import * as logger from "../../utils/logger"
 
 import type { ArticleEntity, IssueEntity, IssuesViewMode, ProjectEntity } from "../../views"
-import type { ServerCache } from "./youtrack.types"
+import type { WorkspaceCache } from "./workspace.types"
 
 /**
  * Cache service for YouTrack data
  * Manages storing and retrieving data in the extension's storage
  */
-export class CacheService {
+export class WorkspaceService {
   private _baseUrl: string | undefined
   private readonly _workspaceState: vscode.Memento
 
@@ -38,14 +38,14 @@ export class CacheService {
    * @param key The key to get data for
    * @returns The stored data or undefined if not found
    */
-  private getValue<T extends keyof ServerCache>(key: T): ServerCache[T] | undefined {
+  private getValue<T extends keyof WorkspaceCache>(key: T): WorkspaceCache[T] | undefined {
     if (!this._baseUrl) {
       logger.warn(`Cannot get server value for \`${key}\` - no base URL available`)
       return undefined
     }
 
     const serverKey = `${this._baseUrl}/${key}`
-    const value = this._workspaceState.get<ServerCache[T]>(serverKey)
+    const value = this._workspaceState.get<WorkspaceCache[T]>(serverKey)
     logger.info(`## Getting cache value for \`${serverKey}\` - value: \`${value}\``)
     return value
   }
@@ -56,7 +56,7 @@ export class CacheService {
    * @param value The value to store
    * @returns Promise that resolves when the data is stored
    */
-  private async setValue<T extends keyof ServerCache>(key: T, value: ServerCache[T]): Promise<void> {
+  private async setValue<T extends keyof WorkspaceCache>(key: T, value: WorkspaceCache[T]): Promise<void> {
     if (!this._baseUrl) {
       logger.warn(`Cannot save server value for \`${key}\` - no base URL available`)
       return

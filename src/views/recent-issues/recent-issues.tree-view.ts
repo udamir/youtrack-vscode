@@ -1,6 +1,6 @@
 import * as vscode from "vscode"
 import { BaseTreeView, YouTrackTreeItem, createLoadingItem } from "../base"
-import type { CacheService, VSCodeService, YouTrackService } from "../../services"
+import type { WorkspaceService, VSCodeService, YouTrackService } from "../../services"
 import { RecentIssueItem } from "./recent-issues.tree-item"
 import type { IssueEntity } from "../issues"
 import { VIEW_RECENT_ISSUES } from "./recent-issues.consts"
@@ -31,7 +31,7 @@ export class RecentIssuesTreeView extends BaseTreeView<RecentIssueItem | YouTrac
     this.loadFromCache()
   }
 
-  get cache(): CacheService {
+  get cache(): WorkspaceService {
     return this._youtrackService.cache
   }
 

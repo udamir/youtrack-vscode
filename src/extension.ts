@@ -44,6 +44,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const mcpService = new McpService(youtrackService, vscodeService)
     context.subscriptions.push(mcpService)
     await mcpService.start()
+    logger.info(`MCP server started on port ${mcpService.port}`)
 
     // Register tree data providers (creates project and issue tree views)
     new ProjectsTreeView(context, youtrackService, vscodeService)

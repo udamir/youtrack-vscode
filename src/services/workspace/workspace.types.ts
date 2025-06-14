@@ -3,7 +3,7 @@ import type { ArticleEntity, IssueEntity, IssuesViewMode, ProjectEntity } from "
 /**
  * Interface representing the cache state for YouTrack extension
  */
-export interface ServerCache {
+export interface WorkspaceCache {
   selectedProjects: ProjectEntity[]
   activeProjectKey?: string
   recentIssues?: IssueEntity[]

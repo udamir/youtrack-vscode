@@ -3,11 +3,7 @@ export const MCP_DEFAULT_PORT = 4877
 export const CONFIG_MCP_PORT = "youtrack.mcpServer.port"
 export const CONFIG_MCP_ENABLED = "youtrack.mcpServer.enabled"
 
-export const MCP_RESOURCE_ISSUE = "issue"
-export const MCP_RESOURCE_ARTICLE = "article"
-
-export const MCP_RESOURCE_ISSUE_TEMPLATE = "yt://issues/{issueId}"
-export const MCP_RESOURCE_ARTICLE_TEMPLATE = "yt://articles/{articleId}"
+export const MCP_TOOL_GET_PROJECTS = "youtrack-get-projects"
 
 export const INTERNAL_ERROR = {
   jsonrpc: "2.0",

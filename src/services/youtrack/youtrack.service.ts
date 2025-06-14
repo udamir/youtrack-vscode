@@ -4,7 +4,7 @@ import { AuthenticationService } from "./youtrack-auth.service"
 import type { IssueEntity, ProjectEntity, ArticleEntity, IssueBaseEntity, ArticleBaseEntity } from "../../views"
 import { ISSUE_FIELDS, PROJECT_FIELDS, ARTICLE_FIELDS, ARTICLE_FIELDS_FULL, ISSUE_FIELDS_FULL } from "./youtrack.consts"
 import { getIssueEntity, getArticleBaseEntity, getIssueBaseEntity, getArticleEntity } from "./youtrack.utils"
-import { CacheService } from "./youtrack-cache.service"
+import { WorkspaceService } from "../workspace/workspace.service"
 import { Disposable } from "../../utils/disposable"
 import type { VSCodeService } from "../vscode/vscode.service"
 import { STATUS_AUTHENTICATED, STATUS_ERROR } from "../vscode"
@@ -14,17 +14,17 @@ import { STATUS_AUTHENTICATED, STATUS_ERROR } from "../vscode"
  */
 export class YouTrackService extends Disposable {
   private _authService: AuthenticationService
-  private _cacheService: CacheService
+  private _cacheService: WorkspaceService
 
   constructor(private readonly _vscodeService: VSCodeService) {
     super()
-    this._cacheService = new CacheService(this._vscodeService.workspaceState)
+    this._cacheService = new WorkspaceService(this._vscodeService.workspaceState)
 
     // Initialize authentication service
     this._authService = new AuthenticationService(this._vscodeService.secureStorage)
   }
 
-  public get cache(): CacheService {
+  public get cache(): WorkspaceService {
     return this._cacheService
   }
 

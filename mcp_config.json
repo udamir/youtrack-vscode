@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "youtrack-mcp-server": {
+      "command": "npx",
+      "args": ["mcp-remote", "http://localhost:4777/mcp", "--allow-http"]
+    }
+  }
+}
