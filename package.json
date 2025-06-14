@@ -2,7 +2,7 @@
   "name": "youtrack-vscode",
   "displayName": "YouTrack extension for VSCode",
   "description": "YouTrack integration for VSCode to manage issues and knowledge base articles",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.80.0"
   },
