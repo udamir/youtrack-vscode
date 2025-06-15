@@ -17,9 +17,9 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "importHelpers": false,
-    "outDir": "out",
+    "outDir": "dist",
     "declaration": true,
     "typeRoots": ["./node_modules/@types", "./types"]
   },
-  "exclude": ["node_modules", ".vscode-test", "out", "test"]
+  "exclude": ["node_modules", ".vscode-test", "dist", "test"]
 }

@@ -13,3 +13,8 @@ design/**
 bun.lock
 biome.json
 *.log
+webpack.config.js
+src/**
+out/**/*.map
+*.vsix
+bin/**

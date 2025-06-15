@@ -187,7 +187,7 @@ export class VSCodeService extends Disposable {
     const folderPath = this.getTempFolderPath()
 
     // If using default path, no validation needed
-    if (!folderPath || folderPath.includes(path.join("vscode-youtrack"))) {
+    if (!folderPath || folderPath.includes(path.join("vscode-youtrack")) || folderPath.includes(".youtrack-temp")) {
       return true
     }
 
@@ -244,7 +244,7 @@ export class VSCodeService extends Disposable {
 
   /**
    * Get temp folder path for storing edited documents
-   * Returns user-configured path or default temp directory
+   * Returns user-configured path or default temp directory in the current workspace
    */
   public getTempFolderPath(): string {
     const configuredPath = this.getValue<string>(CONFIG_TEMP_FOLDER_PATH, "")
@@ -252,16 +252,22 @@ export class VSCodeService extends Disposable {
       return this.ensureDirectoryExists(configuredPath)
     }
 
-    // Get extension directory - typically the workspace root in development
-    const extensionPath = vscode.extensions.getExtension(EXTENSION_NAME)?.extensionUri.fsPath || ""
+    // Check if we have an active workspace folder
+    const workspaceFolders = vscode.workspace.workspaceFolders
+    if (workspaceFolders && workspaceFolders.length > 0) {
+      // Use the first workspace folder's .youtrack-temp directory
+      const tempFolder = path.join(workspaceFolders[0].uri.fsPath, ".youtrack-temp")
+      return this.ensureDirectoryExists(tempFolder)
+    }
 
-    // If extension path is available, use its temp subfolder
+    // Get extension directory as a fallback
+    const extensionPath = vscode.extensions.getExtension(EXTENSION_NAME)?.extensionUri.fsPath || ""
     if (extensionPath) {
       const tempFolder = path.join(extensionPath, "temp")
       return this.ensureDirectoryExists(tempFolder)
     }
 
-    // Fallback to system temp folder + youtrack subfolder if extension path is not available
+    // Absolute last fallback to system temp folder + youtrack subfolder
     const defaultTempFolder = path.join(os.tmpdir(), "vscode-youtrack")
     return this.ensureDirectoryExists(defaultTempFolder)
   }
