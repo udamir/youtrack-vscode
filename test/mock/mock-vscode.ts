@@ -1,4 +1,5 @@
 import type * as vscode from "vscode"
+import { jest } from "bun:test"
 
 export class MockMemento implements vscode.Memento {
   private storage: Record<string, any> = {}

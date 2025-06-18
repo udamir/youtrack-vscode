@@ -33,9 +33,9 @@ jobs:
         run: bun run lint
       
       # Run tests
-      # - name: Run tests
-      #   env:
-      #     YOUTRACK_BASE_URL: ${{ secrets.YOUTRACK_BASE_URL }}
-      #     YOUTRACK_TOKEN: ${{ secrets.YOUTRACK_TOKEN }}
-      #   run: bun run test
+      - name: Run tests
+        env:
+          YOUTRACK_BASE_URL: ${{ secrets.YOUTRACK_BASE_URL }}
+          YOUTRACK_TOKEN: ${{ secrets.YOUTRACK_TOKEN }}
+        run: bun run test
       

@@ -1,8 +1,9 @@
+import { beforeAll, describe, it, expect } from "bun:test"
 import { MockExtensionContext } from "../mock"
+
 import { createServices } from "../helpers/service-helper"
 import type { YouTrackService } from "../../src/services"
 import type { IssueBaseEntity, ProjectEntity, ArticleBaseEntity } from "../../src/views"
-
 /**
  * Integration tests for the YouTrack service
  *

@@ -1,7 +1,8 @@
 import { VSCodeMock } from "./mock-vscode"
+import { mock, jest, beforeEach } from "bun:test"
 
 // Mock the vscode module
-jest.mock("vscode", () => {
+mock.module("vscode", () => {
   return VSCodeMock.createMockVSCodeApi()
 })
 

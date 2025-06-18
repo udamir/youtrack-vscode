@@ -1,4 +1,5 @@
-import * as assert from "node:assert"
+import { beforeAll, describe, it, expect } from "bun:test"
+// import * as assert from "node:assert"
 
 import { MockExtensionContext, MockEventEmitter } from "../mock"
 import { ENV_YOUTRACK_BASE_URL, ENV_YOUTRACK_TOKEN } from "../../src/services"
@@ -71,14 +72,14 @@ describe("Issues Tree View Integration Test", () => {
     const items = await issuesTreeView.getChildren()
 
     // Verify we got items
-    assert.ok(Array.isArray(items), "Items should be an array")
-    assert.ok(items.length > 0, "Should have at least one item if project has issues")
+    expect(Array.isArray(items)).toBe(true)
+    expect(items.length > 0).toBe(true)
 
     // Check the first item has the right structure
     const firstItem = items[0]
-    assert.ok(firstItem instanceof IssueTreeItem, "First item should be an IssueTreeItem")
-    assert.ok(firstItem.label, "Item should have a label")
-    assert.ok(firstItem.issue, "Item should have an issue object")
+    expect(firstItem instanceof IssueTreeItem).toBe(true)
+    expect(firstItem.label).toBeDefined()
+    expect((firstItem as IssueTreeItem).issue).toBeDefined()
   })
 
   it("should handle project change events", async () => {
@@ -92,19 +93,19 @@ describe("Issues Tree View Integration Test", () => {
     const items = await issuesTreeView.getChildren()
 
     // Verify we got items for the new project
-    assert.ok(Array.isArray(items), "Items should be an array")
+    expect(Array.isArray(items)).toBe(true)
   })
 
   it("should toggle between list and tree view modes", async () => {
     // Initial state
-    assert.strictEqual(issuesTreeView.viewMode, ISSUE_VIEW_MODE_LIST)
+    expect(issuesTreeView.viewMode).toBe(ISSUE_VIEW_MODE_LIST)
 
     // Toggle to tree mode
     await issuesTreeView.setTreeViewMode()
-    assert.strictEqual(issuesTreeView.viewMode, ISSUE_VIEW_MODE_TREE)
+    expect(issuesTreeView.viewMode).toBe(ISSUE_VIEW_MODE_TREE)
 
     // Toggle back to list mode
     await issuesTreeView.setListViewMode()
-    assert.strictEqual(issuesTreeView.viewMode, ISSUE_VIEW_MODE_LIST)
+    expect(issuesTreeView.viewMode).toBe(ISSUE_VIEW_MODE_LIST)
   })
 })

@@ -1,3 +1,4 @@
+import { beforeAll, afterAll, describe, it, expect } from "bun:test"
 import * as path from "node:path"
 import * as fs from "node:fs"
 import * as yaml from "js-yaml"
@@ -52,7 +53,7 @@ describe("Youtrack Files Service Integration Test", () => {
       console.error("Error setting up file editor tests:", error)
       throw error
     }
-  }, 30000) // Longer timeout for API calls
+  })
 
   afterAll(() => {
     // Clean up temp directory
@@ -167,7 +168,9 @@ describe("Youtrack Files Service Integration Test", () => {
   it("should save file to YouTrack without errors", async () => {
     if (!testIssue.idReadable) return
 
-    let fileInfo = youtrackFilesService.getEditedFiles().find((info) => info.metadata.idReadable === testIssue.idReadable)
+    let fileInfo = youtrackFilesService
+      .getEditedFiles()
+      .find((info) => info.metadata.idReadable === testIssue.idReadable)
     if (!fileInfo) {
       await youtrackFilesService.openInEditor(testIssue.idReadable)
       fileInfo = youtrackFilesService.getEditedFiles().find((info) => info.metadata.idReadable === testIssue.idReadable)
@@ -176,7 +179,9 @@ describe("Youtrack Files Service Integration Test", () => {
     }
     const result = await youtrackFilesService.saveToYouTrack(fileInfo)
     expect(result).toBe(true)
-    const updatedFileInfo = youtrackFilesService.getEditedFiles().find((info) => info.metadata.idReadable === testIssue.idReadable)
+    const updatedFileInfo = youtrackFilesService
+      .getEditedFiles()
+      .find((info) => info.metadata.idReadable === testIssue.idReadable)
     expect(updatedFileInfo?.syncStatus).toBe(FILE_STATUS_SYNCED)
   }, 10000)
 

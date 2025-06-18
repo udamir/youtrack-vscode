@@ -1,4 +1,5 @@
 import * as assert from "node:assert"
+import { afterEach, beforeEach, describe, it, jest } from "bun:test"
 
 import { mockBaseUrl, mockProjects, mockIssues, mockArticles } from "./mock/youtrack-data"
 import { WorkspaceService } from "../src/services"
@@ -21,7 +22,7 @@ describe("WorkspaceService", () => {
   })
 
   afterEach(() => {
-    jest.resetAllMocks()
+    jest.restoreAllMocks()
   })
 
   describe("Initialization", () => {
