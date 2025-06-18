@@ -1,4 +1,4 @@
-import * as assert from "node:assert"
+import { beforeAll, describe, it, expect } from "bun:test"
 
 import { ArticlesTreeView, ArticleTreeItem, ProjectsTreeView } from "../../src/views"
 import { MockExtensionContext } from "../mock"
@@ -37,7 +37,7 @@ describe("Knowledge Base Tree View - Integration Tests", () => {
 
     await projectsTreeView.addProject(testProject)
     await projectsTreeView.setActiveProjectCommand(testProject.shortName)
-  }, 30000) // Increase timeout for API calls
+  }) // Increase timeout for API calls
 
   it("should return a message when no active project is selected", async () => {
     const activeProject = projectsTreeView.activeProject?.shortName
@@ -47,8 +47,8 @@ describe("Knowledge Base Tree View - Integration Tests", () => {
     const articles = await articlesTreeView.getChildren()
 
     // If no active project available, should show message
-    assert.strictEqual(articles.length, 1, "Should return exactly one item")
-    assert.strictEqual(articles[0].label, "No active project", "Should show 'No active project' message")
+    expect(articles.length).toBe(1)
+    expect(articles[0].label).toBe("No active project")
 
     // Restore original active project
     await projectsTreeView.setActiveProjectCommand(activeProject)
@@ -59,17 +59,17 @@ describe("Knowledge Base Tree View - Integration Tests", () => {
     const articles = await articlesTreeView.getChildren()
 
     // Verify the response (either articles or a "no articles" message)
-    assert.ok(Array.isArray(articles), "Should return an array of items")
+    expect(Array.isArray(articles)).toBe(true)
 
     // If we have articles, verify their structure
     const hasArticles = articles.length > 0 && articles[0] instanceof ArticleTreeItem
     if (hasArticles) {
       const article = (articles[0] as ArticleTreeItem).article
-      assert.ok(article.id, "Article should have an ID")
-      assert.ok(article.summary, "Article should have a summary")
+      expect(article.id).toBeDefined()
+      expect(article.summary).toBeDefined()
     } else if (articles.length === 1) {
       // If no articles, verify the "no articles" message
-      assert.strictEqual(articles[0].label, "No articles found", "Should show 'No articles found' message")
+      expect(articles[0].label).toBe("No articles found")
     }
   }, 30000) // Increase timeout for API calls
 
@@ -84,7 +84,7 @@ describe("Knowledge Base Tree View - Integration Tests", () => {
     articlesTreeView.refresh()
 
     // Verify event was fired
-    assert.strictEqual(eventFired, true, "Refresh should fire onDidChangeTreeData event")
+    expect(eventFired).toBe(true)
 
     // Clean up
     disposable.dispose()

@@ -301,10 +301,8 @@
     "watch": "webpack --watch",
     "lint": "biome check src",
     "lint:fix": "biome check src --write",
-    "test": "jest",
-    "test:integration": "jest --testMatch=\"**/*.integration.test.ts\"",
-    "test:unit": "jest --testMatch=\"**/test/**/*.test.ts\" --testPathIgnorePatterns=\"integration\"",
-    "test:coverage": "jest --coverage",
+    "test": "bun test --preload ./test/mock/mock-setup",
+    "test:coverage": "bun test --preload ./test/mock/mock-setup --coverage",
     "test:vsix": "webpack --mode production --devtool hidden-source-map && vsce package --no-yarn -o bin/youtrack-vscode-test.vsix && code --install-extension bin/youtrack-vscode-test.vsix --force && echo 'VSIX installed for testing. Please check extension functionality.'",
     "prepublish": "webpack --mode production --devtool hidden-source-map && bun run lint && vsce package --no-yarn -o bin/youtrack-vscode-$npm_package_version.vsix",
     "publish": "npx ovsx publish bin/youtrack-vscode-$npm_package_version.vsix -p $(grep OVSX_TOKEN .env | cut -d= -f2)",
@@ -315,16 +313,13 @@
     "@biomejs/biome": "^1.9.4",
     "@types/bun": "latest",
     "@types/express": "^5.0.1",
-    "@types/jest": "^29.5.14",
     "@types/js-yaml": "^4.0.9",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^24.0.1",
     "@types/vscode": "^1.74.0",
     "biome": "^0.3.3",
     "dotenv": "^16.4.7",
-    "jest": "^29.7.0",
     "prettier": "^3.5.3",
-    "ts-jest": "^29.4.0",
     "ts-loader": "^9.5.2",
     "typescript": "^5.8.3",
     "webpack": "^5.99.9",
@@ -338,32 +333,5 @@
     "markdown-it-mermaid": "^0.2.5",
     "markdown-it-task-lists": "^2.1.1",
     "youtrack-client": "^0.5.2"
-  },
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node",
-    "moduleNameMapper": {
-      "^vscode$": "<rootDir>/test/mock/mock-vscode.ts"
-    },
-    "moduleFileExtensions": [
-      "ts",
-      "js"
-    ],
-    "transform": {
-      "^.+\\.ts$": [
-        "ts-jest"
-      ]
-    },
-    "testMatch": [
-      "**/test/**/*.test.ts"
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/",
-      "/out/",
-      "/dist/"
-    ],
-    "setupFilesAfterEnv": [
-      "<rootDir>/test/mock/mock-setup.ts"
-    ]
   }
 }

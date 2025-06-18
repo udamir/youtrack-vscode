@@ -1,3 +1,4 @@
+import { beforeAll, afterAll, describe, it, expect } from "bun:test"
 import { McpClient } from "../helpers/mcp-client"
 import { McpService } from "../../src/services/mcp/mcp.service"
 import { MockExtensionContext } from "../mock"

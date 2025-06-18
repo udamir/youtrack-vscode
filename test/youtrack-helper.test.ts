@@ -2,6 +2,7 @@ import dotenv from "dotenv"
 import * as assert from "node:assert"
 import { YouTrackHelper } from "./helpers/youtrack-helper"
 import { YouTrack } from "youtrack-client"
+import { beforeAll, afterAll, describe, it } from "bun:test"
 
 import axios from "axios"
 import type { IssueEntity, ProjectEntity } from "../src/views"

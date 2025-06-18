@@ -1,7 +1,7 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 import * as os from "node:os"
-import { hash } from "node:crypto"
+import { afterEach, beforeEach, describe, it, expect } from "bun:test"
 
 import {
   scanYoutrackFiles,
@@ -51,7 +51,7 @@ describe("File Sync Utils", () => {
         expect(result.syncStatus).toBe(FILE_STATUS_SYNCED)
         expect(result.metadata.idReadable).toBe(issue.idReadable)
         expect(result.metadata.summary).toBe(issue.summary)
-        expect(result.content).toBe(issue.description)
+        expect(result.content).toBe(issue.description || "")
       }
     })
 
