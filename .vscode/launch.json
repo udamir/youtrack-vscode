@@ -14,11 +14,7 @@
       "name": "Debug Extension",
       "type": "extensionHost",
       "request": "launch",
-      "args": [
-        "--extensionDevelopmentPath=${workspaceFolder}",
-        "--disable-extensions",
-        "--inspect-extensions=9229"
-      ],
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}", "--disable-extensions", "--inspect-extensions=9229"],
       "outFiles": ["${workspaceFolder}/out/**/*.js"],
       "preLaunchTask": "${defaultBuildTask}",
       "sourceMaps": true

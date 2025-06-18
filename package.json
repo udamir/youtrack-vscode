@@ -2,7 +2,7 @@
   "name": "youtrack-vscode",
   "displayName": "YouTrack extension with MCP Server",
   "description": "YouTrack integration for VSCode to manage issues and knowledge base articles with MCP Server",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "publisher": "udamir",
   "license": "MIT",
   "icon": "media/logo.png",
@@ -304,7 +304,7 @@
     "test": "bun test --preload ./test/mock/mock-setup",
     "test:coverage": "bun test --preload ./test/mock/mock-setup --coverage",
     "test:vsix": "webpack --mode production --devtool hidden-source-map && vsce package --no-yarn -o bin/youtrack-vscode-test.vsix && code --install-extension bin/youtrack-vscode-test.vsix --force && echo 'VSIX installed for testing. Please check extension functionality.'",
-    "prepublish": "webpack --mode production --devtool hidden-source-map && bun run lint && vsce package --no-yarn -o bin/youtrack-vscode-$npm_package_version.vsix",
+    "prepublish": "bun run lint && webpack --mode production --devtool hidden-source-map && vsce package --no-yarn -o bin/youtrack-vscode-$npm_package_version.vsix",
     "publish": "npx ovsx publish bin/youtrack-vscode-$npm_package_version.vsix -p $(grep OVSX_TOKEN .env | cut -d= -f2)",
     "dev": "webpack && code --extensionDevelopmentPath=\"$(pwd)\"",
     "debug": "webpack && code --extensionDevelopmentPath=\"$(pwd)\" --disable-extensions --inspect-extensions=9229"
