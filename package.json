@@ -54,6 +54,11 @@
         "title": "YouTrack: Connect to YouTrack Instance"
       },
       {
+        "command": "youtrack.openSettings",
+        "title": "YouTrack: Open Settings",
+        "icon": "$(gear)"
+      },
+      {
         "command": "youtrack.addProject",
         "title": "YouTrack: Add Project",
         "icon": "$(add)"
@@ -173,6 +178,11 @@
     "menus": {
       "view/title": [
         {
+          "command": "youtrack.openSettings",
+          "when": "view == youtrackProjects && youtrack.status.connected",
+          "group": "navigation"
+        },
+        {
           "command": "youtrack.addProject",
           "when": "view == youtrackProjects && youtrack.status.connected",
           "group": "navigation"
@@ -257,12 +267,12 @@
       }
     ],
     "configuration": {
-      "title": "YouTrack extension for VSCode",
+      "title": "YouTrack extension with MCP Server",
       "properties": {
-        "youtrack.instanceUrl": {
+        "youtrack.baseUrl": {
           "type": "string",
           "default": "",
-          "description": "URL of the YouTrack instance"
+          "description": "URL of the YouTrack server"
         },
         "youtrack.tokenStorage": {
           "type": "string",
@@ -286,12 +296,12 @@
         "youtrack.mcpServer.port": {
           "type": "number",
           "default": 4777,
-          "description": "Port for the AI MCP server (requires reload)"
+          "description": "Port for the AI MCP server"
         },
         "youtrack.mcpServer.enabled": {
           "type": "boolean",
           "default": false,
-          "description": "Enable the AI MCP server (requires reload)"
+          "description": "Enable the AI MCP server"
         }
       }
     }

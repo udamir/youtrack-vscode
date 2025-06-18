@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { BaseTreeView, YouTrackTreeItem, createLoadingItem } from "../base"
 import { RecentArticleTreeItem } from "./recent-articles.tree-item"
-import type { WorkspaceService, VSCodeService, YouTrackService } from "../../services"
+import type { WorkspaceService, VSCodeService } from "../../services"
 
 import { VIEW_RECENT_ARTICLES } from "./recent-articles.consts"
 import type { ArticleEntity } from "../articles"
@@ -20,7 +20,7 @@ export class RecentArticlesTreeView extends BaseTreeView<RecentArticleTreeItem |
    */
   constructor(
     _context: vscode.ExtensionContext,
-    private readonly _youtrackService: YouTrackService,
+    // private readonly _youtrackService: YouTrackService,
     private readonly _vscodeService: VSCodeService,
   ) {
     super(VIEW_RECENT_ARTICLES, _context)
@@ -33,7 +33,7 @@ export class RecentArticlesTreeView extends BaseTreeView<RecentArticleTreeItem |
   }
 
   get cache(): WorkspaceService {
-    return this._youtrackService.cache
+    return this._vscodeService.cache
   }
 
   /**

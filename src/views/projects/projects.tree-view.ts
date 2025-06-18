@@ -14,7 +14,7 @@ import {
   COMMAND_EDIT_ENTITY,
 } from "./projects.consts"
 import type { YouTrackService, VSCodeService, WorkspaceService } from "../../services"
-import { YoutrackFilesService, CONFIG_TEMP_FOLDER_PATH, FILE_STATUS_SYNCED } from "../../services"
+import { YoutrackFilesService, FILE_STATUS_SYNCED } from "../../services"
 import { ProjectTreeItem, YoutrackFileTreeItem } from "./projects.tree-item"
 import type { ProjectEntity } from "./projects.types"
 
@@ -77,14 +77,14 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
   }
 
   public get cache(): WorkspaceService {
-    return this._youtrackService.cache
+    return this._vscodeService.cache
   }
 
   /**
    * Open settings for editor configuration
    */
   private async openSettingsCommand(): Promise<void> {
-    await vscode.commands.executeCommand("workbench.action.openSettings", CONFIG_TEMP_FOLDER_PATH)
+    await vscode.commands.executeCommand("workbench.action.openSettings", "youtrack")
   }
 
   // Register fetch from YouTrack command
@@ -202,7 +202,7 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
     this._selectedProjects.push(project)
 
     // Save selected projects to cache
-    await this._youtrackService.cache.saveSelectedProjects(this._selectedProjects)
+    await this._vscodeService.cache.saveSelectedProjects(this._selectedProjects)
 
     // If no active project is set, set this as active project
     if (!this._activeProject) {

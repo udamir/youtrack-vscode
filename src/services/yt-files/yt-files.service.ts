@@ -65,14 +65,51 @@ export class YoutrackFilesService extends Disposable {
 
     // Listen for configuration changes
     this._subscriptions.push(
-      this.vsCodeService.onDidChangeTempFolderPath(() => {
-        logger.debug("yt-files.service: Temp directory changed")
-        // Update temp directory
-        this._tempDirectory = this.vsCodeService.getTempFolderPath()
-
-        // Re-initialize if configuration changes
+      this.vsCodeService.onDidChangeTempFolderPath((newTempPath) => {
+        logger.info(`yt-files.service: Temp directory changed to ${newTempPath}`)
+        
+        // Store current temp directory and edited files
+        const oldTempDirectory = this._tempDirectory
+        const existingFilesMap = new Map(this._editedFiles)
+        const filesCount = existingFilesMap.size
+        
+        logger.info(`Current temp directory: ${oldTempDirectory}, files count: ${filesCount}`)
+        
+        // Update to new temp directory
+        this._tempDirectory = newTempPath
+        
+        // Ensure the new directory exists
+        try {
+          fs.mkdirSync(newTempPath, { recursive: true })
+          logger.info(`Created new temp directory at ${newTempPath}`)
+        } catch (error) {
+          logger.error(`Failed to create temp directory at ${newTempPath}:`, error)
+        }
+        
+        // Re-initialize with new configuration
         if (this.isConfigured()) {
+          logger.info('Service is configured, reinitializing with new temp folder')
+          
+          // First close any file watchers
+          if (this._fileWatcher) {
+            this._fileWatcher.dispose()
+            this._fileWatcher = undefined
+            logger.debug('Disposed existing file watcher')
+          }
+          
+          // Initialize with the new folder
           this.initialize()
+          
+          // If we had files in the old directory, migrate them
+          if (oldTempDirectory && oldTempDirectory !== newTempPath && filesCount > 0) {
+            logger.info(`Migrating ${filesCount} files from ${oldTempDirectory} to ${newTempPath}`)
+            vscode.window.showInformationMessage(`YouTrack: Migrating ${filesCount} files to new temp folder location...`)
+            this.migrateFilesToNewLocation(oldTempDirectory, newTempPath, existingFilesMap)
+          } else {
+            logger.info('No files to migrate or paths are the same')
+          }
+        } else {
+          logger.warn('Service is not properly configured, skipping reinitialization')
         }
       }),
     )
@@ -83,6 +120,93 @@ export class YoutrackFilesService extends Disposable {
    */
   public isConfigured(): boolean {
     return !!this._tempDirectory
+  }
+  
+  /**
+   * Migrates files from old temp directory to new temp directory
+   * @param oldDirectory The old temp directory path
+   * @param newDirectory The new temp directory path
+   * @param existingFiles Map of existing YouTrack files
+   */
+  private async migrateFilesToNewLocation(
+    oldDirectory: string,
+    newDirectory: string,
+    existingFiles: Map<string, YoutrackFileData>
+  ): Promise<void> {
+    logger.info(`Migrating YouTrack files from ${oldDirectory} to ${newDirectory}`)
+    
+    try {
+      // Ensure the new directory exists
+      fs.mkdirSync(newDirectory, { recursive: true })
+      
+      // Create a new map for the migrated files
+      const migratedFiles = new Map<string, YoutrackFileData>()
+      
+      // Process each existing file
+      for (const [entityId, fileData] of existingFiles.entries()) {
+        try {
+          const oldFilePath = fileData.filePath
+          
+          // Skip if old file doesn't exist
+          if (!fs.existsSync(oldFilePath)) {
+            continue
+          }
+          
+          // Calculate the new file path
+          const fileName = path.basename(oldFilePath)
+          const newFilePath = path.join(newDirectory, fileName)
+          
+          // Read the content from old location
+          const content = fs.readFileSync(oldFilePath, 'utf8')
+          
+          // Add to ignore list to prevent triggering file watchers
+          this._ignoreFileChanges.add(newFilePath)
+          
+          // Write to the new location
+          fs.writeFileSync(newFilePath, content)
+          
+          // Update the file data with new path
+          const updatedFileData = {
+            ...fileData,
+            filePath: newFilePath
+          }
+          
+          // Add to migrated files map
+          migratedFiles.set(entityId, updatedFileData)
+          
+          logger.debug(`Migrated ${fileName} to new location`)
+          
+          // Remove from ignore list after short delay
+          setTimeout(() => {
+            this._ignoreFileChanges.delete(newFilePath)
+          }, 1000)
+          
+          // Remove old file if successful
+          if (fs.existsSync(newFilePath)) {
+            fs.unlinkSync(oldFilePath)
+          }
+        } catch (error) {
+          logger.error(`Error migrating file for ${entityId}:`, error)
+        }
+      }
+      
+      // Update the edited files map with the migrated files
+      this._editedFiles = migratedFiles
+      
+      // Notify about changes
+      this._onDidChangeEditedFiles.fire()
+      
+      logger.info(`Successfully migrated ${migratedFiles.size} files to new temp folder`)
+      vscode.window.showInformationMessage(
+        `Successfully migrated ${migratedFiles.size} YouTrack files to new temp folder`
+      )
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Unknown error'
+      logger.error('Failed to migrate files to new location:', error)
+      vscode.window.showErrorMessage(
+        `Failed to migrate YouTrack files to the new temp folder: ${errorMessage}`
+      )
+    }
   }
 
   /**
@@ -264,8 +388,15 @@ export class YoutrackFilesService extends Disposable {
     // Check if already open
     const existingFile = this._editedFiles.get(idReadable)
     if (existingFile) {
-      await vscode.window.showTextDocument(vscode.Uri.file(existingFile.filePath))
-      return
+      // Check if the file exists at the path listed in our records
+      if (fs.existsSync(existingFile.filePath)) {
+        await vscode.window.showTextDocument(vscode.Uri.file(existingFile.filePath))
+        return
+      }
+      
+      // If we get here, file doesn't exist where expected - could have been moved or deleted
+      // Remove it from our tracking and continue with recreation
+      this._editedFiles.delete(idReadable)
     }
 
     const entityType = entityTypeById(idReadable)
@@ -281,10 +412,16 @@ export class YoutrackFilesService extends Disposable {
         throw new Error(`Entity (${entityType}) not found: ${idReadable}`)
       }
 
+      // Always get the latest temp directory from settings
+      this._tempDirectory = this.vsCodeService.getTempFolderPath()
+      
       // Check if temp directory is configured
       if (!this._tempDirectory) {
         throw new Error("Temp directory not configured")
       }
+      
+      // Ensure the directory exists
+      fs.mkdirSync(this._tempDirectory, { recursive: true })
 
       // Create the file path
       const filePath = path.join(this._tempDirectory, generateFileName(entity))
