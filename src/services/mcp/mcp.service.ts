@@ -2,12 +2,18 @@ import type { Server } from "node:http"
 import express from "express"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types"
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js"
 
 import {
   CONFIG_MCP_PORT,
   INTERNAL_ERROR,
   MCP_DEFAULT_PORT,
+  MCP_RESOURCE_ARTICLE,
+  MCP_RESOURCE_ARTICLE_TEMPLATE,
+  MCP_RESOURCE_ISSUE,
+  MCP_RESOURCE_ISSUE_TEMPLATE,
+  MCP_RESOURCE_PROJECTS,
+  MCP_RESOURCE_PROJECTS_TEMPLATE,
   MCP_TOOL_GET_ENTITIES_BY_ID,
   MCP_TOOL_GET_PROJECTS,
 } from "./mcp.consts"
@@ -19,6 +25,7 @@ import { tryCatch } from "../../utils/tryCatch"
 import { getEntitiesByIdParams } from "./mcp.models"
 import type { ArticleBaseEntity, IssueBaseEntity } from "../../views"
 import type { GetEntitiesByIdParams } from "./mcp.types"
+import { getEntityResourceTemplateCallback, getProjectsResourceTemplateCallback } from "./mcp.resources"
 
 /**
  * Service to manage the lifecycle of the MCP server within the YouTrack VSCode extension.
@@ -58,6 +65,24 @@ export class McpService extends Disposable {
         }
       }
     })
+
+    this.mcp.resource(
+      MCP_RESOURCE_ISSUE,
+      new ResourceTemplate(MCP_RESOURCE_ISSUE_TEMPLATE, { list: undefined }),
+      getEntityResourceTemplateCallback(this.youtrackService),
+    )
+
+    this.mcp.resource(
+      MCP_RESOURCE_ARTICLE,
+      new ResourceTemplate(MCP_RESOURCE_ARTICLE_TEMPLATE, { list: undefined }),
+      getEntityResourceTemplateCallback(this.youtrackService),
+    )
+
+    this.mcp.resource(
+      MCP_RESOURCE_PROJECTS,
+      new ResourceTemplate(MCP_RESOURCE_PROJECTS_TEMPLATE, { list: undefined }),
+      getProjectsResourceTemplateCallback(this.youtrackService),
+    )
 
     // Tool to list all YouTrack projects - takes no arguments
     this.mcp.tool(MCP_TOOL_GET_PROJECTS, "Get all available projects", this.getProjects.bind(this))
