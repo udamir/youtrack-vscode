@@ -5,7 +5,7 @@ import * as os from "node:os"
 
 import * as logger from "../../utils/logger"
 import {
-  CONFIG_INSTANCE_URL,
+  CONFIG_YOUTRACK_BASE_URL,
   CONFIG_RECENT_ITEMS_LIMIT,
   CONFIG_TOKEN_STORAGE,
   EXTENSION_NAME,
@@ -19,6 +19,7 @@ import { Disposable } from "../../utils/disposable"
 import type { ProjectEntity } from "../../views"
 import { SecureStorageService } from "./vscode-storage.service"
 import type { ConnectionStatus } from "./vscode.types"
+import { WorkspaceService } from "../workspace"
 
 /**
  * Service for managing extension configuration
@@ -26,6 +27,7 @@ import type { ConnectionStatus } from "./vscode.types"
 export class VSCodeService extends Disposable {
   public readonly config = vscode.workspace.getConfiguration()
   private readonly _secureStorage: SecureStorageService
+  private readonly _workspaceService: WorkspaceService
 
   // State
   private _activeProject?: ProjectEntity
@@ -45,9 +47,14 @@ export class VSCodeService extends Disposable {
   public readonly onDidChangeTempFolderPath = this._onDidChangeTempFolderPath.event
   public readonly onConnectionStatusChanged = this._onConnectionStatusChanged.event
 
+  get cache(): WorkspaceService {
+    return this._workspaceService
+  }
+
   constructor(private readonly _context: vscode.ExtensionContext) {
     super()
 
+    this._workspaceService = new WorkspaceService(this._context.workspaceState)
     this._secureStorage = new SecureStorageService(this._context)
 
     this._subscriptions.push(this._onServerChanged)
@@ -127,7 +134,7 @@ export class VSCodeService extends Disposable {
    * @returns True if all settings are valid, false otherwise
    */
   public validateSettings(): boolean {
-    const urlValid = this.validateInstanceUrl()
+    const urlValid = this.validateServerUrl()
     const tempFolderValid = this.validateTempFolder()
     const tokenStorageValid = this.validateTokenStorage()
     const recentItemsLimitValid = this.validateRecentItemsLimit()
@@ -136,14 +143,14 @@ export class VSCodeService extends Disposable {
   }
 
   /**
-   * Validate YouTrack instance URL
+   * Validate YouTrack server URL
    * @returns True if valid, false otherwise
    */
-  public validateInstanceUrl(): boolean {
-    const url = this.getInstanceUrl()
+  public validateServerUrl(): boolean {
+    const url = this.getServerUrl()
 
     if (!url) {
-      vscode.window.showErrorMessage("YouTrack instance URL is not configured.")
+      vscode.window.showErrorMessage("YouTrack server URL is not configured.")
       return false
     }
 
@@ -151,12 +158,12 @@ export class VSCodeService extends Disposable {
     try {
       const parsedUrl = new URL(url)
       if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-        vscode.window.showErrorMessage("YouTrack instance URL must use http or https protocol.")
+        vscode.window.showErrorMessage("YouTrack server URL must use http or https protocol.")
         return false
       }
     } catch (error) {
       vscode.window.showErrorMessage(
-        `Invalid YouTrack instance URL: ${error instanceof Error ? error.message : "Unknown error"}`,
+        `Invalid YouTrack server URL: ${error instanceof Error ? error.message : "Unknown error"}`,
       )
       return false
     }
@@ -229,17 +236,17 @@ export class VSCodeService extends Disposable {
   }
 
   /**
-   * Get YouTrack instance URL from settings
+   * Get YouTrack server URL from settings
    */
-  public getInstanceUrl(): string | undefined {
-    return this.getValue<string>(CONFIG_INSTANCE_URL)
+  public getServerUrl(): string | undefined {
+    return this.getValue<string>(CONFIG_YOUTRACK_BASE_URL)
   }
 
   /**
-   * Set YouTrack instance URL in settings
+   * Set YouTrack server URL in settings
    */
-  public async setInstanceUrl(url: string): Promise<void> {
-    await this.updateValue(CONFIG_INSTANCE_URL, url)
+  public async setServerUrl(url: string): Promise<void> {
+    await this.updateValue(CONFIG_YOUTRACK_BASE_URL, url)
   }
 
   /**
@@ -328,8 +335,8 @@ export class VSCodeService extends Disposable {
    * Check if configuration is complete with required settings
    */
   public isConfigured(): boolean {
-    const instanceUrl = this.getInstanceUrl()
-    return instanceUrl !== undefined && instanceUrl.trim() !== ""
+    const serverUrl = this.getServerUrl()
+    return serverUrl !== undefined && serverUrl.trim() !== ""
   }
 
   /**

@@ -26,16 +26,18 @@ if (!fs.existsSync(TEST_TEMP_DIR)) {
   fs.mkdirSync(TEST_TEMP_DIR, { recursive: true })
 }
 
-export const createYoutrackService = async (vscodeService: VSCodeService) => {
+export const createYoutrackService = async () => {
   const baseUrl = process.env[ENV_YOUTRACK_BASE_URL]
   const token = process.env[ENV_YOUTRACK_TOKEN]
 
   if (!baseUrl || !token) {
     throw new Error("⚠️ Skipping knowledge base tests - no valid credentials provided")
   }
-  const youtrackService = new YouTrackService(vscodeService)
-  await youtrackService.initialize()
-  await youtrackService.setCredentials(baseUrl, token)
+  const youtrackService = new YouTrackService()
+  if (!(await youtrackService.authenticate(baseUrl, token))) {
+    throw new Error("⚠️ Skipping knowledge base tests - authentication failed")
+  }
+
   return youtrackService
 }
 
@@ -44,7 +46,7 @@ export const createServices = async (context: vscode.ExtensionContext) => {
   // Configure temp directory for file service
   vscodeService.config.update(CONFIG_TEMP_FOLDER_PATH, TEST_TEMP_DIR)
 
-  const youtrackService = await createYoutrackService(vscodeService)
+  const youtrackService = await createYoutrackService()
 
   const youtrackFilesService = new YoutrackFilesService(youtrackService, vscodeService)
 

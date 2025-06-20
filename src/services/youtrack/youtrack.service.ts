@@ -1,50 +1,48 @@
-import type { YouTrack } from "youtrack-client"
+import { YouTrack } from "youtrack-client"
 import * as logger from "../../utils/logger"
-import { AuthenticationService } from "./youtrack-auth.service"
 import type { IssueEntity, ProjectEntity, ArticleEntity, IssueBaseEntity, ArticleBaseEntity } from "../../views"
-import { ISSUE_FIELDS, PROJECT_FIELDS, ARTICLE_FIELDS, ARTICLE_FIELDS_FULL, ISSUE_FIELDS_FULL } from "./youtrack.consts"
+import {
+  ISSUE_FIELDS,
+  PROJECT_FIELDS,
+  ARTICLE_FIELDS,
+  ARTICLE_FIELDS_FULL,
+  ISSUE_FIELDS_FULL,
+  USER_PROFILE_FIELDS,
+} from "./youtrack.consts"
 import { getIssueEntity, getArticleBaseEntity, getIssueBaseEntity, getArticleEntity } from "./youtrack.utils"
-import { WorkspaceService } from "../workspace/workspace.service"
 import { Disposable } from "../../utils/disposable"
-import type { VSCodeService } from "../vscode/vscode.service"
-import { STATUS_AUTHENTICATED, STATUS_ERROR } from "../vscode"
+import { tryCatch } from "../../utils/tryCatch"
 
 /**
  * Service for interacting with YouTrack API
  */
 export class YouTrackService extends Disposable {
-  private _authService: AuthenticationService
-  private _cacheService: WorkspaceService
-
-  constructor(private readonly _vscodeService: VSCodeService) {
-    super()
-    this._cacheService = new WorkspaceService(this._vscodeService.workspaceState)
-
-    // Initialize authentication service
-    this._authService = new AuthenticationService(this._vscodeService.secureStorage)
-  }
-
-  public get cache(): WorkspaceService {
-    return this._cacheService
-  }
+  private _client: YouTrack | null = null
 
   /**
    * Initialize the YouTrack client with credentials
    * @returns True if initialization was successful
    */
-  public async initialize(): Promise<boolean> {
-    try {
-      // Try to initialize authentication
-      const success = await this._authService.initialize()
-      const baseUrl = this._authService.getBaseUrl()
-      this._cacheService.setBaseUrl(baseUrl)
-      this._vscodeService.changeConnectionStatus(success ? STATUS_AUTHENTICATED : STATUS_ERROR, baseUrl)
-
-      return success
-    } catch (error) {
-      logger.error("Failed to initialize YouTrack client:", error)
+  public async authenticate(baseUrl: string, token: string): Promise<boolean> {
+    if (!baseUrl || !token) {
       return false
     }
+
+    // Initialize the client
+    const testClient = YouTrack.client(baseUrl, token)
+
+    // Test the connection by fetching current user
+    const [user, error] = await tryCatch(testClient.Users.getCurrentUserProfile({ fields: USER_PROFILE_FIELDS }))
+
+    if (user) {
+      // If no error was thrown, credentials are valid
+      this._client = testClient
+      return true
+    }
+
+    logger.error("Credentials verification failed:", error)
+    this._client = null
+    return false
   }
 
   /**
@@ -52,34 +50,7 @@ export class YouTrackService extends Disposable {
    * @returns The base URL or undefined if not connected
    */
   public get baseUrl(): string | undefined {
-    return this._authService?.getBaseUrl()
-  }
-
-  /**
-   * Set the YouTrack credentials
-   * @param baseUrl YouTrack instance URL
-   * @param token YouTrack permanent token
-   */
-  public async setCredentials(baseUrl: string, token: string): Promise<boolean> {
-    try {
-      // Authenticate with provided credentials
-      const success = await this._authService.authenticate(baseUrl, token)
-
-      this._cacheService.setBaseUrl(baseUrl)
-      this._vscodeService.changeConnectionStatus(success ? STATUS_AUTHENTICATED : STATUS_ERROR, baseUrl)
-
-      return success
-    } catch (error) {
-      logger.error("Failed to set YouTrack credentials:", error)
-      return false
-    }
-  }
-
-  /**
-   * Clear the stored credentials
-   */
-  public async clearCredentials(): Promise<void> {
-    await this._authService.logout()
+    return this._client?.baseUrl
   }
 
   /**
@@ -87,7 +58,7 @@ export class YouTrackService extends Disposable {
    * @returns YouTrack client instance or null if not initialized
    */
   public get client(): YouTrack | null {
-    return this._authService.client
+    return this._client
   }
 
   /**
@@ -95,7 +66,7 @@ export class YouTrackService extends Disposable {
    * @returns True if YouTrack is configured with valid credentials
    */
   public isConnected(): boolean {
-    return this._authService.isAuthenticated
+    return this._client !== null
   }
 
   /**
@@ -295,7 +266,7 @@ export class YouTrackService extends Disposable {
       // Fetch articles for the project using more specific typing and any type to bypass strict typing
       const articles = await this.client.Admin.Projects.getProjectArticles(projectId, {
         $skip: 0,
-        $top: 100,
+        $top: -1,
         fields: [...ARTICLE_FIELDS],
       })
 

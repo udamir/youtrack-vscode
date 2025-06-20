@@ -10,7 +10,7 @@ export const EXTENSION_NAME = "youtrack-vscode"
 export const EXTENSION_DISPLAY_NAME = "YouTrack Integration"
 
 // Configuration keys
-export const CONFIG_INSTANCE_URL = "youtrack.instanceUrl"
+export const CONFIG_YOUTRACK_BASE_URL = "youtrack.baseUrl"
 export const CONFIG_TOKEN_STORAGE = "youtrack.tokenStorage"
 export const CONFIG_RECENT_ITEMS_LIMIT = "youtrack.recentItemsLimit"
 export const CONFIG_TEMP_FOLDER_PATH = "youtrack.tempFolderPath"

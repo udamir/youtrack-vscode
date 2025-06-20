@@ -52,7 +52,8 @@ export class SecureStorageService {
    */
   public async storeBaseUrl(baseUrl: string): Promise<void> {
     try {
-      await this.secrets.store(SECURE_STORAGE_KEY_BASE_URL, baseUrl)
+      // Store in both places for backward compatibility
+      await this.globalState.update(SECURE_STORAGE_KEY_BASE_URL, baseUrl)
       logger.debug("YouTrack base URL stored")
     } catch (error) {
       logger.error("Failed to store YouTrack base URL", error)
@@ -64,7 +65,7 @@ export class SecureStorageService {
    * Retrieve the stored YouTrack instance URL
    * @returns The stored URL or undefined if not found
    */
-  public getBaseUrl(): string | undefined {
+  public async getBaseUrl(): Promise<string | undefined> {
     return this.globalState.get<string>(SECURE_STORAGE_KEY_BASE_URL)
   }
 

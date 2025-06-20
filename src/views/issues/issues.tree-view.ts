@@ -58,7 +58,7 @@ export class IssuesTreeView extends BaseTreeView<IssueTreeItem | YouTrackTreeIte
   }
 
   get cache(): WorkspaceService {
-    return this._youtrackService.cache
+    return this._vscodeService.cache
   }
 
   private onActiveProjectChanged(project: ProjectEntity | undefined): void {
