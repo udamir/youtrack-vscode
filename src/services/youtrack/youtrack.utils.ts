@@ -1,6 +1,6 @@
 import type { Article, Entity, Issue, SingleEnumIssueCustomField } from "youtrack-client"
 import type { ARTICLE_FIELDS, ARTICLE_FIELDS_FULL, ISSUE_FIELDS, ISSUE_FIELDS_FULL } from "./youtrack.consts"
-import type { ArticleBaseEntity, ArticleEntity, IssueBaseEntity, IssueEntity, LinkType } from "../../views"
+import type { ArticleBaseEntity, ArticleEntity, IssueBaseEntity, IssueEntity, LinkType, IssueLink } from "../../views"
 
 export const getEntityTypeById = (id: string): "issue" | "article" => {
   const [_, __, articleId] = id.split("-")
@@ -9,8 +9,8 @@ export const getEntityTypeById = (id: string): "issue" | "article" => {
 
 export const getIssueLinks = (
   issue: Entity<Issue, typeof ISSUE_FIELDS>,
-): Record<Exclude<LinkType, "parent">, string[]> & { parent?: string } => {
-  const links = {} as Record<Exclude<LinkType, "parent">, string[]> & { parent?: string }
+): Record<Exclude<LinkType, "parent">, IssueLink[]> & { parent?: IssueLink } => {
+  const links = {} as Record<Exclude<LinkType, "parent">, IssueLink[]> & { parent?: IssueLink }
   issue.links.forEach(({ linkType, direction, issues }) => {
     if (!issues.length) {
       return
@@ -18,9 +18,12 @@ export const getIssueLinks = (
     const linkTypeStr = getIssueLinkType(linkType?.name || "", direction)
     if (linkTypeStr) {
       if (linkTypeStr === "parent") {
-        links.parent = issues[0].idReadable
+        links.parent = {
+          id: issues[0].idReadable || "",
+          summary: issues[0].summary || "",
+        }
       } else {
-        links[linkTypeStr] = issues.map(({ idReadable }) => idReadable)
+        links[linkTypeStr] = issues.map(({ idReadable, summary }) => ({ id: idReadable, summary: summary || "" }))
       }
     }
   })

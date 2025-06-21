@@ -1,6 +1,6 @@
 import type { ReadResourceTemplateCallback } from "@modelcontextprotocol/sdk/server/mcp"
 
-import { dumpEntity, mcpUriError, mcpUriResponse } from "./mcp.utils"
+import { dumpEntity, resourceError, resourceResource } from "./mcp.utils"
 import { entityTypeById, FILE_TYPE_ARTICLE } from "../yt-files"
 import type { YouTrackService } from "../youtrack"
 import { tryCatch } from "../../utils/tryCatch"
@@ -16,10 +16,10 @@ export const getEntityResourceTemplateCallback =
         : await tryCatch(youtrackService.getIssueById(id))
 
     if (error) {
-      return mcpUriError(uri, error.message)
+      return resourceError(uri.href, error.message)
     }
 
-    return mcpUriResponse(uri, dumpEntity(entity))
+    return resourceResource({ [uri.href]: dumpEntity(entity) })
   }
 
 export const getProjectsResourceTemplateCallback =
@@ -28,11 +28,11 @@ export const getProjectsResourceTemplateCallback =
     const [projects, error] = await tryCatch(youtrackService.getProjects())
 
     if (error) {
-      return mcpUriError(uri, error.message)
+      return resourceError(uri.href, error.message)
     }
 
     if (!projects || projects.length === 0) {
-      return mcpUriError(uri, "No projects found or you don't have access to any projects.")
+      return resourceError(uri.href, "No projects found or you don't have access to any projects.")
     }
 
     const contents: { uri: string; text: string }[] = []

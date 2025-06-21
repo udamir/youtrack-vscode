@@ -1,8 +1,8 @@
 import type { Server } from "node:http"
 import express from "express"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types"
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js"
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types"
 
 import {
   CONFIG_MCP_PORT,
@@ -17,15 +17,15 @@ import {
   MCP_TOOL_GET_ENTITIES_BY_ID,
   MCP_TOOL_GET_PROJECTS,
 } from "./mcp.consts"
-import { mcpError, mcpTextResponse } from "./mcp.utils"
-import { Disposable } from "../../utils/disposable"
-import { getEntityTypeById, type YouTrackService } from "../youtrack"
-import type { VSCodeService } from "../vscode"
-import { tryCatch } from "../../utils/tryCatch"
-import { getEntitiesByIdParams } from "./mcp.models"
-import type { ArticleBaseEntity, IssueBaseEntity } from "../../views"
-import type { GetEntitiesByIdParams } from "./mcp.types"
 import { getEntityResourceTemplateCallback, getProjectsResourceTemplateCallback } from "./mcp.resources"
+import { getEntityTypeById, type YouTrackService } from "../youtrack"
+import { dumpEntity, mcpError, toolTextResponse } from "./mcp.utils"
+import type { GetEntitiesByIdParams } from "./mcp.types"
+import { getEntitiesByIdParams } from "./mcp.models"
+import { Disposable } from "../../utils/disposable"
+import { tryCatch } from "../../utils/tryCatch"
+import type { VSCodeService } from "../vscode"
+import * as logger from "../../utils/logger"
 
 /**
  * Service to manage the lifecycle of the MCP server within the YouTrack VSCode extension.
@@ -47,17 +47,17 @@ export class McpService extends Disposable {
   ) {
     super()
     this.mcp = new McpServer({ name: "YouTrack", version: "1.0.0" })
+
+    this.server = express()
+    this.server.use(express.json())
     this.transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
     })
 
-    this.server = express()
-    this.server.use(express.json())
-
     this.server.post("/mcp", async (req, res) => {
       try {
         await this.transport.handleRequest(req, res, req.body)
-        res.on("close", () => this.stop.bind(this))
+        // res.on("close", () => this.stop.bind(this))
       } catch (error) {
         console.error("Error handling MCP request:", error)
         if (!res.headersSent) {
@@ -95,6 +95,7 @@ export class McpService extends Disposable {
   }
 
   private async getProjects(): Promise<CallToolResult> {
+    logger.debug("mcp.service: getProjects")
     if (!this.youtrackService.isConnected()) {
       return mcpError("YouTrack is not connected. Please log in first.")
     }
@@ -109,27 +110,32 @@ export class McpService extends Disposable {
       return mcpError("No projects found or you don't have access to any projects.")
     }
 
-    return mcpTextResponse(projects)
+    const result = toolTextResponse(projects.map((project) => dumpEntity(project)))
+
+    logger.debug(`mcp.service: getProjects - result: ${JSON.stringify(result, null, 2)}`)
+
+    return result
   }
 
   private async getEntitiesById({ ids }: GetEntitiesByIdParams): Promise<CallToolResult> {
+    logger.debug(`mcp.service: getEntitiesById - ids: ${ids.join(", ")}`)
     if (!this.youtrackService.isConnected()) {
       return mcpError("YouTrack is not connected. Please log in first.")
     }
 
-    const entities: Record<string, IssueBaseEntity | ArticleBaseEntity | string> = {}
+    const entities: string[] = []
     for (const entityId of ids) {
       const entityType = getEntityTypeById(entityId)
       if (entityType === "issue") {
         const [entity, error] = await tryCatch(this.youtrackService.getIssueById(entityId))
-        entities[entityId] = error ? `Error: ${error.message}` : entity || `Entity ${entityId} not found`
+        entities.push(error ? `Error: ${error.message}` : dumpEntity(entity) || `Entity ${entityId} not found`)
       } else if (entityType === "article") {
         const [entity, error] = await tryCatch(this.youtrackService.getArticleById(entityId))
-        entities[entityId] = error ? `Error: ${error.message}` : entity || `Entity ${entityId} not found`
+        entities.push(error ? `Error: ${error.message}` : dumpEntity(entity) || `Entity ${entityId} not found`)
       }
     }
 
-    return mcpTextResponse(entities)
+    return toolTextResponse(entities)
   }
 
   /**
@@ -138,7 +144,7 @@ export class McpService extends Disposable {
   public async start() {
     await this.mcp.connect(this.transport)
     this.httpServer = this.server.listen(this.port)
-    console.log(`MCP server started on port ${this.port}`)
+    logger.info(`MCP server started on port ${this.port}`)
   }
 
   /**
@@ -154,6 +160,7 @@ export class McpService extends Disposable {
         resolve()
       }
     })
+    logger.info(`MCP server stopped on port ${this.port}`)
   }
 
   public async dispose() {

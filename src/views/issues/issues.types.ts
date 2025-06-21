@@ -7,6 +7,8 @@ export type IssuesViewMode = typeof ISSUE_VIEW_MODE_LIST | typeof ISSUE_VIEW_MOD
 
 export type LinkType = "subtasks" | "related" | "dependant" | "dependencies" | "duplicates" | "parent"
 
+export type IssueLink = { id: string; summary: string }
+
 /**
  * Represents a YouTrack issue entity
  */
@@ -16,12 +18,12 @@ export interface IssueBaseEntity {
   projectId: string
   resolved: number
   summary: string
-  subtasks?: string[]
-  dependencies?: string[]
-  dependant?: string[]
-  duplicates?: string[]
-  related?: string[]
-  parent?: string
+  subtasks?: IssueLink[]
+  dependencies?: IssueLink[]
+  dependant?: IssueLink[]
+  duplicates?: IssueLink[]
+  related?: IssueLink[]
+  parent?: IssueLink
   type: string
 }
 
