@@ -13,7 +13,7 @@ export class YouTrackTreeItem extends vscode.TreeItem {
    */
   constructor(
     public readonly label: string,
-    public readonly collapsibleState: vscode.TreeItemCollapsibleState,
+    public readonly collapsibleState = vscode.TreeItemCollapsibleState.None,
     public readonly command?: vscode.Command,
     public readonly contextValue?: string,
   ) {

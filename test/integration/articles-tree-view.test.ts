@@ -1,6 +1,6 @@
 import { beforeAll, describe, it, expect } from "bun:test"
 
-import { ArticlesTreeView, ArticleTreeItem, ProjectsTreeView } from "../../src/views"
+import { ArticlesTreeView, ArticleTreeItem } from "../../src/views"
 import { MockExtensionContext } from "../mock"
 import type { ProjectEntity } from "../../src/views"
 import { createServices } from "../helpers/service-helper"

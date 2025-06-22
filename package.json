@@ -60,16 +60,6 @@
         "icon": "$(gear)"
       },
       {
-        "command": "youtrack.addProject",
-        "title": "YouTrack: Add Project",
-        "icon": "$(add)"
-      },
-      {
-        "command": "youtrack.removeProject",
-        "title": "YouTrack: Remove Project from List",
-        "icon": "$(trash)"
-      },
-      {
         "command": "youtrack.refreshIssues",
         "title": "YouTrack: Refresh Issues",
         "icon": "$(refresh)"
@@ -116,6 +106,12 @@
         "title": "YouTrack: Set Active Project"
       },
       {
+        "command": "youtrack.newSyncFile",
+        "title": "Open in Editor",
+        "category": "YouTrack",
+        "icon": "$(new-file)"
+      },
+      {
         "command": "youtrack.editEntity",
         "title": "Open in Editor",
         "category": "YouTrack",
@@ -145,6 +141,16 @@
         "command": "youtrack.removeSearchItem",
         "title": "Remove Item",
         "icon": "$(trash)"
+      },
+      {
+        "command": "youtrack.syncFiles.viewMode.list",
+        "title": "YouTrack: Switch to List View",
+        "icon": "$(list-flat)"
+      },
+      {
+        "command": "youtrack.syncFiles.viewMode.tree",
+        "title": "YouTrack: Switch to Tree View",
+        "icon": "$(list-tree)"
       }
     ],
     "viewsContainers": {
@@ -208,11 +214,6 @@
     "menus": {
       "view/title": [
         {
-          "command": "youtrack.openSettings",
-          "when": "view == youtrackIssueSearches && youtrack.status.connected",
-          "group": "navigation"
-        },
-        {
           "command": "youtrack.refreshIssues",
           "when": "view == youtrackIssues && youtrack.status.connected",
           "group": "navigation"
@@ -240,6 +241,26 @@
         {
           "command": "youtrack.refreshKnowledgeBase",
           "when": "view == youtrackKnowledgeBase && youtrack.status.connected",
+          "group": "navigation"
+        },
+        {
+          "command": "youtrack.openSettings",
+          "when": "view == youtrackSyncFiles && youtrack.status.connected",
+          "group": "navigation"
+        },
+        {
+          "command": "youtrack.newSyncFile",
+          "when": "view == youtrackSyncFiles && youtrack.status.connected",
+          "group": "navigation"
+        },
+        {
+          "command": "youtrack.syncFiles.viewMode.list",
+          "when": "view == youtrackSyncFiles && youtrack.status.connected && youtrack.filesViewMode == 'tree'",
+          "group": "navigation"
+        },
+        {
+          "command": "youtrack.syncFiles.viewMode.tree",
+          "when": "view == youtrackSyncFiles && youtrack.status.connected && youtrack.filesViewMode == 'list'",
           "group": "navigation"
         }
       ],
@@ -287,7 +308,7 @@
         },
         {
           "command": "youtrack.unlinkFile",
-          "when": "view == youtrackSyncFiles && (viewItem != 'youtrack-project' && viewItem != 'youtrack-project-active')",
+          "when": "view == youtrackSyncFiles && (viewItem == 'youtrack-edited-file-Synced' || viewItem == 'youtrack-edited-file-Modified' || viewItem == 'youtrack-edited-file-Outdated' || viewItem == 'youtrack-edited-file-Conflict')",
           "group": "inline@4"
         }
       ]

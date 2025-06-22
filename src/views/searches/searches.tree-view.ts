@@ -103,30 +103,6 @@ export class IssueSearchesTreeView extends BaseTreeView<
   }
 
   /**
-   * Get tree item for given element
-   */
-  public getTreeItem(
-    element:
-      | SearchRootTreeItem
-      | SearchProjectTreeItem
-      | SearchSavedSearchTreeItem
-      | SearchAgileTreeItem
-      | SearchSprintTreeItem
-      | YouTrackTreeItem,
-  ): vscode.TreeItem {
-    if (
-      element instanceof SearchProjectTreeItem &&
-      this.issuesSource?.type === "project" &&
-      element.project.id === this.issuesSource.source.id
-    ) {
-      // Add special styling for active source
-      element.description = "Active"
-    }
-
-    return element
-  }
-
-  /**
    * Get children for the tree view
    */
   public async getChildren(
@@ -274,9 +250,13 @@ export class IssueSearchesTreeView extends BaseTreeView<
    * Add new search item (project, saved search, or agile board)
    */
   private async addSearchItemCommand(rootItem?: SearchRootTreeItem): Promise<void> {
-    if (!rootItem) {
+    let categoryId = rootItem?.categoryId
+    if (!categoryId) {
       // If no root item was provided (command called from toolbar), ask which type to add
-      const itemType = await vscode.window.showQuickPick(
+      const itemType = await vscode.window.showQuickPick<{
+        label: string
+        value: SearchRootCategory
+      }>(
         [
           { label: "Project", value: SEARCH_ROOT_PROJECTS },
           { label: "Saved Search", value: SEARCH_ROOT_SEARCHES },
@@ -289,20 +269,17 @@ export class IssueSearchesTreeView extends BaseTreeView<
         return
       }
 
-      rootItem = new SearchRootTreeItem(itemType.value as SearchRootCategory, itemType.label)
+      categoryId = itemType.value
     }
 
     // Handle based on category
-    switch (rootItem.categoryId) {
+    switch (categoryId) {
       case SEARCH_ROOT_PROJECTS:
-        await this.addProjectCommand()
-        break
+        return this.addProjectCommand()
       case SEARCH_ROOT_SEARCHES:
-        await this.addSavedSearchCommand()
-        break
+        return this.addSavedSearchCommand()
       case SEARCH_ROOT_BOARDS:
-        await this.addAgileBoardCommand()
-        break
+        return this.addAgileBoardCommand()
     }
   }
 

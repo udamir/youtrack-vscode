@@ -11,7 +11,7 @@ export const ISSUE_FIELDS = [
   "idReadable",
   "summary",
   "resolved",
-  { project: ["id"] },
+  { project: PROJECT_FIELDS },
   { customFields: ["name", { value: ["name", { color: ["id", "background"] }] }] },
   { links: [{ linkType: ["name"] }, "direction", { issues: ["id", "idReadable", "summary"] }, "id"] },
 ] as const satisfies Schema<Issue>
@@ -32,7 +32,7 @@ export const ARTICLE_FIELDS = [
   "idReadable",
   "summary",
   { parentArticle: ["id"] },
-  { project: ["id"] },
+  { project: PROJECT_FIELDS },
   { childArticles: ["id"] },
 ] as const satisfies Schema<Article>
 
