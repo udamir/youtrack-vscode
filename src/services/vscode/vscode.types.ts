@@ -7,7 +7,6 @@ import type { AgileBoardEntity, IssuesSource, SavedSearchEntity } from "../../vi
  */
 export interface VscodeCache {
   selectedProjects: ProjectEntity[]
-  activeProjectKey?: string
   recentIssues?: IssueEntity[]
   recentArticles?: ArticleEntity[]
   issuesViewMode?: IssuesViewMode
@@ -16,6 +15,7 @@ export interface VscodeCache {
   savedSearches?: SavedSearchEntity[]
   agileBoards?: AgileBoardEntity[]
   issuesSource?: IssuesSource
+  knowledgeBaseProject?: ProjectEntity
 }
 
 /**

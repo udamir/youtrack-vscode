@@ -151,6 +151,12 @@
         "command": "youtrack.syncFiles.viewMode.tree",
         "title": "YouTrack: Switch to Tree View",
         "icon": "$(list-tree)"
+      },
+      {
+        "command": "youtrack.selectKnowledgeBaseProject",
+        "title": "Select Project for Knowledge Base",
+        "category": "YouTrack",
+        "icon": "$(layers)"
       }
     ],
     "viewsContainers": {
@@ -240,6 +246,11 @@
         },
         {
           "command": "youtrack.refreshKnowledgeBase",
+          "when": "view == youtrackKnowledgeBase && youtrack.status.connected",
+          "group": "navigation"
+        },
+        {
+          "command": "youtrack.selectKnowledgeBaseProject",
           "when": "view == youtrackKnowledgeBase && youtrack.status.connected",
           "group": "navigation"
         },

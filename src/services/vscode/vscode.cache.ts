@@ -240,4 +240,23 @@ export class CacheService {
   public async saveIssuesSource(source: IssuesSource | undefined): Promise<void> {
     await this.setValue("issuesSource", source)
   }
+
+  // Knowledge Base Project
+
+  /**
+   * Get the selected Knowledge Base project
+   * @returns The project shortName or undefined if not set
+   */
+  public getKnowledgeBaseProject(): ProjectEntity | undefined {
+    return this.getValue("knowledgeBaseProject")
+  }
+
+  /**
+   * Save the selected Knowledge Base project
+   * @param projectKey The project shortName to save
+   * @returns Promise that resolves when the Knowledge Base project is saved
+   */
+  public async saveKnowledgeBaseProject(project?: ProjectEntity): Promise<void> {
+    await this.setValue("knowledgeBaseProject", project)
+  }
 }

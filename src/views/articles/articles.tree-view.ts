@@ -1,13 +1,11 @@
-import type * as vscode from "vscode"
+import * as vscode from "vscode"
 import * as logger from "../../utils/logger"
-import { VIEW_KNOWLEDGE_BASE, COMMAND_REFRESH_KNOWLEDGE_BASE } from "./articles.consts"
-import { createBasicItem, createLoadingItem, BaseTreeView } from "../base"
+import { VIEW_KNOWLEDGE_BASE, COMMAND_REFRESH_KNOWLEDGE_BASE, COMMAND_SELECT_KB_PROJECT } from "./articles.consts"
+import { createBasicItem, createLoadingItem, BaseTreeView, type YouTrackTreeItem } from "../base"
 import type { YouTrackService, VSCodeService } from "../../services"
 import type { ArticleBaseEntity } from "./articles.types"
-import { ArticleTreeItem } from "./articles.tree-item"
 import type { ProjectEntity } from "../projects"
-import type { YouTrackTreeItem } from "../base"
-import type { IssuesSource } from "../searches"
+import { ArticleTreeItem } from "./articles.tree-item"
 
 /**
  * Tree view for YouTrack Knowledge Base
@@ -23,26 +21,14 @@ export class ArticlesTreeView extends BaseTreeView<ArticleTreeItem | YouTrackTre
   ) {
     super(VIEW_KNOWLEDGE_BASE, context)
 
-    // Setup event listeners for project changes
-    this.subscriptions.push(this._vscodeService.onDidChangeIssuesSource(this.onActiveProjectChanged.bind(this)))
-
     // Register commands
     this.registerCommand(COMMAND_REFRESH_KNOWLEDGE_BASE, this.refreshArticlesCommand.bind(this))
+    this.registerCommand(COMMAND_SELECT_KB_PROJECT, this.selectProjectCommand.bind(this))
 
-    logger.info("ArticlesTreeView initialized and listening to ViewService events")
-  }
+    // Load saved KB project if any
+    void this.loadSavedKbProject()
 
-  /**
-   * Handler for active project changes
-   */
-  private onActiveProjectChanged(source?: IssuesSource): void {
-    if (!source || source.type !== "project") {
-      this._activeProject = undefined
-    } else {
-      this._activeProject = source.source
-    }
-    this.updateViewTitle(this._activeProject)
-    this.refresh()
+    logger.info("ArticlesTreeView initialized")
   }
 
   /**
@@ -58,6 +44,71 @@ export class ArticlesTreeView extends BaseTreeView<ArticleTreeItem | YouTrackTre
    */
   async refreshArticlesCommand(): Promise<void> {
     this.refresh()
+  }
+
+  /**
+   * Select a project for Knowledge Base articles
+   */
+  async selectProjectCommand(): Promise<void> {
+    logger.debug("ArticlesTreeView: Select project for Knowledge Base")
+    try {
+      // Get all projects from YouTrack
+      const projects = await this._youtrackService.getProjects()
+
+      if (!projects || projects.length === 0) {
+        vscode.window.showInformationMessage("No projects found")
+        return
+      }
+
+      // Show quick pick with projects
+      const selectedItem = await vscode.window.showQuickPick(
+        projects.map((project) => ({
+          label: project.name,
+          description: project.shortName,
+          project: project,
+        })),
+        { placeHolder: "Select a project to view its Knowledge Base articles" },
+      )
+
+      if (selectedItem) {
+        this._activeProject = selectedItem.project
+        await this.saveKnowledgeBaseProject(selectedItem.project)
+        this.updateViewTitle(this._activeProject)
+        this.refresh()
+      }
+    } catch (error) {
+      logger.error(`Error selecting project for Knowledge Base: ${error}`)
+      vscode.window.showErrorMessage(`Failed to load projects: ${error}`)
+    }
+  }
+
+  /**
+   * Load saved Knowledge Base project
+   */
+  private async loadSavedKbProject(): Promise<void> {
+    try {
+      // Get saved project from cache
+      const savedProject = this._vscodeService.cache.getKnowledgeBaseProject()
+
+      if (savedProject) {
+        this._activeProject = savedProject
+        this.updateViewTitle(this._activeProject)
+        this.refresh()
+      }
+    } catch (error) {
+      logger.error(`Error loading saved Knowledge Base project: ${error}`)
+    }
+  }
+
+  /**
+   * Save selected Knowledge Base project to cache
+   */
+  private async saveKnowledgeBaseProject(project?: ProjectEntity): Promise<void> {
+    try {
+      await this._vscodeService.cache.saveKnowledgeBaseProject(project)
+    } catch (error) {
+      logger.error(`Error saving Knowledge Base project: ${error}`)
+    }
   }
 
   /**
