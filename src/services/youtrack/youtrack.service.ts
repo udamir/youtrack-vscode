@@ -1,6 +1,7 @@
 import { YouTrack } from "youtrack-client"
 import * as logger from "../../utils/logger"
 import type { IssueEntity, ProjectEntity, ArticleEntity, IssueBaseEntity, ArticleBaseEntity } from "../../views"
+import type { SavedSearchEntity, AgileBoardEntity } from "../../views/searches"
 import {
   ISSUE_FIELDS,
   PROJECT_FIELDS,
@@ -8,8 +9,18 @@ import {
   ARTICLE_FIELDS_FULL,
   ISSUE_FIELDS_FULL,
   USER_PROFILE_FIELDS,
+  AGILE_BOARD_FIELDS,
+  SAVED_SEARCH_FIELDS_BASE,
 } from "./youtrack.consts"
-import { getIssueEntity, getArticleBaseEntity, getIssueBaseEntity, getArticleEntity } from "./youtrack.utils"
+import {
+  getIssueEntity,
+  getArticleBaseEntity,
+  getIssueBaseEntity,
+  getArticleEntity,
+  getSavedSearchEntity,
+  getAgileBoardEntity,
+} from "./youtrack.utils"
+
 import { Disposable } from "../../utils/disposable"
 import { tryCatch } from "../../utils/tryCatch"
 
@@ -51,6 +62,71 @@ export class YouTrackService extends Disposable {
    */
   public get baseUrl(): string | undefined {
     return this._client?.baseUrl
+  }
+
+  /**
+   * Get saved queries for the current user
+   * @returns Array of saved queries or empty array if none found/error
+   */
+  public async getSavedQueries(): Promise<SavedSearchEntity[]> {
+    try {
+      if (!this.isConnected() || !this.client) {
+        logger.warn("YouTrack service not connected, cannot get saved searches")
+        return []
+      }
+
+      // Get saved searches from YouTrack
+      const searches = await this.client.SavedQueries.getSavedQueries({
+        fields: SAVED_SEARCH_FIELDS_BASE,
+        $top: -1,
+      })
+
+      // Map to our simplified SavedSearch model
+      return searches.map(getSavedSearchEntity)
+    } catch (error) {
+      logger.error("Error fetching saved searches:", error)
+      return []
+    }
+  }
+
+  public async getSavedSearchIssues(name: string, filter?: string): Promise<IssueBaseEntity[]> {
+    return this.getIssues(`saved search: ${name} ${filter ? ` ${filter}` : ""}`)
+  }
+
+  /**
+   * Get all available agile boards
+   * @returns Array of agile boards or empty array if none found/error
+   */
+  public async getAgileBoards(): Promise<AgileBoardEntity[]> {
+    try {
+      if (!this.isConnected() || !this.client) {
+        logger.warn("YouTrack service not connected, cannot get agile boards")
+        return []
+      }
+
+      // Get agile boards from YouTrack
+      const boards = await this.client.Agiles.getAgiles({ fields: AGILE_BOARD_FIELDS, $top: -1 })
+
+      // Map to our simplified AgileBoard model
+      return boards.map(getAgileBoardEntity)
+    } catch (error) {
+      logger.error("Error fetching agile boards:", error)
+      return []
+    }
+  }
+
+  /**
+   * Get issues for an agile board
+   * @param agileBoardName Name of the agile board
+   * @param sprintName Name of the sprint
+   * @returns Array of issues or empty array if none found
+   */
+  public async getSprintIssues(
+    agileBoardName: string,
+    sprintName: string,
+    filter?: string,
+  ): Promise<IssueBaseEntity[]> {
+    return this.getIssues(`Board ${agileBoardName}: ${sprintName}${filter ? ` ${filter}` : ""}`)
   }
 
   /**
@@ -146,30 +222,18 @@ export class YouTrackService extends Disposable {
     }
   }
 
-  /**
-   * Get issues for a specific project
-   * @param projectShortName Short name of the project to fetch issues for
-   * @param filter Optional filter string to apply (YouTrack query syntax)
-   * @returns Array of issues or empty array if none found
-   */
-  public async getIssues(projectShortName: string, filter?: string): Promise<IssueBaseEntity[]> {
+  public async getIssues(filter?: string): Promise<IssueBaseEntity[]> {
     try {
       if (!this.isConnected() || !this.client) {
         logger.warn("YouTrack service not connected, cannot get issues")
         return []
       }
 
-      // Construct the query to filter by project
-      let query = `project: {${projectShortName}}`
-
-      // Add any additional filter criteria if provided
-      if (filter && filter.trim().length > 0) {
-        query += ` ${filter}`
-      }
+      const query = filter && filter.trim().length > 0 ? filter : ""
 
       logger.info(`Fetching issues with query: ${query}`)
 
-      const issues = await this.client.Issues.getIssues({ query, fields: ISSUE_FIELDS, $top: 50 })
+      const issues = await this.client.Issues.getIssues({ query, fields: ISSUE_FIELDS, $top: 250 })
 
       // Map to our simplified Issue model
       return issues.map(getIssueBaseEntity)
@@ -177,6 +241,32 @@ export class YouTrackService extends Disposable {
       logger.error("Error fetching issues:", error)
       return []
     }
+  }
+
+  public async getFavorites(filter?: string): Promise<IssueBaseEntity[]> {
+    return this.getIssues(`tag: Star ${filter ? ` ${filter}` : ""}`)
+  }
+
+  public async getAssignedToMe(filter?: string): Promise<IssueBaseEntity[]> {
+    return this.getIssues(`assigned to: me ${filter ? ` ${filter}` : ""}`)
+  }
+
+  public async getCommentedByMe(filter?: string): Promise<IssueBaseEntity[]> {
+    return this.getIssues(`commented by: me ${filter ? ` ${filter}` : ""}`)
+  }
+
+  public async getReportedByMe(filter?: string): Promise<IssueBaseEntity[]> {
+    return this.getIssues(`reported by: me ${filter ? ` ${filter}` : ""}`)
+  }
+
+  /**
+   * Get issues for a specific project
+   * @param projectShortName Short name of the project to fetch issues for
+   * @param filter Optional filter string to apply (YouTrack query syntax)
+   * @returns Array of issues or empty array if none found
+   */
+  public async getProjectIssues(projectShortName: string, filter?: string): Promise<IssueBaseEntity[]> {
+    return this.getIssues(`project: {${projectShortName}} ${filter ? ` ${filter}` : ""}`)
   }
 
   /**
@@ -192,7 +282,7 @@ export class YouTrackService extends Disposable {
     filter?: string,
   ): Promise<IssueBaseEntity[]> {
     const parentFilter = parentIssueId ? `subtask of: {${parentIssueId}}` : "has: -{Subtask of}"
-    return this.getIssues(projectShortName, `${parentFilter}${filter ? ` ${filter}` : ""}`)
+    return this.getProjectIssues(projectShortName, `${parentFilter}${filter ? ` ${filter}` : ""}`)
   }
 
   /**

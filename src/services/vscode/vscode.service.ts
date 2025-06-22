@@ -16,10 +16,10 @@ import {
   STATUS_AUTHENTICATED,
 } from "./vscode.consts"
 import { Disposable } from "../../utils/disposable"
-import type { ProjectEntity } from "../../views"
-import { SecureStorageService } from "./vscode-storage.service"
+import type { IssuesSource, ProjectEntity } from "../../views"
+import { SecureStorageService } from "./vscode.storage"
 import type { ConnectionStatus } from "./vscode.types"
-import { WorkspaceService } from "../workspace"
+import { CacheService } from "./vscode.cache"
 
 /**
  * Service for managing extension configuration
@@ -27,10 +27,10 @@ import { WorkspaceService } from "../workspace"
 export class VSCodeService extends Disposable {
   public readonly config = vscode.workspace.getConfiguration()
   private readonly _secureStorage: SecureStorageService
-  private readonly _workspaceService: WorkspaceService
+  private readonly _cache: CacheService
 
   // State
-  private _activeProject?: ProjectEntity
+  private _issuesSource?: IssuesSource
   private _baseUrl?: string
 
   // Event emitters to notify components of state changes
@@ -39,22 +39,23 @@ export class VSCodeService extends Disposable {
   private readonly _onDidRefreshViews = new vscode.EventEmitter<void>()
   private readonly _onServerChanged = new vscode.EventEmitter<string | undefined>()
   private readonly _onConnectionStatusChanged = new vscode.EventEmitter<ConnectionStatus>()
+  private readonly _onDidChangeIssuesSource = new vscode.EventEmitter<IssuesSource | undefined>()
 
   // Public events that components can subscribe to
-  public readonly onDidChangeActiveProject = this._onDidChangeActiveProject.event
   public readonly onDidRefreshViews = this._onDidRefreshViews.event
   public readonly onServerChanged = this._onServerChanged.event
   public readonly onDidChangeTempFolderPath = this._onDidChangeTempFolderPath.event
   public readonly onConnectionStatusChanged = this._onConnectionStatusChanged.event
+  public readonly onDidChangeIssuesSource = this._onDidChangeIssuesSource.event
 
-  get cache(): WorkspaceService {
-    return this._workspaceService
+  get cache(): CacheService {
+    return this._cache
   }
 
   constructor(private readonly _context: vscode.ExtensionContext) {
     super()
 
-    this._workspaceService = new WorkspaceService(this._context.workspaceState)
+    this._cache = new CacheService(this._context.workspaceState)
     this._secureStorage = new SecureStorageService(this._context)
 
     this._subscriptions.push(this._onServerChanged)
@@ -73,12 +74,8 @@ export class VSCodeService extends Disposable {
     )
   }
 
-  get activeProject(): ProjectEntity | undefined {
-    return this._activeProject
-  }
-
-  public get activeProjectKey(): string | undefined {
-    return this._activeProject?.shortName
+  public get issuesSource(): IssuesSource | undefined {
+    return this._issuesSource
   }
 
   public get secureStorage(): SecureStorageService {
@@ -93,16 +90,24 @@ export class VSCodeService extends Disposable {
     this._onConnectionStatusChanged.fire(status)
 
     if (status === STATUS_AUTHENTICATED && this._baseUrl !== baseUrl) {
+      this._cache.setBaseUrl(baseUrl)
       this._onServerChanged.fire(baseUrl)
     }
 
     this._baseUrl = baseUrl
   }
 
-  public changeActiveProject(project?: ProjectEntity): void {
-    // Notify about the change
-    this._activeProject = project
-    this._onDidChangeActiveProject.fire(project)
+  /**
+   * Fire event to notify that active search source has changed
+   * @param source Optional source object containing id and type
+   */
+  public changeIssuesSource(source?: IssuesSource): void {
+    // Update context variable for conditional view visibility
+    vscode.commands.executeCommand("setContext", "youtrack.activeSourceType", source?.type || "")
+
+    this._issuesSource = source
+    // Fire event to notify listeners
+    this._onDidChangeIssuesSource.fire(source)
   }
 
   /**

@@ -13,7 +13,7 @@ import {
   COMMAND_UNLINK_FILE,
   COMMAND_EDIT_ENTITY,
 } from "./projects.consts"
-import type { YouTrackService, VSCodeService, WorkspaceService } from "../../services"
+import type { YouTrackService, VSCodeService, CacheService } from "../../services"
 import { YoutrackFilesService, FILE_STATUS_SYNCED } from "../../services"
 import { ProjectTreeItem, YoutrackFileTreeItem } from "./projects.tree-item"
 import type { ProjectEntity } from "./projects.types"
@@ -56,7 +56,7 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
     this.subscriptions.push(this._fileEditorService)
 
     // Listen for active project changes from ViewService
-    this.subscriptions.push(this._vscodeService.onDidChangeActiveProject(() => this.refresh()))
+    this.subscriptions.push(this._vscodeService.onDidChangeIssuesSource(() => this.refresh()))
     this.subscriptions.push(this._vscodeService.onServerChanged(() => this.loadFromCache()))
 
     // Listen for file changes
@@ -76,7 +76,7 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
     this.loadFromCache()
   }
 
-  public get cache(): WorkspaceService {
+  public get cache(): CacheService {
     return this._vscodeService.cache
   }
 
@@ -227,19 +227,19 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
         logger.info(`Loaded ${cachedProjects.length} projects from cache`)
 
         // Load active project from cache
-        const activeProjectKey = this.cache.getActiveProjectKey()
-        if (activeProjectKey) {
-          const activeProject = cachedProjects.find((p) => p.shortName === activeProjectKey)
-          if (activeProject) {
-            this._activeProject = activeProject
-            logger.info(`Loaded active project from cache: ${activeProject.name}`)
-          } else {
-            logger.info(`Active project not found in selected projects: ${activeProjectKey}`)
-          }
-        }
+        // const activeProjectKey = this.cache.getActiveProjectKey()
+        // if (activeProjectKey) {
+        //   const activeProject = cachedProjects.find((p) => p.shortName === activeProjectKey)
+        //   if (activeProject) {
+        //     this._activeProject = activeProject
+        //     logger.info(`Loaded active project from cache: ${activeProject.name}`)
+        //   } else {
+        //     logger.info(`Active project not found in selected projects: ${activeProjectKey}`)
+        //   }
+        // }
 
         // Fire events
-        this._vscodeService.changeActiveProject(this._activeProject)
+        // this._vscodeService.fireDidChangeIssuesSource({ type: "project", source: this._activeProject })
         this.refresh()
       }
     } catch (error) {
@@ -278,7 +278,7 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
     // Find the project from selected projects
     const project = projectShortName ? this._selectedProjects.find((p) => p.shortName === projectShortName) : undefined
 
-    if (!project && projectShortName) {
+    if (!project) {
       logger.warn(`Project with short name ${projectShortName} not found in selected projects`)
       return
     }
@@ -286,11 +286,8 @@ export class ProjectsTreeView extends BaseTreeView<ProjectTreeItem | YouTrackTre
     // Set active project
     this._activeProject = project
 
-    // Save active project to cache
-    await this.cache.saveActiveProject(projectShortName)
-
     // Notify about the change
-    this._vscodeService.changeActiveProject(project)
+    this._vscodeService.changeIssuesSource({ type: "project", source: project })
 
     logger.info(projectShortName ? `Active project set to: ${projectShortName}` : "No active project set")
     this.refresh()

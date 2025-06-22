@@ -1,5 +1,6 @@
 import * as vscode from "vscode"
 
+import { STATUS_AUTHENTICATED } from "../../services"
 import type { VSCodeService, YouTrackService } from "../../services"
 import { COMMAND_CONNECT, VIEW_NOT_CONNECTED } from "./auth.consts"
 import { BaseWebview } from "../base/base.webview"
@@ -85,6 +86,8 @@ export class AuthSidebar extends BaseWebview {
 
       if (success) {
         await this.vscodeService.setServerUrl(baseUrl)
+        // Update connection status to ensure status bar is updated
+        this.vscodeService.changeConnectionStatus(STATUS_AUTHENTICATED, baseUrl)
         vscode.window.showInformationMessage("Successfully connected to YouTrack!")
         logger.info(`Connected to YouTrack server at ${baseUrl}`)
 

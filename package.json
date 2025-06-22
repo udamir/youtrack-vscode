@@ -23,11 +23,12 @@
     "Other"
   ],
   "activationEvents": [
-    "onView:youtrackProjects",
     "onView:youtrackIssues",
     "onView:youtrackKnowledgeBase",
     "onView:youtrackRecentIssues",
     "onView:youtrackRecentArticles",
+    "onView:youtrackIssueSearches",
+    "onView:youtrackSyncFiles",
     "onCommand:youtrack.connect"
   ],
   "main": "./dist/extension.js",
@@ -77,6 +78,11 @@
         "command": "youtrack.filterIssues",
         "title": "YouTrack: Filter Issues",
         "icon": "$(filter)"
+      },
+      {
+        "command": "youtrack.filterIssues.active",
+        "title": "YouTrack: Filter Issues",
+        "icon": "$(filter-filled)"
       },
       {
         "command": "youtrack.toggleIssuesViewModeList",
@@ -129,6 +135,16 @@
         "command": "youtrack.unlinkFile",
         "title": "YouTrack: Unlink File",
         "icon": "$(trash)"
+      },
+      {
+        "command": "youtrack.addSearchItem",
+        "title": "Add Item",
+        "icon": "$(add)"
+      },
+      {
+        "command": "youtrack.removeSearchItem",
+        "title": "Remove Item",
+        "icon": "$(trash)"
       }
     ],
     "viewsContainers": {
@@ -146,32 +162,46 @@
           "id": "youtrackNotConnected",
           "type": "webview",
           "name": "Setup Connection",
+          "icon": "$(plug)",
           "when": "!youtrack.status.connected"
         },
         {
-          "id": "youtrackProjects",
-          "name": "Projects",
+          "id": "youtrackSyncFiles",
+          "name": "Sync Files",
+          "icon": "$(sync)",
+          "when": "youtrack.status.connected"
+        },
+        {
+          "id": "youtrackIssueSearches",
+          "name": "Issue Searches",
+          "icon": "$(search)",
           "when": "youtrack.status.connected"
         },
         {
           "id": "youtrackIssues",
           "name": "Issues",
+          "icon": "$(issues)",
           "when": "youtrack.status.connected"
         },
         {
           "id": "youtrackKnowledgeBase",
           "name": "Knowledge Base",
+          "icon": "$(book)",
           "when": "youtrack.status.connected"
         },
         {
           "id": "youtrackRecentIssues",
           "name": "Recent Issues",
-          "when": "youtrack.status.connected"
+          "icon": "$(clock)",
+          "when": "youtrack.status.connected",
+          "visibility": "collapsed"
         },
         {
           "id": "youtrackRecentArticles",
           "name": "Recent Articles",
-          "when": "youtrack.status.connected"
+          "icon": "$(history)",
+          "when": "youtrack.status.connected",
+          "visibility": "collapsed"
         }
       ]
     },
@@ -179,12 +209,7 @@
       "view/title": [
         {
           "command": "youtrack.openSettings",
-          "when": "view == youtrackProjects && youtrack.status.connected",
-          "group": "navigation"
-        },
-        {
-          "command": "youtrack.addProject",
-          "when": "view == youtrackProjects && youtrack.status.connected",
+          "when": "view == youtrackIssueSearches && youtrack.status.connected",
           "group": "navigation"
         },
         {
@@ -194,7 +219,12 @@
         },
         {
           "command": "youtrack.filterIssues",
-          "when": "view == youtrackIssues && youtrack.status.connected",
+          "when": "view == youtrackIssues && youtrack.status.connected && !youtrack.filterActive",
+          "group": "navigation"
+        },
+        {
+          "command": "youtrack.filterIssues.active",
+          "when": "view == youtrackIssues && youtrack.status.connected && youtrack.filterActive",
           "group": "navigation"
         },
         {
@@ -215,10 +245,26 @@
       ],
       "view/item/context": [
         {
-          "command": "youtrack.removeProject",
-          "when": "view == youtrackProjects && viewItem == youtrack-project || viewItem == youtrack-project-active",
+          "command": "youtrack.addSearchItem",
+          "when": "view == youtrackIssueSearches && viewItem == root-projects",
           "group": "inline"
         },
+        {
+          "command": "youtrack.addSearchItem",
+          "when": "view == youtrackIssueSearches && viewItem == root-searches",
+          "group": "inline"
+        },
+        {
+          "command": "youtrack.addSearchItem",
+          "when": "view == youtrackIssueSearches && viewItem == root-boards",
+          "group": "inline"
+        },
+        {
+          "command": "youtrack.removeSearchItem",
+          "when": "view == youtrackIssueSearches && (viewItem == source-project || viewItem == source-search || viewItem == source-board)",
+          "group": "inline"
+        },
+
         {
           "command": "youtrack.editEntity",
           "when": "view == youtrackIssues && viewItem == youtrack-issue || view == youtrackRecentIssues && viewItem == youtrack-issue",
@@ -231,17 +277,17 @@
         },
         {
           "command": "youtrack.fetchFromYouTrack",
-          "when": "view == youtrackProjects && (viewItem == 'youtrack-edited-file-Outdated' || viewItem == 'youtrack-edited-file-Modified' || viewItem == 'youtrack-edited-file-Conflict')",
+          "when": "view == youtrackSyncFiles && (viewItem == 'youtrack-edited-file-Outdated' || viewItem == 'youtrack-edited-file-Modified' || viewItem == 'youtrack-edited-file-Conflict')",
           "group": "inline@4"
         },
         {
           "command": "youtrack.saveToYouTrack",
-          "when": "view == youtrackProjects && (viewItem == 'youtrack-edited-file-Modified' || viewItem == 'youtrack-edited-file-Conflict')",
+          "when": "view == youtrackSyncFiles && (viewItem == 'youtrack-edited-file-Modified' || viewItem == 'youtrack-edited-file-Conflict')",
           "group": "inline@4"
         },
         {
           "command": "youtrack.unlinkFile",
-          "when": "view == youtrackProjects && (viewItem != 'youtrack-project' && viewItem != 'youtrack-project-active')",
+          "when": "view == youtrackSyncFiles && (viewItem != 'youtrack-project' && viewItem != 'youtrack-project-active')",
           "group": "inline@4"
         }
       ]

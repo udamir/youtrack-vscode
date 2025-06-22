@@ -1,14 +1,16 @@
 import * as vscode from "vscode"
-import { YouTrackService } from "./services"
+import { YouTrackService, STATUS_AUTHENTICATED } from "./services"
 import {
   IssuesTreeView,
   RecentIssuesTreeView,
   ArticlesTreeView,
   RecentArticlesTreeView,
-  ProjectsTreeView,
+  // ProjectsTreeView,
   AuthSidebar,
   StatusBarView,
   MarkdownPreview,
+  IssueSearchesTreeView,
+  SyncFilesTreeView,
 } from "./views"
 import * as logger from "./utils/logger"
 import { VSCodeService } from "./services/vscode/vscode.service"
@@ -58,11 +60,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     )
 
     // Register tree data providers (creates project and issue tree views)
-    new ProjectsTreeView(context, youtrackService, vscodeService)
+    // new ProjectsTreeView(context, youtrackService, vscodeService)
     new IssuesTreeView(context, youtrackService, vscodeService)
     new ArticlesTreeView(context, youtrackService, vscodeService)
     new RecentArticlesTreeView(context, vscodeService)
     new RecentIssuesTreeView(context, vscodeService)
+    new IssueSearchesTreeView(context, youtrackService, vscodeService)
+    new SyncFilesTreeView(context, youtrackService, vscodeService)
     new MarkdownPreview(context, youtrackService)
     new AuthSidebar(context, youtrackService, vscodeService)
     new StatusBarView(context, youtrackService, vscodeService)
@@ -77,6 +81,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     await vscodeService.toggleViewsVisibility(connected)
 
     if (connected) {
+      // Update connection status to update status bar
+      vscodeService.changeConnectionStatus(STATUS_AUTHENTICATED, serverUrl)
       logger.info("Successfully authenticated using stored credentials")
       // Start MCP server after successful connection
       await mcpService.start()

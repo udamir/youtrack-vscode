@@ -7,6 +7,7 @@ import type { ArticleBaseEntity } from "./articles.types"
 import { ArticleTreeItem } from "./articles.tree-item"
 import type { ProjectEntity } from "../projects"
 import type { YouTrackTreeItem } from "../base"
+import type { IssuesSource } from "../searches"
 
 /**
  * Tree view for YouTrack Knowledge Base
@@ -23,7 +24,7 @@ export class ArticlesTreeView extends BaseTreeView<ArticleTreeItem | YouTrackTre
     super(VIEW_KNOWLEDGE_BASE, context)
 
     // Setup event listeners for project changes
-    this.subscriptions.push(this._vscodeService.onDidChangeActiveProject(this.onActiveProjectChanged.bind(this)))
+    this.subscriptions.push(this._vscodeService.onDidChangeIssuesSource(this.onActiveProjectChanged.bind(this)))
 
     // Register commands
     this.registerCommand(COMMAND_REFRESH_KNOWLEDGE_BASE, this.refreshArticlesCommand.bind(this))
@@ -34,9 +35,13 @@ export class ArticlesTreeView extends BaseTreeView<ArticleTreeItem | YouTrackTre
   /**
    * Handler for active project changes
    */
-  private onActiveProjectChanged(project?: ProjectEntity): void {
-    this._activeProject = project
-    this.updateViewTitle(project)
+  private onActiveProjectChanged(source?: IssuesSource): void {
+    if (!source || source.type !== "project") {
+      this._activeProject = undefined
+    } else {
+      this._activeProject = source.source
+    }
+    this.updateViewTitle(this._activeProject)
     this.refresh()
   }
 

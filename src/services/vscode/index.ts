@@ -1,4 +1,5 @@
 export * from "./vscode.service"
 export * from "./vscode.consts"
-export * from "./vscode-storage.service"
+export * from "./vscode.storage"
 export * from "./vscode.types"
+export * from "./vscode.cache"

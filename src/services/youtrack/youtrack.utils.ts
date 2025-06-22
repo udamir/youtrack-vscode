@@ -1,6 +1,15 @@
-import type { Article, Entity, Issue, SingleEnumIssueCustomField } from "youtrack-client"
-import type { ARTICLE_FIELDS, ARTICLE_FIELDS_FULL, ISSUE_FIELDS, ISSUE_FIELDS_FULL } from "./youtrack.consts"
+import type { Agile, Article, Entity, Issue, SavedQuery, SingleEnumIssueCustomField, Sprint } from "youtrack-client"
+import type {
+  AGILE_BOARD_FIELDS,
+  ARTICLE_FIELDS,
+  ARTICLE_FIELDS_FULL,
+  ISSUE_FIELDS,
+  ISSUE_FIELDS_FULL,
+  SAVED_SEARCH_FIELDS_BASE,
+  SPRINT_FIELDS_BASE,
+} from "./youtrack.consts"
 import type { ArticleBaseEntity, ArticleEntity, IssueBaseEntity, IssueEntity, LinkType, IssueLink } from "../../views"
+import type { AgileBoardEntity, SavedSearchEntity, SprintEntity } from "../../views/searches"
 
 export const getEntityTypeById = (id: string): "issue" | "article" => {
   const [_, __, articleId] = id.split("-")
@@ -112,5 +121,53 @@ export function getArticleEntity(article: Entity<Article, typeof ARTICLE_FIELDS_
       },
       {} as Record<string, string>,
     ),
+  }
+}
+
+/**
+ * Convert YouTrack API response to SavedSearchEntity
+ * @param data Raw saved search data from YouTrack API
+ * @returns Typed SavedSearchEntity
+ */
+export function getSavedSearchEntity(data: Entity<SavedQuery, typeof SAVED_SEARCH_FIELDS_BASE>): SavedSearchEntity {
+  return {
+    id: data.id,
+    name: data.name || "",
+    query: data.query || "",
+  }
+}
+
+/**
+ * Convert YouTrack API response to SprintEntity
+ * @param data Raw sprint data from YouTrack API
+ * @returns Typed SprintEntity
+ */
+export function getSprintEntity(
+  agile: Entity<Agile, typeof AGILE_BOARD_FIELDS>,
+  data: Entity<Sprint, typeof SPRINT_FIELDS_BASE>,
+): SprintEntity {
+  return {
+    id: data.id,
+    agile: {
+      id: agile.id,
+      name: agile.name,
+    },
+    name: data.name || "",
+    start: data.start || undefined,
+    finish: data.finish || undefined,
+    archived: data.archived,
+  }
+}
+
+/**
+ * Convert YouTrack API response to AgileBoardEntity
+ * @param data Raw agile board data from YouTrack API
+ * @returns Typed AgileBoardEntity
+ */
+export function getAgileBoardEntity(data: Entity<Agile, typeof AGILE_BOARD_FIELDS>): AgileBoardEntity {
+  return {
+    id: data.id,
+    name: data.name,
+    sprints: data.sprints?.map((sprint) => getSprintEntity(data, sprint)) || [],
   }
 }
