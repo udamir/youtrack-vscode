@@ -2,7 +2,7 @@
   "name": "youtrack-vscode",
   "displayName": "YouTrack extension with MCP Server",
   "description": "YouTrack integration for VSCode to manage issues and knowledge base articles with MCP Server",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "publisher": "udamir",
   "license": "MIT",
   "icon": "media/logo.png",
