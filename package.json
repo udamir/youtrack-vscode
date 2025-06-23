@@ -398,7 +398,7 @@
     "debug": "webpack && code --extensionDevelopmentPath=\"$(pwd)\" --disable-extensions --inspect-extensions=9229"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.0.4",
     "@types/bun": "latest",
     "@types/express": "^5.0.1",
     "@types/js-yaml": "^4.0.9",
