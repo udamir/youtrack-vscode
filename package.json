@@ -407,7 +407,7 @@
     "@types/vscode": "^1.74.0",
     "biome": "^0.3.3",
     "dotenv": "^16.4.7",
-    "prettier": "^3.5.3",
+    "prettier": "^3.6.2",
     "ts-loader": "^9.5.2",
     "typescript": "^5.8.3",
     "webpack": "^5.99.9",
