@@ -403,7 +403,7 @@
     "@types/express": "^5.0.1",
     "@types/js-yaml": "^4.0.9",
     "@types/markdown-it": "^14.1.2",
-    "@types/node": "^24.0.1",
+    "@types/node": "^24.1.0",
     "@types/vscode": "^1.74.0",
     "biome": "^0.3.3",
     "dotenv": "^16.4.7",
