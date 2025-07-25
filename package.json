@@ -414,7 +414,7 @@
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.10.2",
+    "@modelcontextprotocol/sdk": "^1.17.0",
     "express": "^5.1.0",
     "js-yaml": "^4.1.0",
     "markdown-it": "^14.1.0",
